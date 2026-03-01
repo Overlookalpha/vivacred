@@ -1,26 +1,82 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Home - VivaCred</title>
+  <title>VivaCred</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(10px);
+      padding: 40px;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 400px;
+      text-align: center;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+    }
+
+    h1 {
+      margin-bottom: 10px;
+      font-size: 28px;
+      letter-spacing: 1px;
+    }
+
+    .email {
+      opacity: 0.8;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .btn {
+      padding: 12px 20px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.2s;
+    }
+
+    .btn-logout {
+      background: #ef4444;
+      color: white;
+    }
+
+    .btn-logout:hover {
+      background: #dc2626;
+    }
+
+    .logo {
+      font-size: 18px;
+      opacity: 0.7;
+      margin-bottom: 5px;
+      letter-spacing: 2px;
+    }
+  </style>
 </head>
 
-<body style="background:#0f172a; color:white; text-align:center; font-family:Arial; padding-top:100px;">
+<body>
 
-  <h1>Bem-vindo ao VivaCred 🔥</h1>
+  <div class="card">
+    <div class="logo">VIVACRED</div>
+    <h1>Painel do Cliente</h1>
+    <div id="userEmail" class="email"></div>
 
-  <p id="userEmail"></p>
-
-  <button id="logoutBtn" style="
-    margin-top:20px;
-    padding:10px 20px;
-    background:#ef4444;
-    border:none;
-    border-radius:8px;
-    color:white;
-    cursor:pointer;
-  ">
-    Sair
-  </button>
+    <button id="logoutBtn" class="btn btn-logout">
+      Sair
+    </button>
+  </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
@@ -38,7 +94,6 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
-    // Proteção da rota
     onAuthStateChanged(auth, (user) => {
       if (user) {
         document.getElementById("userEmail").innerText = "Logado como: " + user.email;
@@ -47,7 +102,6 @@
       }
     });
 
-    // Logout
     document.getElementById("logoutBtn").addEventListener("click", async () => {
       await signOut(auth);
       window.location.replace("login.html");

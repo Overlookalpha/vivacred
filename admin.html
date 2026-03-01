@@ -83,7 +83,7 @@ onAuthStateChanged(auth, async (user) => {
 
   snapshot.forEach((docSnap) => {
     const data = docSnap.data();
-
+  if (data.statusAumento !== "pendente") return;
     const div = document.createElement("div");
     div.className = "card";
 

@@ -27,10 +27,6 @@
       background:#00c853;
       color:white;
     }
-    .negar{
-      background:#ff5252;
-      color:white;
-    }
   </style>
 </head>
 <body>
@@ -65,7 +61,7 @@ const db = getFirestore(app);
 onAuthStateChanged(auth, async (user) => {
 
   if (!user) {
-    .location.replace("login.html");
+    window.location.replace("login.html");
     return;
   }
 
@@ -75,7 +71,7 @@ onAuthStateChanged(auth, async (user) => {
 
   if (!adminSnap.exists()) {
     alert("Acesso negado.");
-    .location.replace("home.html");
+    window.location.replace("home.html");
     return;
   }
 
@@ -95,7 +91,7 @@ onAuthStateChanged(auth, async (user) => {
       <strong>${data.email}</strong><br>
       Score: ${data.score}<br>
       Limite Base: ${data.limiteBase}<br><br>
-      <button onclick="aprovar('${docSnap.id}')">Aprovar</button>
+      <button class="aprovar" onclick="aprovar('${docSnap.id}')">Aprovar +500</button>
     `;
 
     container.appendChild(div);
@@ -115,7 +111,9 @@ window.aprovar = async (id) => {
   });
 
   alert("Limite atualizado!");
+  location.reload();
 };
+
 </script>
 
 </body>

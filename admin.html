@@ -102,14 +102,20 @@ onAuthStateChanged(auth, async (user) => {
 
 });
 
-window.aprovar = async (id, novoLimite) => {
+window.aprovar = async (id) => {
 
   const userRef = doc(db, "usuarios", id);
+  const userSnap = await getDoc(userRef);
+  const data = userSnap.data();
+
+  const limiteAnterior = data.limiteBase;
+  const novoLimite = data.limiteSolicitado;
 
   await updateDoc(userRef, {
     limiteBase: novoLimite,
-    statusAumento: null,
-    limiteSolicitado: null
+    limiteAnterior: limiteAnterior,
+    statusAumento: "aprovado",
+    dataAprovacao: new Date()
   });
 
   alert("Pedido aprovado!");

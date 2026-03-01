@@ -126,7 +126,9 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+    
 
     const firebaseConfig = {
       apiKey: "AIzaSyDJHtQp7OUxgYqtcD_2eTqzh1BRpufvKrY",
@@ -139,19 +141,34 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const db = getFirestore(app);
 
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        document.getElementById("userEmail").innerText = "Logado como: " + user.email;
-      } else {
-        window.location.replace("login.html");
-      }
-    });
+    onAuthStateChanged(auth, async (user) => {
+  if (user) {
 
-    document.getElementById("logoutBtn").addEventListener("click", async () => {
-      await signOut(auth);
-      window.location.replace("login.html");
-    });
+    document.getElementById("userEmail").innerText = 
+      "Logado como: " + user.email;
+
+    const userRef = doc(db, "usuarios", user.uid);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      await setDoc(userRef, {
+        email: user.email,
+        score: 20,
+        limiteBase: 100,
+        status: "ativo",
+        criadoEm: new Date()
+      });
+      console.log("Usuário criado no Firestore");
+    } else {
+      console.log("Usuário já existe");
+    }
+
+  } else {
+    window.location.replace("login.html");
+  }
+});
   </script>
 
 </body>

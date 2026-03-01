@@ -176,7 +176,7 @@
 </div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+import {  getFirestore, doc, getDoc, setDoc, addDoc, collection  } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -254,24 +254,49 @@ inputValor.addEventListener("input", () => {
     });
 
     // Confirmar solicitação
-    confirmar.addEventListener("click", () => {
+  confirmar.addEventListener("click", async () => {
 
-      const prazoSelecionado = document.querySelector('input[name="prazo"]:checked');
+  const inputValor = document.getElementById("outroValor");
+  const valorDigitado = parseInt(inputValor.value);
+  const prazoSelecionado = document.querySelector('input[name="prazo"]:checked');
 
-      if (!prazoSelecionado) {
-        alert("Escolha um prazo antes de confirmar.");
-        return;
-      }
+  let valorFinal = 0;
+  let prazoFinal = null;
 
-      const prazo = prazoSelecionado.value;
+  // SE DIGITOU OUTRO VALOR
+  if (valorDigitado && valorDigitado >= 100) {
+    valorFinal = valorDigitado;
+  } else {
 
-      alert("Solicitação enviada para análise.\nPrazo escolhido: " + prazo + " dias.");
+    if (!prazoSelecionado) {
+      alert("Escolha um prazo antes de confirmar.");
+      return;
+    }
 
-      modal.style.display = "none";
+    valorFinal = 100;
+    prazoFinal = prazoSelecionado.value;
+  }
 
+  try {
+
+    await addDoc(collection(db, "solicitacoes"), {
+      userId: user.uid,
+      email: user.email,
+      valor: valorFinal,
+      prazo: prazoFinal,
+      status: "pendente",
+      criadoEm: new Date()
     });
 
+    alert("Solicitação enviada para análise.");
+    modal.style.display = "none";
+
+  } catch (error) {
+    console.error(error);
+    alert("Erro ao enviar solicitação.");
   }
+
+});
 
 }); // FECHA onAuthStateChanged
 

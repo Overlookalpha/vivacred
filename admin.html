@@ -92,7 +92,9 @@ onAuthStateChanged(auth, async (user) => {
       Score: ${data.score}<br>
       Limite Atual: ${data.limiteBase}<br>
       Limite Solicitado: ${data.limiteSolicitado}<br><br>
-      <button class="aprovar" onclick="aprovar('${docSnap.id}')">Aprovar +500</button>
+      <button class="aprovar" onclick="aprovar('${docSnap.id}', ${data.limiteSolicitado})">
+       Aprovar Pedido
+       </button>
     `;
 
     container.appendChild(div);

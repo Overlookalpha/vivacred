@@ -114,7 +114,6 @@ btnLogin.addEventListener("click", async () => {
 
   try {
     await signInWithEmailAndPassword(auth, email, senha);
-    alert("Login realizado com sucesso!");
     window.location.href = "home.html";
   } catch (error) {
     alert("Erro no login: " + error.message);

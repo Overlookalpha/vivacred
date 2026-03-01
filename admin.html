@@ -90,7 +90,8 @@ onAuthStateChanged(auth, async (user) => {
     div.innerHTML = `
       <strong>${data.email}</strong><br>
       Score: ${data.score}<br>
-      Limite Base: ${data.limiteBase}<br><br>
+      Limite Atual: ${data.limiteBase}<br>
+      Limite Solicitado: ${data.limiteSolicitado}<br><br>
       <button class="aprovar" onclick="aprovar('${docSnap.id}')">Aprovar +500</button>
     `;
 

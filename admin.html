@@ -58,24 +58,21 @@ const db = getFirestore(app);
 onAuthStateChanged(auth, async (user) => {
 
   if (!user) {
-    window.location.href = "index.html";
-    return;
+    return; // espera o Firebase resolver
   }
 
-  // 🔐 VERIFICA SE É ADMIN
   if (user.email !== "over@vivacred.com") {
     window.location.href = "home.html";
     return;
   }
 
-  // ✅ SE CHEGOU AQUI, É ADMIN
+  // ADMIN AUTORIZADO
 
   const snapshot = await getDocs(collection(db, "usuarios"));
   const container = document.getElementById("listaUsuarios");
   container.innerHTML = "";
 
   snapshot.forEach((docSnap) => {
-
     const data = docSnap.data();
 
     if (data.statusAumento === "pendente") {
@@ -87,17 +84,15 @@ onAuthStateChanged(auth, async (user) => {
         <strong>${data.nome || "Usuário"}</strong><br>
         Limite atual: ${data.limiteAprovado}<br>
         Novo limite sugerido: ${data.limiteCalculado}<br><br>
-        <button class="aprovar" onclick="aprovar('${docSnap.id}')">Aprovar</button>
-        <button class="negar" onclick="negar('${docSnap.id}')">Negar</button>
+        <button onclick="aprovar('${docSnap.id}')">Aprovar</button>
+        <button onclick="negar('${docSnap.id}')">Negar</button>
       `;
 
       container.appendChild(div);
     }
-
   });
 
 });
-
 window.aprovar = async (id) => {
   await updateDoc(doc(db, "usuarios", id), {
     limiteAprovado: firebase.firestore.FieldValue.serverTimestamp,

@@ -88,6 +88,29 @@
       opacity: 0.7;
       font-size: 14px;
     }
+    .modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.modal-content {
+  background: #1e1e1e;
+  padding: 20px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 400px;
+  color: white;
+}
+
+.modal-content label {
+  display: block;
+  margin-bottom: 10px;
+}
   </style>
 </head>
 
@@ -123,8 +146,29 @@
     </div>
 
   </div>
+ <div id="modalCredito" class="modal">
+  <div class="modal-content">
+    <h3>Simulação de Crédito</h3>
 
- <script type="module">
+    <p>Valor solicitado: <strong>R$100</strong></p>
+
+    <label>
+      <input type="radio" name="prazo" value="15">
+      15 dias – Total: R$130
+    </label>
+
+    <label>
+      <input type="radio" name="prazo" value="30">
+      30 dias – Total: R$150
+    </label>
+
+    <br><br>
+
+    <button id="confirmarCredito">Confirmar Solicitação</button>
+    <button id="fecharModal">Cancelar</button>
+  </div>
+</div>
+<script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
@@ -169,14 +213,23 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   const btn = document.getElementById("btnSolicitar");
+  const modal = document.getElementById("modalCredito");
+  const fechar = document.getElementById("fecharModal");
 
-  if (btn) {
+  if (btn && modal && fechar) {
+
     btn.addEventListener("click", () => {
-      alert("Botão funcionando");
+      modal.style.display = "flex";
     });
+
+    fechar.addEventListener("click", () => {
+      modal.style.display = "none";
+    });
+
   }
 
-});
+}); // 🔥 FALTAVA ISSO
+
 </script>
 
 </body>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>VivaCred Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body{
+      font-family: Arial;
+      background:#111;
+      color:white;
+      padding:20px;
+    }
+    .card{
+      background:#1c1c1c;
+      padding:15px;
+      margin-bottom:15px;
+      border-radius:10px;
+    }
+    button{
+      padding:6px 12px;
+      border:none;
+      border-radius:6px;
+      cursor:pointer;
+      margin-right:5px;
+    }
+    .aprovar{
+      background:#00c853;
+      color:white;
+    }
+    .negar{
+      background:#ff5252;
+      color:white;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Painel Administrativo VivaCred</h2>
+
+<div id="listaUsuarios"></div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "SUA_API_AQUI",
+  authDomain: "meta-viva.firebaseapp.com",
+  projectId: "meta-viva",
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+onAuthStateChanged(auth, async (user) => {
+
+  if(!user){
+    window.location.href = "index.html";
+    return;
+  }
+
+  const snapshot = await getDocs(collection(db, "usuarios"));
+  const container = document.getElementById("listaUsuarios");
+  container.innerHTML = "";
+
+  snapshot.forEach((docSnap) => {
+
+    const data = docSnap.data();
+
+    if(data.statusAumento === "pendente"){
+
+      const div = document.createElement("div");
+      div.className = "card";
+
+      div.innerHTML = `
+        <strong>${data.nome || "Usuário"}</strong><br>
+        Limite atual: ${data.limiteAprovado}<br>
+        Novo limite sugerido: ${data.limiteCalculado}<br><br>
+        <button class="aprovar" onclick="aprovar('${docSnap.id}')">Aprovar</button>
+        <button class="negar" onclick="negar('${docSnap.id}')">Negar</button>
+      `;
+
+      container.appendChild(div);
+    }
+
+  });
+
+});
+
+window.aprovar = async (id) => {
+  await updateDoc(doc(db, "usuarios", id), {
+    limiteAprovado: firebase.firestore.FieldValue.serverTimestamp,
+  });
+};
+
+</script>
+
+</body>
+</html>

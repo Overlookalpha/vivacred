@@ -117,7 +117,14 @@ btnLogin.addEventListener("click", async () => {
 
   try {
     await signInWithEmailAndPassword(auth, email, senha);
+
+const user = auth.currentUser;
+
+if (user.email === "over@vivacred.com") {
+    window.location.href = "admin.html";
+} else {
     window.location.href = "home.html";
+}
   } catch (error) {
     alert("Erro no login: " + error.message);
   }

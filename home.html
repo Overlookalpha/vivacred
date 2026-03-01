@@ -150,7 +150,7 @@
   <div class="modal-content">
     <h3>Simulação de Crédito</h3>
 
-    <p>Valor solicitado: <strong>R$100</strong></p>
+    <p>Valor padrão disponível: <strong>R$100</strong></p>
 
     <label>
       <input type="radio" name="prazo" value="15">
@@ -161,6 +161,12 @@
       <input type="radio" name="prazo" value="30">
       30 dias – Total: R$150
     </label>
+
+    <hr>
+
+    <p>Ou solicitar outro valor:</p>
+
+    <input type="number" id="outroValor" placeholder="Digite o valor desejado" min="100" />
 
     <br><br>
 
@@ -193,9 +199,11 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
+  // Mostrar email
   document.getElementById("userEmail").innerText =
     "Logado como: " + user.email;
 
+  // Criar usuário se não existir
   const userRef = doc(db, "usuarios", user.uid);
   const userSnap = await getDoc(userRef);
 
@@ -212,23 +220,45 @@ onAuthStateChanged(auth, async (user) => {
     console.log("Usuário já existe");
   }
 
+  // ===== MODAL =====
   const btn = document.getElementById("btnSolicitar");
   const modal = document.getElementById("modalCredito");
   const fechar = document.getElementById("fecharModal");
+  const confirmar = document.getElementById("confirmarCredito");
 
-  if (btn && modal && fechar) {
+  if (btn && modal && fechar && confirmar) {
 
+    // Abrir modal
     btn.addEventListener("click", () => {
       modal.style.display = "flex";
     });
 
+    // Fechar modal
     fechar.addEventListener("click", () => {
       modal.style.display = "none";
     });
 
+    // Confirmar solicitação
+    confirmar.addEventListener("click", () => {
+
+      const prazoSelecionado = document.querySelector('input[name="prazo"]:checked');
+
+      if (!prazoSelecionado) {
+        alert("Escolha um prazo antes de confirmar.");
+        return;
+      }
+
+      const prazo = prazoSelecionado.value;
+
+      alert("Solicitação enviada para análise.\nPrazo escolhido: " + prazo + " dias.");
+
+      modal.style.display = "none";
+
+    });
+
   }
 
-}); // 🔥 FALTAVA ISSO
+}); // FECHA onAuthStateChanged
 
 </script>
 

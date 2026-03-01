@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>VivaCred</title>
+  <title>VivaCred - Painel</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
@@ -10,72 +10,118 @@
       font-family: Arial, sans-serif;
       background: linear-gradient(135deg, #0f172a, #1e293b);
       color: white;
+    }
+
+    .header {
+      padding: 20px;
       display: flex;
-      justify-content: center;
+      justify-content: space-between;
       align-items: center;
-      height: 100vh;
-    }
-
-    .card {
-      background: rgba(255,255,255,0.05);
-      backdrop-filter: blur(10px);
-      padding: 40px;
-      border-radius: 16px;
-      width: 90%;
-      max-width: 400px;
-      text-align: center;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
-    }
-
-    h1 {
-      margin-bottom: 10px;
-      font-size: 28px;
-      letter-spacing: 1px;
-    }
-
-    .email {
-      opacity: 0.8;
-      margin-bottom: 30px;
-      font-size: 14px;
-    }
-
-    .btn {
-      padding: 12px 20px;
-      border-radius: 8px;
-      border: none;
-      cursor: pointer;
-      font-weight: bold;
-      transition: 0.2s;
-    }
-
-    .btn-logout {
-      background: #ef4444;
-      color: white;
-    }
-
-    .btn-logout:hover {
-      background: #dc2626;
     }
 
     .logo {
       font-size: 18px;
-      opacity: 0.7;
-      margin-bottom: 5px;
       letter-spacing: 2px;
+      opacity: 0.7;
+    }
+
+    .logout {
+      background: #ef4444;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+    }
+
+    .container {
+      padding: 30px;
+      max-width: 500px;
+      margin: auto;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.05);
+      padding: 25px;
+      border-radius: 16px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+
+    .score-value {
+      font-size: 40px;
+      font-weight: bold;
+    }
+
+    .bar {
+      height: 10px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 5px;
+      margin-top: 10px;
+    }
+
+    .bar-fill {
+      height: 10px;
+      width: 20%;
+      background: #22c55e;
+      border-radius: 5px;
+    }
+
+    .limit {
+      font-size: 24px;
+      margin-top: 10px;
+    }
+
+    .btn-credit {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      background: #22c55e;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+
+    .email {
+      opacity: 0.7;
+      font-size: 14px;
     }
   </style>
 </head>
 
 <body>
 
-  <div class="card">
+  <div class="header">
     <div class="logo">VIVACRED</div>
-    <h1>Painel do Cliente</h1>
-    <div id="userEmail" class="email"></div>
+    <button id="logoutBtn" class="logout">Sair</button>
+  </div>
 
-    <button id="logoutBtn" class="btn btn-logout">
-      Sair
-    </button>
+  <div class="container">
+
+    <div class="card">
+      <div id="userEmail" class="email"></div>
+    </div>
+
+    <div class="card">
+      <div>Seu Score</div>
+      <div class="score-value">20</div>
+
+      <div class="bar">
+        <div class="bar-fill"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div>Limite Disponível</div>
+      <div class="limit">€100</div>
+
+      <button class="btn-credit">
+        Solicitar Crédito
+      </button>
+    </div>
+
   </div>
 
   <script type="module">
@@ -106,7 +152,6 @@
       await signOut(auth);
       window.location.replace("login.html");
     });
-
   </script>
 
 </body>

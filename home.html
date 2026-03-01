@@ -7,30 +7,53 @@
 <body style="background:#0f172a; color:white; text-align:center; font-family:Arial; padding-top:100px;">
 
   <h1>Bem-vindo ao VivaCred 🔥</h1>
-  <p>Você está logado.</p>
+
+  <p id="userEmail"></p>
+
+  <button id="logoutBtn" style="
+    margin-top:20px;
+    padding:10px 20px;
+    background:#ef4444;
+    border:none;
+    border-radius:8px;
+    color:white;
+    cursor:pointer;
+  ">
+    Sair
+  </button>
 
   <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDJHtQp7OUxgYqtcD_2eTqzh1BRpufvKrY",
-  authDomain: "vivacred-5a5b8.firebaseapp.com",
-  projectId: "vivacred-5a5b8",
-  storageBucket: "vivacred-5a5b8.firebasestorage.app",
-  messagingSenderId: "932933359706",
-  appId: "1:932933359706:web:59fd16618feea3b2fa6063"
-};
+    const firebaseConfig = {
+      apiKey: "AIzaSyDJHtQp7OUxgYqtcD_2eTqzh1BRpufvKrY",
+      authDomain: "vivacred-5a5b8.firebaseapp.com",
+      projectId: "vivacred-5a5b8",
+      storageBucket: "vivacred-5a5b8.firebasestorage.app",
+      messagingSenderId: "932933359706",
+      appId: "1:932933359706:web:59fd16618feea3b2fa6063"
+    };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
 
-onAuthStateChanged(auth, (user) => {
-  if (!user) {
-    window.location.replace("login.html");
-  }
-});
-</script>
+    // Proteção da rota
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        document.getElementById("userEmail").innerText = "Logado como: " + user.email;
+      } else {
+        window.location.replace("login.html");
+      }
+    });
+
+    // Logout
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      await signOut(auth);
+      window.location.replace("login.html");
+    });
+
+  </script>
 
 </body>
 </html>

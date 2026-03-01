@@ -41,14 +41,21 @@
 
 <script type="module">
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, collection, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+import { 
+  getFirestore, 
+  collection, 
+  getDocs, 
+  doc, 
+  getDoc,
+  updateDoc 
+} from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "SUA_API_AQUI",
-  authDomain: "meta-viva.firebaseapp.com",
-  projectId: "meta-viva",
+  apiKey: "AIzaSyDJHtQp7OUxgYqtcD_2eTqzh1BRpufvKrY",
+  authDomain: "vivacred-5a5b8.firebaseapp.com",
+  projectId: "vivacred-5a5b8",
 };
 
 const app = initializeApp(firebaseConfig);
@@ -58,15 +65,21 @@ const db = getFirestore(app);
 onAuthStateChanged(auth, async (user) => {
 
   if (!user) {
-    return; // espera o Firebase resolver
-  }
-
-  if (user.email !== "over@vivacred.com") {
-    window.location.href = "home.html";
+    window.location.replace("login.html");
     return;
   }
 
-  // ADMIN AUTORIZADO
+  // 🔐 Verifica se é admin na coleção admins
+  const adminRef = doc(db, "admins", user.uid);
+  const adminSnap = await getDoc(adminRef);
+
+  if (!adminSnap.exists()) {
+    alert("Acesso negado.");
+    window.location.replace("home.html");
+    return;
+  }
+
+  console.log("Admin autenticado");
 
   const snapshot = await getDocs(collection(db, "usuarios"));
   const container = document.getElementById("listaUsuarios");
@@ -75,28 +88,29 @@ onAuthStateChanged(auth, async (user) => {
   snapshot.forEach((docSnap) => {
     const data = docSnap.data();
 
-    if (data.statusAumento === "pendente") {
+    const div = document.createElement("div");
+    div.className = "card";
 
-      const div = document.createElement("div");
-      div.className = "card";
+    div.innerHTML = `
+      <strong>${data.email}</strong><br>
+      Score: ${data.score}<br>
+      Limite Base: ${data.limiteBase}<br><br>
+      <button onclick="aprovar('${docSnap.id}')">Aprovar</button>
+    `;
 
-      div.innerHTML = `
-        <strong>${data.nome || "Usuário"}</strong><br>
-        Limite atual: ${data.limiteAprovado}<br>
-        Novo limite sugerido: ${data.limiteCalculado}<br><br>
-        <button onclick="aprovar('${docSnap.id}')">Aprovar</button>
-        <button onclick="negar('${docSnap.id}')">Negar</button>
-      `;
-
-      container.appendChild(div);
-    }
+    container.appendChild(div);
   });
 
 });
+
 window.aprovar = async (id) => {
-  await updateDoc(doc(db, "usuarios", id), {
-    limiteAprovado: firebase.firestore.FieldValue.serverTimestamp,
+  const userRef = doc(db, "usuarios", id);
+
+  await updateDoc(userRef, {
+    limiteBase: 1000
   });
+
+  alert("Limite atualizado!");
 };
 
 </script>

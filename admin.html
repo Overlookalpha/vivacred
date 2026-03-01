@@ -57,10 +57,18 @@ const db = getFirestore(app);
 
 onAuthStateChanged(auth, async (user) => {
 
-  if(!user){
+  if (!user) {
     window.location.href = "index.html";
     return;
   }
+
+  // 🔐 VERIFICA SE É ADMIN
+  if (user.email !== "over@vivacred.com") {
+    window.location.href = "home.html";
+    return;
+  }
+
+  // ✅ SE CHEGOU AQUI, É ADMIN
 
   const snapshot = await getDocs(collection(db, "usuarios"));
   const container = document.getElementById("listaUsuarios");
@@ -70,7 +78,7 @@ onAuthStateChanged(auth, async (user) => {
 
     const data = docSnap.data();
 
-    if(data.statusAumento === "pendente"){
+    if (data.statusAumento === "pendente") {
 
       const div = document.createElement("div");
       div.className = "card";

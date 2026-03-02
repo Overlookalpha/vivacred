@@ -281,79 +281,81 @@ if (limiteElemento && data.limiteBase) {
   });
 }
 
-  // ===== MODAL =====
-  const btn = document.getElementById("btnSolicitar");
-  const modal = document.getElementById("modalCredito");
-  const fechar = document.getElementById("fecharModal");
-  const confirmar = document.getElementById("confirmarCredito");
+ // ===== MODAL =====
+const btn = document.getElementById("btnSolicitar");
+const modal = document.getElementById("modalCredito");
+const fechar = document.getElementById("fecharModal");
+const confirmar = document.getElementById("confirmarCredito");
 
-  if (btn && modal && fechar && confirmar) {
+if (btn && modal && fechar && confirmar) {
 
-    const inputValor = document.getElementById("outroValor");
+  const inputValor = document.getElementById("outroValor");
 
-    inputValor.addEventListener("input", () => {
+  inputValor.addEventListener("input", () => {
 
-      const valor = parseInt(inputValor.value);
+    const valor = parseInt(inputValor.value);
 
-      if (valor < 100) {
-        alert("Valor mínimo é 100.");
-        inputValor.value = "";
+    if (valor < 100) {
+      alert("Valor mínimo é 100.");
+      inputValor.value = "";
+      return;
+    }
+  });
+
+  btn.addEventListener("click", () => {
+    modal.style.display = "flex";
+  });
+
+  fechar.addEventListener("click", () => {
+    modal.style.display = "none";
+  });
+
+  confirmar.addEventListener("click", async () => {
+
+    const valorDigitado = parseInt(inputValor.value);
+    const prazoSelecionado = document.querySelector('input[name="prazo"]:checked');
+
+    let valorFinal = 0;
+    let prazoFinal = null;
+
+    if (valorDigitado && valorDigitado >= 100) {
+      valorFinal = valorDigitado;
+    } else {
+
+      if (!prazoSelecionado) {
+        alert("Escolha um prazo antes de confirmar.");
         return;
       }
-    });
 
-    btn.addEventListener("click", () => {
-      modal.style.display = "flex";
-    });
+      valorFinal = 100;
+      prazoFinal = prazoSelecionado.value;
+    }
 
-    fechar.addEventListener("click", () => {
+    try {
+
+      await addDoc(collection(db, "solicitacoes"), {
+        userId: user.uid,
+        email: user.email,
+        valor: valorFinal,
+        prazo: prazoFinal,
+        status: "pendente",
+        criadoEm: new Date()
+      });
+
+      alert("Solicitação enviada para análise.");
       modal.style.display = "none";
-    });
 
-    confirmar.addEventListener("click", async () => {
+    } catch (error) {
+      console.error(error);
+      alert("Erro ao enviar solicitação.");
+    }
 
-      const valorDigitado = parseInt(inputValor.value);
-      const prazoSelecionado = document.querySelector('input[name="prazo"]:checked');
+  });
 
-      let valorFinal = 0;
-      let prazoFinal = null;
+} // 👈 FECHA o if (btn && modal ...)
 
-      if (valorDigitado && valorDigitado >= 100) {
-        valorFinal = valorDigitado;
-      } else {
+}); // 👈 FECHA onAuthStateChanged
 
-        if (!prazoSelecionado) {
-          alert("Escolha um prazo antes de confirmar.");
-          return;
-        }
-
-        valorFinal = 100;
-        prazoFinal = prazoSelecionado.value;
-      }
-
-      try {
-
-        await addDoc(collection(db, "solicitacoes"), {
-          userId: user.uid,
-          email: user.email,
-          valor: valorFinal,
-          prazo: prazoFinal,
-          status: "pendente",
-          criadoEm: new Date()
-        });
-
-        alert("Solicitação enviada para análise.");
-        modal.style.display = "none";
-
-      } catch (error) {
-        console.error(error);
-        alert("Erro ao enviar solicitação.");
-      }
-
-    });
-  }
-
-});
 </script>
 
 </body>

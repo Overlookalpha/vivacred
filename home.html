@@ -254,35 +254,26 @@ if (limiteElemento && data.limiteBase) {
       info.style.borderRadius = "10px";
       info.style.color = "white";
 
-     
+     info.innerHTML = `
+  <strong>Pedido de aumento aprovado</strong><br>
+  Limite anterior: ${data.limiteAnterior.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  })}<br>
+  Novo limite: ${data.limiteBase.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  })}<br>
+  Data da aprovação: ${data.dataAprovacao?.toDate().toLocaleString("pt-BR")}
+`;
      const area = document.getElementById("areaAvisoTopo");
   area.innerHTML = "";
   area.appendChild(info);
-  document.getElementById("fecharAviso").addEventListener("click", () => {
-  info.remove();
-      });
     }
+  }
 
   // ===== MODAL =====
-  const btn = document.getElementById("btnSolicitar");info.innerHTML = `
-  <div style="position:relative;">
-    <div id="fecharAviso" 
-         style="position:absolute; right:0; top:0; cursor:pointer; font-weight:bold; font-size:18px;">
-      ✕
-    </div>
-
-    <strong>Pedido de aumento aprovado</strong><br>
-    Limite anterior: ${data.limiteAnterior.toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL"
-    })}<br>
-    Novo limite: ${data.limiteBase.toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL"
-    })}<br>
-    Data da aprovação: ${data.dataAprovacao?.toDate().toLocaleString("pt-BR")}
-  </div>
-`;
+  const btn = document.getElementById("btnSolicitar");
   const modal = document.getElementById("modalCredito");
   const fechar = document.getElementById("fecharModal");
   const confirmar = document.getElementById("confirmarCredito");

@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -245,42 +246,24 @@ if (limiteElemento && data.limiteBase) {
 }
 
     // 🔔 MOSTRAR PEDIDO APROVADO
-   if (data.statusAumento === "aprovado") {
+    if (data.statusAumento === "aprovado") {
 
-  const info = document.createElement("div");
-  info.style.marginTop = "20px";
-  info.style.padding = "15px";
-  info.style.background = "#1e3d2f";
-  info.style.borderRadius = "10px";
-  info.style.color = "white";
-  info.style.position = "relative";
+      const info = document.createElement("div");
+      info.style.marginTop = "20px";
+      info.style.padding = "15px";
+      info.style.background = "#1e3d2f";
+      info.style.borderRadius = "10px";
+      info.style.color = "white";
 
-  info.innerHTML = `
-    <div id="fecharAviso"
-         style="position:absolute; right:10px; top:8px; cursor:pointer; font-weight:bold;">
-      ✕
-    </div>
-
-    <strong>Pedido de aumento aprovado</strong><br>
-    Limite anterior: ${data.limiteAnterior.toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL"
-    })}<br>
-    Novo limite: ${data.limiteBase.toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL"
-    })}<br>
-    Data da aprovação: ${data.dataAprovacao?.toDate().toLocaleString("pt-BR")}
-  `;
-
-  const area = document.getElementById("areaAvisoTopo");
+     
+     const area = document.getElementById("areaAvisoTopo");
   area.innerHTML = "";
   area.appendChild(info);
-
- info.querySelector("#fecharAviso").addEventListener("click", () => {
+  document.getElementById("fecharAviso").addEventListener("click", () => {
   info.remove();
-});
-}
+      });
+    }
+
   // ===== MODAL =====
   const btn = document.getElementById("btnSolicitar");info.innerHTML = `
   <div style="position:relative;">

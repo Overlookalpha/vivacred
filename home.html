@@ -112,6 +112,51 @@
   display: block;
   margin-bottom: 10px;
 }
+    .score-card {
+  background: linear-gradient(135deg, #111827, #0f172a);
+  border: 1px solid rgba(0,255,200,0.2);
+  box-shadow: 0 0 20px rgba(0,255,200,0.1);
+}
+
+.score-header {
+  font-size: 12px;
+  letter-spacing: 2px;
+  opacity: 0.6;
+  margin-bottom: 10px;
+}
+
+.score-value {
+  font-size: 48px;
+  font-weight: bold;
+  color: #00ffc3;
+}
+
+.score-level {
+  margin-top: 5px;
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.score-bar {
+  height: 8px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 4px;
+  margin-top: 15px;
+  overflow: hidden;
+}
+
+.score-bar-fill {
+  height: 8px;
+  width: 20%;
+  background: linear-gradient(90deg, #00ffc3, #00c853);
+  transition: 0.3s;
+}
+
+.score-info {
+  margin-top: 12px;
+  font-size: 12px;
+  opacity: 0.6;
+}
   </style>
 </head>
 
@@ -131,9 +176,23 @@
 
     <div id="areaAvisoTopo"></div>
     
-    <div class="card">
-      <div>Seu Score</div>
-      <div class="score-value">20</div>
+  <div class="card score-card">
+  <div class="score-header">PERFIL DE CRÉDITO</div>
+
+  <div class="score-value" id="scoreValor">20</div>
+
+  <div class="score-level" id="scoreNivel">
+    Nível: Iniciante
+  </div>
+
+  <div class="score-bar">
+    <div class="score-bar-fill" id="scoreBar"></div>
+  </div>
+
+  <div class="score-info">
+    Pague seus empréstimos em dia para aumentar seu limite.
+  </div>
+</div>
 
       <div class="bar">
         <div class="bar-fill"></div>

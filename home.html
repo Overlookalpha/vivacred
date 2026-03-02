@@ -124,10 +124,13 @@
 
   <div class="container">
 
+    
     <div class="card">
       <div id="userEmail" class="email"></div>
     </div>
 
+    <div id="areaAvisoTopo"></div>
+    
     <div class="card">
       <div>Seu Score</div>
       <div class="score-value">20</div>
@@ -263,7 +266,9 @@ if (limiteElemento && data.limiteBase) {
   })}<br>
   Data da aprovação: ${data.dataAprovacao?.toDate().toLocaleString("pt-BR")}
 `;
-      document.body.appendChild(info);
+     const area = document.getElementById("areaAvisoTopo");
+  area.innerHTML = "";
+  area.appendChild(info);
     }
   }
 

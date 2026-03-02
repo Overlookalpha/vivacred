@@ -148,7 +148,12 @@
      Solicitar Crédito
      </button>
     </div>
-
+     <div class="card">
+  <div><strong>Meus Empréstimos</strong></div>
+  <div id="listaEmprestimos" style="margin-top:15px; font-size:14px;">
+    Carregando...
+  </div>
+</div>
   </div>
  <div id="modalCredito" class="modal">
   <div class="modal-content">
@@ -180,7 +185,17 @@
 </div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
-import {  getFirestore, doc, getDoc, setDoc, addDoc, collection  } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+import {  
+  getFirestore, 
+  doc, 
+  getDoc, 
+  setDoc, 
+  addDoc, 
+  collection,
+  query,
+  where,
+  getDocs
+}
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -365,7 +380,44 @@ await addDoc(collection(db, "emprestimos"), {
 
     });
   }
+// ===== LISTAR EMPRÉSTIMOS APROVADOS =====
 
+const listaDiv = document.getElementById("listaEmprestimos");
+
+const q = query(
+  collection(db, "solicitacoes"),
+  where("userId", "==", user.uid),
+  where("status", "==", "aprovado")
+);
+
+const querySnapshot = await getDocs(q);
+
+if (querySnapshot.empty) {
+  listaDiv.innerHTML = "Você não possui empréstimos ativos.";
+} else {
+  listaDiv.innerHTML = "";
+
+  querySnapshot.forEach((docSnap) => {
+    const dados = docSnap.data();
+
+    const item = document.createElement("div");
+    item.style.marginBottom = "10px";
+    item.style.padding = "10px";
+    item.style.background = "rgba(255,255,255,0.05)";
+    item.style.borderRadius = "8px";
+
+    item.innerHTML = `
+      Valor: ${dados.valor.toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL"
+      })}<br>
+      Prazo: ${dados.prazo} dias<br>
+      Status: ${dados.status}
+    `;
+
+    listaDiv.appendChild(item);
+  });
+}
 });
 </script>
 

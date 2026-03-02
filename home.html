@@ -88,99 +88,106 @@
       opacity: 0.7;
       font-size: 14px;
     }
-
     .modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.6);
-      justify-content: center;
-      align-items: center;
-      z-index: 999;
-    }
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
 
-    .modal-content {
-      background: #1e1e1e;
-      padding: 20px;
-      border-radius: 10px;
-      width: 90%;
-      max-width: 400px;
-      color: white;
-    }
+.modal-content {
+  background: #1e1e1e;
+  padding: 20px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 400px;
+  color: white;
+}
 
-    .modal-content label {
-      display: block;
-      margin-bottom: 10px;
-    }
-
-    .aviso-aprovado {
-      background: #1e3d2f;
-      padding: 18px;
-      border-radius: 14px;
-      margin-bottom: 20px;
-      position: relative;
-      text-align: center;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-      animation: fadeIn 0.4s ease-in-out;
-    }
-
-    .fechar-aviso {
-      position: absolute;
-      right: 12px;
-      top: 8px;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 18px;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+.modal-content label {
+  display: block;
+  margin-bottom: 10px;
+}
   </style>
 </head>
 
 <body>
 
-<div class="header">
-  <div class="logo">VIVACRED</div>
-  <button id="logoutBtn" class="logout">Sair</button>
-</div>
-
-<div class="container">
-
-  <div class="card">
-    <div id="userEmail" class="email"></div>
+  <div class="header">
+    <div class="logo">VIVACRED</div>
+    <button id="logoutBtn" class="logout">Sair</button>
   </div>
 
-  <!-- 🔔 AVISO FICA AQUI -->
-  <div id="areaAvisoTopo"></div>
+  <div class="container">
 
-  <div class="card">
-    <div>Seu Score</div>
-    <div class="score-value">20</div>
-    <div class="bar">
-      <div class="bar-fill"></div>
+    <div class="card">
+      <div id="userEmail" class="email"></div>
     </div>
-  </div>
+    
+   <div id="areaAvisoTopo"></div>
+    
+    <div class="card">
+      <div>Seu Score</div>
+      <div class="score-value">20</div>
 
-  <div class="card">
-    <div>Limite Disponível</div>
-    <div class="limit" id="limiteDisponivel">R$ 100,00</div>
-    <button id="btnSolicitar" class="btn-credit">Solicitar Crédito</button>
-  </div>
+      <div class="bar">
+        <div class="bar-fill"></div>
+      </div>
+    </div>
 
+    <div class="card">
+      <div>Limite Disponível</div>
+      <div class="limit" id="limiteDisponivel">R$ 100,00</div>
+
+     <button id="btnSolicitar" class="btn-credit">
+     Solicitar Crédito
+     </button>
+    </div>
+
+  </div>
+ <div id="modalCredito" class="modal">
+  <div class="modal-content">
+    <h3>Simulação de Crédito</h3>
+
+    <p>Valor padrão disponível: <strong>R$100</strong></p>
+
+    <label>
+      <input type="radio" name="prazo" value="15">
+      15 dias – Total: R$130
+    </label>
+
+    <label>
+      <input type="radio" name="prazo" value="30">
+      30 dias – Total: R$150
+    </label>
+
+    <hr>
+
+    <p>Ou solicitar outro valor:</p>
+
+    <input type="number" id="outroValor" placeholder="Digite o valor desejado" min="100" />
+
+    <br><br>
+
+    <button id="confirmarCredito">Confirmar Solicitação</button>
+    <button id="fecharModal">Cancelar</button>
+  </div>
 </div>
-
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
-import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+import {  getFirestore, doc, getDoc, setDoc, addDoc, collection  } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
 
 const firebaseConfig = {
-  apiKey: "SUA_KEY",
+  apiKey: "AIzaSyDJHtQp7OUxgYqtcD_2eTqzh1BRpufvKrY",
   authDomain: "vivacred-5a5b8.firebaseapp.com",
   projectId: "vivacred-5a5b8",
+  storageBucket: "vivacred-5a5b8.firebasestorage.app",
+  messagingSenderId: "932933359706",
+  appId: "1:932933359706:web:59fd16618feea3b2fa6063"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -198,46 +205,156 @@ onAuthStateChanged(auth, async (user) => {
     "Logado como: " + user.email;
 
   const userRef = doc(db, "usuarios", user.uid);
-  const userSnap = await getDoc(userRef);
+  const adminRef = doc(db, "admins", user.uid);
+  const adminSnap = await getDoc(adminRef);
 
-  if (!userSnap.exists()) return;
-
-  const data = userSnap.data();
-
-  // Atualizar limite
-  if (data.limiteBase) {
-    document.getElementById("limiteDisponivel").innerText =
-      data.limiteBase.toLocaleString("pt-BR", {
-        style: "currency",
-        currency: "BRL"
-      });
+  if (adminSnap.exists()) {
+    console.log("Usuário é ADMIN");
+    document.body.style.border = "4px solid red";
   }
 
-  // 🔔 Aviso aprovado
-  if (data.statusAumento === "aprovado") {
+  const userSnap = await getDoc(userRef);
 
-    const area = document.getElementById("areaAvisoTopo");
-    area.innerHTML = "";
+  if (!userSnap.exists()) {
 
-    const aviso = document.createElement("div");
-    aviso.className = "aviso-aprovado";
+    await setDoc(userRef, {
+      email: user.email,
+      score: 20,
+      limiteBase: 100,
+      status: "ativo",
+      criadoEm: new Date()
+    });
 
-    aviso.innerHTML = `
-      <div class="fechar-aviso" id="fecharAviso">✕</div>
-      <strong>Pedido de aumento aprovado</strong><br><br>
-      Limite anterior: ${(data.limiteAnterior || 0).toLocaleString("pt-BR", {style:"currency",currency:"BRL"})}<br>
-      Novo limite: ${(data.limiteBase || 0).toLocaleString("pt-BR", {style:"currency",currency:"BRL"})}<br>
-      Data da aprovação: ${data.dataAprovacao?.toDate().toLocaleString("pt-BR") || ""}
-    `;
+    console.log("Usuário criado no Firestore");
 
-    area.appendChild(aviso);
+  } else {
 
-    document.getElementById("fecharAviso").addEventListener("click", () => {
-      aviso.remove();
+    console.log("Usuário já existe");
+
+    const data = userSnap.data();
+    // Atualizar limite principal da tela
+const limiteElemento = document.getElementById("limiteDisponivel");
+
+if (limiteElemento && data.limiteBase) {
+  limiteElemento.innerText = data.limiteBase.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  });
+}
+
+    // 🔔 MOSTRAR PEDIDO APROVADO
+   if (data.statusAumento === "aprovado") {
+
+  const area = document.getElementById("areaAvisoTopo");
+
+  const info = document.createElement("div");
+
+  info.style.background = "#1e3d2f";
+  info.style.padding = "15px";
+  info.style.borderRadius = "12px";
+  info.style.marginBottom = "20px";
+  info.style.position = "relative";
+  info.style.textAlign = "center";
+  info.style.boxShadow = "0 8px 20px rgba(0,0,0,0.4)";
+
+  info.innerHTML = `
+    <div style="position:absolute; right:10px; top:8px; cursor:pointer; font-weight:bold;" id="fecharAviso">✕</div>
+    <strong>Pedido de aumento aprovado</strong><br><br>
+    Limite anterior: ${data.limiteAnterior.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL"
+    })}<br>
+    Novo limite: ${data.limiteBase.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL"
+    })}<br>
+    Data da aprovação: ${data.dataAprovacao?.toDate().toLocaleString("pt-BR")}
+  `;
+
+  area.innerHTML = "";
+  area.appendChild(info);
+
+  // Botão fechar
+  document.getElementById("fecharAviso").addEventListener("click", () => {
+    info.remove();
+  });
+}
+
+  // ===== MODAL =====
+  const btn = document.getElementById("btnSolicitar");
+  const modal = document.getElementById("modalCredito");
+  const fechar = document.getElementById("fecharModal");
+  const confirmar = document.getElementById("confirmarCredito");
+
+  if (btn && modal && fechar && confirmar) {
+
+    const inputValor = document.getElementById("outroValor");
+
+    inputValor.addEventListener("input", () => {
+
+      const valor = parseInt(inputValor.value);
+
+      if (valor < 100) {
+        alert("Valor mínimo é 100.");
+        inputValor.value = "";
+        return;
+      }
+    });
+
+    btn.addEventListener("click", () => {
+      modal.style.display = "flex";
+    });
+
+    fechar.addEventListener("click", () => {
+      modal.style.display = "none";
+    });
+
+    confirmar.addEventListener("click", async () => {
+
+      const valorDigitado = parseInt(inputValor.value);
+      const prazoSelecionado = document.querySelector('input[name="prazo"]:checked');
+
+      let valorFinal = 0;
+      let prazoFinal = null;
+
+      if (valorDigitado && valorDigitado >= 100) {
+        valorFinal = valorDigitado;
+      } else {
+
+        if (!prazoSelecionado) {
+          alert("Escolha um prazo antes de confirmar.");
+          return;
+        }
+
+        valorFinal = 100;
+        prazoFinal = prazoSelecionado.value;
+      }
+
+      try {
+
+        await addDoc(collection(db, "solicitacoes"), {
+          userId: user.uid,
+          email: user.email,
+          valor: valorFinal,
+          prazo: prazoFinal,
+          status: "pendente",
+          criadoEm: new Date()
+        });
+
+        alert("Solicitação enviada para análise.");
+        modal.style.display = "none";
+
+      } catch (error) {
+        console.error(error);
+        alert("Erro ao enviar solicitação.");
+      }
+
     });
   }
 
 });
+</script>
+
 </script>
 
 </body>

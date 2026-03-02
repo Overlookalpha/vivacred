@@ -127,9 +127,7 @@
     <div class="card">
       <div id="userEmail" class="email"></div>
     </div>
-    
-   <div id="areaAvisoTopo"></div>
-    
+
     <div class="card">
       <div>Seu Score</div>
       <div class="score-value">20</div>
@@ -244,42 +242,30 @@ if (limiteElemento && data.limiteBase) {
 }
 
     // 🔔 MOSTRAR PEDIDO APROVADO
-   if (data.statusAumento === "aprovado") {
+    if (data.statusAumento === "aprovado") {
 
-  const area = document.getElementById("areaAvisoTopo");
+      const info = document.createElement("div");
+      info.style.marginTop = "20px";
+      info.style.padding = "15px";
+      info.style.background = "#1e3d2f";
+      info.style.borderRadius = "10px";
+      info.style.color = "white";
 
-  const info = document.createElement("div");
-
-  info.style.background = "#1e3d2f";
-  info.style.padding = "15px";
-  info.style.borderRadius = "12px";
-  info.style.marginBottom = "20px";
-  info.style.position = "relative";
-  info.style.textAlign = "center";
-  info.style.boxShadow = "0 8px 20px rgba(0,0,0,0.4)";
-
-  info.innerHTML = `
-    <div style="position:absolute; right:10px; top:8px; cursor:pointer; font-weight:bold;" id="fecharAviso">✕</div>
-    <strong>Pedido de aumento aprovado</strong><br><br>
-    Limite anterior: ${data.limiteAnterior.toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL"
-    })}<br>
-    Novo limite: ${data.limiteBase.toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL"
-    })}<br>
-    Data da aprovação: ${data.dataAprovacao?.toDate().toLocaleString("pt-BR")}
-  `;
-
-  area.innerHTML = "";
-  area.appendChild(info);
-
-  // Botão fechar
-  document.getElementById("fecharAviso").addEventListener("click", () => {
-    info.remove();
-  });
-}
+     info.innerHTML = `
+  <strong>Pedido de aumento aprovado</strong><br>
+  Limite anterior: ${data.limiteAnterior.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  })}<br>
+  Novo limite: ${data.limiteBase.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  })}<br>
+  Data da aprovação: ${data.dataAprovacao?.toDate().toLocaleString("pt-BR")}
+`;
+      document.body.appendChild(info);
+    }
+  }
 
   // ===== MODAL =====
   const btn = document.getElementById("btnSolicitar");

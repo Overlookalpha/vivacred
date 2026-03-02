@@ -195,9 +195,12 @@ import {
   query,
   where,
   getDocs
-}
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
 
+import { 
+  getAuth, 
+  onAuthStateChanged 
+} from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
 const firebaseConfig = {
   apiKey: "AIzaSyDJHtQp7OUxgYqtcD_2eTqzh1BRpufvKrY",
   authDomain: "vivacred-5a5b8.firebaseapp.com",
@@ -385,7 +388,7 @@ await addDoc(collection(db, "emprestimos"), {
 const listaDiv = document.getElementById("listaEmprestimos");
 
 const q = query(
-  collection(db, "solicitacoes"),
+  collection(db, "emprestimos"),
   where("userId", "==", user.uid),
   where("status", "==", "aprovado")
 );

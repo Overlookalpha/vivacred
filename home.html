@@ -346,8 +346,12 @@ fecharBtn.style.fontWeight = "bold";
 info.style.position = "relative";
 info.appendChild(fecharBtn);
 
-fecharBtn.addEventListener("click", () => {
+fecharBtn.addEventListener("click", async () => {
   info.remove();
+
+  await updateDoc(userRef, {
+    statusAumento: "visualizado"
+  });
 });
     }
   }

@@ -269,7 +269,7 @@ if (limiteElemento && data.limiteBase) {
       style: "currency",
       currency: "BRL"
     })}<br>
-    Data da aprovação: ${data.dataAprovacao?.toDate().toLocaleString("pt-BR")}
+   Data da aprovação: ${data.dataAprovacao ? data.dataAprovacao.toDate().toLocaleString("pt-BR") : ""}
   `;
 
   area.innerHTML = "";

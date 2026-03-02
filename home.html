@@ -232,6 +232,7 @@ onAuthStateChanged(auth, async (user) => {
     console.log("Usuário já existe");
 
     const data = userSnap.data();
+    console.log("DADOS DO USUARIO:", data);
     // Atualizar limite principal da tela
 const limiteElemento = document.getElementById("limiteDisponivel");
 

@@ -269,6 +269,20 @@ if (limiteElemento && data.limiteBase) {
      const area = document.getElementById("areaAvisoTopo");
   area.innerHTML = "";
   area.appendChild(info);
+  const fecharBtn = document.createElement("span");
+fecharBtn.innerText = "✕";
+fecharBtn.style.position = "absolute";
+fecharBtn.style.right = "10px";
+fecharBtn.style.top = "8px";
+fecharBtn.style.cursor = "pointer";
+fecharBtn.style.fontWeight = "bold";
+
+info.style.position = "relative";
+info.appendChild(fecharBtn);
+
+fecharBtn.addEventListener("click", () => {
+  info.remove();
+});
     }
   }
 

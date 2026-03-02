@@ -34,6 +34,8 @@
 <h2>Painel Administrativo VivaCred</h2>
 
 <div id="listaUsuarios"></div>
+<h3>Solicitações de Empréstimo</h3>
+<div id="listaEmprestimos"></div>
 
 <script type="module">
 
@@ -99,7 +101,33 @@ onAuthStateChanged(auth, async (user) => {
 
     container.appendChild(div);
   });
+// ===== LISTAR EMPRÉSTIMOS AGUARDANDO =====
 
+const emprestimosSnapshot = await getDocs(collection(db, "emprestimos"));
+const containerEmprestimos = document.getElementById("listaEmprestimos");
+containerEmprestimos.innerHTML = "";
+
+emprestimosSnapshot.forEach((docSnap) => {
+
+  const dados = docSnap.data();
+
+  if (dados.status !== "aguardando") return;
+
+  const div = document.createElement("div");
+  div.className = "card";
+
+  div.innerHTML = `
+    <strong>${dados.email}</strong><br>
+    Valor: ${dados.valor}<br>
+    Prazo: ${dados.prazo} dias<br>
+    Juros: ${dados.juros}<br><br>
+    <button class="aprovar" onclick="aprovarEmprestimo('${docSnap.id}')">
+      Aprovar Empréstimo
+    </button>
+  `;
+
+  containerEmprestimos.appendChild(div);
+});
 });
 
 window.aprovar = async (id) => {
@@ -121,7 +149,18 @@ window.aprovar = async (id) => {
   alert("Pedido aprovado!");
   location.reload();
 };
+window.aprovarEmprestimo = async (id) => {
 
+  const emprestimoRef = doc(db, "emprestimos", id);
+
+  await updateDoc(emprestimoRef, {
+    status: "aprovado",
+    dataAprovacao: new Date()
+  });
+
+  alert("Empréstimo aprovado!");
+  location.reload();
+};
 </script>
 
 </body>

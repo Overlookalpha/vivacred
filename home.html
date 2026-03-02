@@ -338,14 +338,22 @@ fecharBtn.addEventListener("click", () => {
 
       try {
 
-        await addDoc(collection(db, "solicitacoes"), {
-          userId: user.uid,
-          email: user.email,
-          valor: valorFinal,
-          prazo: prazoFinal,
-          status: "pendente",
-          criadoEm: new Date()
-        });
+        // cálculo simples de juros
+const juros = prazoFinal == 15 ? 30 : 50;
+const valorFinalComJuros = valorFinal + juros;
+
+await addDoc(collection(db, "emprestimos"), {
+  userId: user.uid,
+  email: user.email,
+  valor: valorFinal,
+  prazo: prazoFinal,
+  juros: juros,
+  valorFinal: valorFinalComJuros,
+  status: "aguardando",
+  criadoEm: new Date(),
+  dataAprovacao: null,
+  dataVencimento: null
+});
 
         alert("Solicitação enviada para análise.");
         modal.style.display = "none";

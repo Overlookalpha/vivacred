@@ -138,7 +138,7 @@
 
     <div class="card">
       <div>Limite Disponível</div>
-      <div class="limit">€100</div>
+      <div class="limit" id="limiteDisponivel">R$ 100,00</div>
 
      <button id="btnSolicitar" class="btn-credit">
      Solicitar Crédito
@@ -230,6 +230,15 @@ onAuthStateChanged(auth, async (user) => {
     console.log("Usuário já existe");
 
     const data = userSnap.data();
+    // Atualizar limite principal da tela
+const limiteElemento = document.getElementById("limiteDisponivel");
+
+if (limiteElemento && data.limiteBase) {
+  limiteElemento.innerText = data.limiteBase.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  });
+}
 
     // 🔔 MOSTRAR PEDIDO APROVADO
     if (data.statusAumento === "aprovado") {
@@ -241,13 +250,18 @@ onAuthStateChanged(auth, async (user) => {
       info.style.borderRadius = "10px";
       info.style.color = "white";
 
-      info.innerHTML = `
-        <strong>Pedido de aumento aprovado</strong><br>
-        Limite anterior: ${data.limiteAnterior}<br>
-        Novo limite: ${data.limiteBase}<br>
-        Data da aprovação: ${data.dataAprovacao?.toDate().toLocaleString()}
-      `;
-
+     info.innerHTML = `
+  <strong>Pedido de aumento aprovado</strong><br>
+  Limite anterior: ${data.limiteAnterior.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  })}<br>
+  Novo limite: ${data.limiteBase.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  })}<br>
+  Data da aprovação: ${data.dataAprovacao?.toDate().toLocaleString("pt-BR")}
+`;
       document.body.appendChild(info);
     }
   }

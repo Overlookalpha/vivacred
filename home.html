@@ -277,10 +277,9 @@ if (limiteElemento && data.limiteBase) {
   area.innerHTML = "";
   area.appendChild(info);
 
-  document.getElementById("fecharAviso").addEventListener("click", () => {
-    info.remove();
-  });
-
+ info.querySelector("#fecharAviso").addEventListener("click", () => {
+  info.remove();
+});
 }
   // ===== MODAL =====
   const btn = document.getElementById("btnSolicitar");info.innerHTML = `

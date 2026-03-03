@@ -558,7 +558,7 @@ function calcularJurosSimples(valor, prazo) {
       try {
 
         // cálculo simples de juros
-const juros = prazoFinal == 15 ? 30 : 50;
+const juros = calcularJurosSimples(valorFinal, prazoFinal);
 const valorFinalComJuros = valorFinal + juros;
 
 await addDoc(collection(db, "emprestimos"), {

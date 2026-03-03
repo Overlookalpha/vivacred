@@ -612,32 +612,65 @@ const q = query(
 const querySnapshot = await getDocs(q);
 
 if (querySnapshot.empty) {
+
   listaDiv.innerHTML = "Você não possui empréstimos ativos.";
+
 } else {
+
   listaDiv.innerHTML = "";
 
   querySnapshot.forEach((docSnap) => {
+
     const dados = docSnap.data();
 
-    const item = document.createElement("div");
-    item.style.marginBottom = "10px";
-    item.style.padding = "10px";
-    item.style.background = "rgba(255,255,255,0.05)";
-    item.style.borderRadius = "8px";
+    const valorParcela = Number(
+      (dados.valorFinal / dados.parcelas).toFixed(2)
+    );
 
-    item.innerHTML = `
-      Valor: ${dados.valor.toLocaleString("pt-BR", {
+    const hoje = new Date();
+
+    let parcelasHTML = "";
+
+    for (let i = 1; i <= dados.parcelas; i++) {
+
+      const dataVencimento = new Date(hoje);
+      dataVencimento.setMonth(hoje.getMonth() + i);
+
+      parcelasHTML +=
+        "Parcela " + i +
+        " - " +
+        valorParcela.toLocaleString("pt-BR", {
+          style: "currency",
+          currency: "BRL"
+        }) +
+        " - Vencimento: " +
+        dataVencimento.toLocaleDateString("pt-BR") +
+        "<br>";
+    }
+
+    const item = document.createElement("div");
+    item.style.marginBottom = "15px";
+    item.style.padding = "12px";
+    item.style.background = "rgba(255,255,255,0.05)";
+    item.style.borderRadius = "10px";
+
+    item.innerHTML =
+      "<strong>Valor Total:</strong> " +
+      dados.valorFinal.toLocaleString("pt-BR", {
         style: "currency",
         currency: "BRL"
-      })}<br>
-      Prazo: ${dados.prazo} dias<br>
-      Status: ${dados.status}
-    `;
+      }) +
+      "<br>" +
+      "<strong>Parcelas:</strong> " +
+      dados.parcelas +
+      "<br><br>" +
+      parcelasHTML;
 
     listaDiv.appendChild(item);
+
   });
+
 }
-});
 </script>
 
 </body>

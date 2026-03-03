@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -207,25 +208,21 @@
   </div>
  <div id="modalCredito" class="modal">
   <div class="modal-content">
-    <h3>Simulação de Crédito</h3>
+   <h3>Simulação de Crédito</h3>
 
-    <p>Valor padrão disponível: <strong>R$100</strong></p>
+<p id="limiteInfo"></p>
 
-    <label>
-      <input type="radio" name="prazo" value="15">
-      15 dias – Total: R$130
-    </label>
+<label>Valor desejado:</label>
+<input type="number" id="valorSimulado" placeholder="Digite o valor" />
 
-    <label>
-      <input type="radio" name="prazo" value="30">
-      30 dias – Total: R$150
-    </label>
+<br><br>
 
-    <hr>
+<label>Parcelas:</label>
+<select id="parcelasSelect"></select>
 
-    <p>Ou solicitar outro valor:</p>
+<br><br>
 
-    <input type="number" id="outroValor" placeholder="Digite o valor desejado" min="100" />
+<div id="resultadoSimulacao" style="margin-top:15px;"></div>
 
     <br><br>
 
@@ -360,7 +357,7 @@ const progressoNivelTexto = document.getElementById("progressoNivelTexto");
 const faltamPontosTexto = document.getElementById("faltamPontosTexto");
 
 if (nivelTexto) {
-  nivelTexto.innerText = Nível: ${nivelEmoji} ${nivelNome};
+  nivelTexto.innerText = `Nível: ${nivelEmoji} ${nivelNome}`;
 }
     
 if (scoreBar) {
@@ -417,13 +414,13 @@ const totalNivel = fimFaixa - inicioFaixa;
 const faltam = fimFaixa - data.score;
 
 if (progressoNivelTexto) {
-  progressoNivelTexto.innerText = ${pontosNoNivel} / ${totalNivel} pontos no nível;
+  progressoNivelTexto.innerText = `${pontosNoNivel} / ${totalNivel} pontos no nível`;
 }
 
 if (faltamPontosTexto) {
   if (faltam > 0) {
     faltamPontosTexto.innerText =
-      Faltam ${faltam} ponto${faltam > 1 ? "s" : ""} para o próximo nível;
+      `Faltam ${faltam} ponto${faltam > 1 ? "s" : ""} para o próximo nível`;
   } else {
     faltamPontosTexto.innerText = "Você pode avançar de nível 🚀";
   }

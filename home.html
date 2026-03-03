@@ -521,24 +521,16 @@ function calcularJurosSimples(valor, prazo) {
 
     confirmar.addEventListener("click", async () => {
 
-      const valorDigitado = parseInt(inputValor.value);
-      const prazoSelecionado = document.querySelector('input[name="prazo"]:checked');
+     const valorInput = document.getElementById("valorSimulado");
+const parcelasSelect = document.getElementById("parcelasSimuladas");
 
-      let valorFinal = 0;
-      let prazoFinal = null;
+const valorFinal = parseInt(valorInput.value);
+const parcelasFinal = parseInt(parcelasSelect.value);
 
-      if (valorDigitado && valorDigitado >= 100) {
-        valorFinal = valorDigitado;
-      } else {
-
-        if (!prazoSelecionado) {
-          alert("Escolha um prazo antes de confirmar.");
-          return;
-        }
-
-        valorFinal = 100;
-        prazoFinal = prazoSelecionado.value;
-      }
+if (!valorFinal || valorFinal < 100) {
+  alert("Valor mínimo é 100.");
+  return;
+}
 
       try {
 

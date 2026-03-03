@@ -384,13 +384,13 @@ const totalNivel = fimFaixa - inicioFaixa;
 const faltam = fimFaixa - data.score;
 
 if (progressoNivelTexto) {
-  progressoNivelTexto.innerText = ${pontosNoNivel} / ${totalNivel} pontos no nível;
+  progressoNivelTexto.innerText = `${pontosNoNivel} / ${totalNivel} pontos no nível`;
 }
 
 if (faltamPontosTexto) {
   if (faltam > 0) {
     faltamPontosTexto.innerText =
-      Faltam ${faltam} ponto${faltam > 1 ? "s" : ""} para o próximo nível;
+      `Faltam ${faltam} ponto${faltam > 1 ? "s" : ""} para o próximo nível`;
   } else {
     faltamPontosTexto.innerText = "Você pode avançar de nível 🚀";
   }

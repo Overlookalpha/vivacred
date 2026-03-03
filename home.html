@@ -360,6 +360,10 @@ const scoreBar = document.getElementById("scoreBar");
 const progressoNivelTexto = document.getElementById("progressoNivelTexto");
 const faltamPontosTexto = document.getElementById("faltamPontosTexto");
 
+if (nivelTexto) {
+  nivelTexto.innerText = `Nível: ${nivelEmoji} ${nivelNome}`;
+}
+    
 if (scoreBar) {
   let progressoNivel = 0;
 

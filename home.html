@@ -510,18 +510,6 @@ function calcularJurosSimples(valor, prazo) {
 
   if (btn && modal && fechar && confirmar) {
 
-    const inputValor = document.getElementById("outroValor");
-
-    inputValor.addEventListener("input", () => {
-
-      const valor = parseInt(inputValor.value);
-
-      if (!isNaN(valor) && valor < 100) {
-        alert("Valor mínimo é 100.");
-        inputValor.value = "";
-        return;
-      }
-    });
 
     btn.addEventListener("click", () => {
       modal.style.display = "flex";

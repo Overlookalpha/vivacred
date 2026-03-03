@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -208,26 +207,30 @@
   </div>
  <div id="modalCredito" class="modal">
   <div class="modal-content">
-   <h3>Simulação de Crédito</h3>
+    <h3>Simulação de Crédito</h3>
 
-<label>Valor desejado:</label>
-<input type="number" id="valorSimulado" placeholder="Digite o valor" min="100" />
+    <p>Valor padrão disponível: <strong>R$100</strong></p>
 
-<br><br>
+    <label>
+      <input type="radio" name="prazo" value="15">
+      15 dias – Total: R$130
+    </label>
 
-<label>Parcelas:</label>
-<select id="parcelasSelect">
-  <option value="">Selecione</option>
-</select>
+    <label>
+      <input type="radio" name="prazo" value="30">
+      30 dias – Total: R$150
+    </label>
 
-<br><br>
+    <hr>
 
-<div id="resultadoSimulacao" style="margin-top:15px;"></div>
+    <p>Ou solicitar outro valor:</p>
 
-<br>
+    <input type="number" id="outroValor" placeholder="Digite o valor desejado" min="100" />
 
-<button id="confirmarCredito">Confirmar Solicitação</button>
-<button id="fecharModal">Cancelar</button>
+    <br><br>
+
+    <button id="confirmarCredito">Confirmar Solicitação</button>
+    <button id="fecharModal">Cancelar</button>
   </div>
 </div>
 <script type="module">
@@ -326,48 +329,6 @@ onAuthStateChanged(auth, async (user) => {
   }
 
 }
-  function obterTaxaPorNivel(nivelNome) {
-
-  const taxas = {
-    "Essencial": {
-      15: 0.10,
-      30: 0.15,
-      45: 0.20,
-      60: 0.50
-    },
-    "Bronze": {
-      15: 0.08,
-      30: 0.12,
-      45: 0.18,
-      60: 0.30,
-      90: 0.40
-    },
-    "Prata": {
-      15: 0.06,
-      30: 0.10,
-      45: 0.15,
-      60: 0.25,
-      90: 0.35
-    },
-    "Ouro": {
-      15: 0.05,
-      30: 0.08,
-      45: 0.12,
-      60: 0.20,
-      90: 0.30
-    },
-    "Black": {
-      15: 0.04,
-      30: 0.06,
-      45: 0.10,
-      60: 0.18,
-      90: 0.25,
-      120: 0.35
-    }
-  };
-
-  return taxas[nivelNome];
-}
   if (!userSnap.exists()) {
 
     await setDoc(userRef, {
@@ -399,7 +360,7 @@ const progressoNivelTexto = document.getElementById("progressoNivelTexto");
 const faltamPontosTexto = document.getElementById("faltamPontosTexto");
 
 if (nivelTexto) {
-  nivelTexto.innerText = `Nível: ${nivelEmoji} ${nivelNome}`;
+  nivelTexto.innerText = Nível: ${nivelEmoji} ${nivelNome};
 }
     
 if (scoreBar) {
@@ -456,13 +417,13 @@ const totalNivel = fimFaixa - inicioFaixa;
 const faltam = fimFaixa - data.score;
 
 if (progressoNivelTexto) {
-  progressoNivelTexto.innerText = `${pontosNoNivel} / ${totalNivel} pontos no nível`;
+  progressoNivelTexto.innerText = ${pontosNoNivel} / ${totalNivel} pontos no nível;
 }
 
 if (faltamPontosTexto) {
   if (faltam > 0) {
     faltamPontosTexto.innerText =
-      `Faltam ${faltam} ponto${faltam > 1 ? "s" : ""} para o próximo nível`;
+      Faltam ${faltam} ponto${faltam > 1 ? "s" : ""} para o próximo nível;
   } else {
     faltamPontosTexto.innerText = "Você pode avançar de nível 🚀";
   }
@@ -543,10 +504,9 @@ fecharBtn.addEventListener("click", async () => {
 
   if (btn && modal && fechar && confirmar) {
 
-    const inputValor = document.getElementById("valorSimulado");
+    const inputValor = document.getElementById("outroValor");
 
-    if (inputValor) {
-  inputValor.addEventListener("input", () => {
+    inputValor.addEventListener("input", () => {
 
       const valor = parseInt(inputValor.value);
 
@@ -588,18 +548,9 @@ fecharBtn.addEventListener("click", async () => {
 
       try {
 
-      // cálculo dinâmico baseado no nível
-const tabelaTaxas = obterTaxaPorNivel(nivelNome);
-
-if (!tabelaTaxas[prazoFinal]) {
-  alert("Prazo não permitido para seu nível.");
-  return;
-}
-
-const taxa = tabelaTaxas[prazoFinal];
-
-const valorFinalComJuros = valorFinal + (valorFinal * taxa);
-const juros = valorFinal * taxa;
+        // cálculo simples de juros
+const juros = prazoFinal == 15 ? 30 : 50;
+const valorFinalComJuros = valorFinal + juros;
 
 await addDoc(collection(db, "emprestimos"), {
   userId: user.uid,

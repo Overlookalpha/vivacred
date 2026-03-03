@@ -208,21 +208,25 @@
   </div>
  <div id="modalCredito" class="modal">
   <div class="modal-content">
-   <h3>Simulação de Crédito</h3>
+    <h3>Simulação de Crédito</h3>
 
-<p id="limiteInfo"></p>
+    <p>Valor padrão disponível: <strong>R$100</strong></p>
 
-<label>Valor desejado:</label>
-<input type="number" id="valorSimulado" placeholder="Digite o valor" />
+    <label>
+      <input type="radio" name="prazo" value="15">
+      15 dias – Total: R$130
+    </label>
 
-<br><br>
+    <label>
+      <input type="radio" name="prazo" value="30">
+      30 dias – Total: R$150
+    </label>
 
-<label>Parcelas:</label>
-<select id="parcelasSelect"></select>
+    <hr>
 
-<br><br>
+    <p>Ou solicitar outro valor:</p>
 
-<div id="resultadoSimulacao" style="margin-top:15px;"></div>
+    <input type="number" id="outroValor" placeholder="Digite o valor desejado" min="100" />
 
     <br><br>
 
@@ -501,10 +505,9 @@ fecharBtn.addEventListener("click", async () => {
 
   if (btn && modal && fechar && confirmar) {
 
-   const inputValor = document.getElementById("outroValor");
+    const inputValor = document.getElementById("outroValor");
 
-if (inputValor) {
-  inputValor.addEventListener("input", () => {
+    inputValor.addEventListener("input", () => {
 
       const valor = parseInt(inputValor.value);
 

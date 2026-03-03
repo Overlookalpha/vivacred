@@ -326,6 +326,11 @@ onAuthStateChanged(auth, async (user) => {
     const nivelAtual = dadosNivel.nivel;
     const limiteMaximoNivel = dadosNivel.max;
     const limiteNivelTexto = document.getElementById("limiteNivelTexto");
+    const scoreBar = document.getElementById("scoreBar");
+
+    if (scoreBar) {
+      scoreBar.style.width = data.score + "%";
+    }
 
     if (limiteNivelTexto) {
       limiteNivelTexto.innerText =

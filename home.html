@@ -177,6 +177,8 @@
 
     <div class="hero-level">Nível: Iniciante</div>
 
+    <p id="limiteNivelTexto"></p>
+
     <div class="hero-progress">
       <div class="hero-progress-fill" id="scoreBar"></div>
     </div>
@@ -283,6 +285,25 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   const userSnap = await getDoc(userRef);
+  function calcularNivel(score) {
+
+  if (score <= 20) {
+    return { nivel: "Iniciante", max: 300 };
+  } 
+  else if (score <= 40) {
+    return { nivel: "Bronze", max: 800 };
+  } 
+  else if (score <= 60) {
+    return { nivel: "Prata", max: 1500 };
+  } 
+  else if (score <= 80) {
+    return { nivel: "Ouro", max: 3000 };
+  } 
+  else {
+    return { nivel: "Black", max: 5000 };
+  }
+
+}
 
   if (!userSnap.exists()) {
 
@@ -290,7 +311,7 @@ onAuthStateChanged(auth, async (user) => {
       email: user.email,
       score: 20,
       limiteBase: 100,
-      status: "ativo",
+      status: "ativlo",
       criadoEm: new Date()
     });
 
@@ -301,14 +322,28 @@ onAuthStateChanged(auth, async (user) => {
     console.log("Usuário já existe");
 
     const data = userSnap.data();
+    const dadosNivel = calcularNivel(data.score);
+    const nivelAtual = dadosNivel.nivel;
+    const limiteMaximoNivel = dadosNivel.max;
+    const limiteNivelTexto = document.getElementById("limiteNivelTexto");
+
+    if (limiteNivelTexto) {
+      limiteNivelTexto.innerText =
+        "Seu perfil permite até " +
+        limiteMaximoNivel.toLocaleString("pt-BR", {
+         style: "currency",
+         currency: "BRL"
+       });
+   }
+  
     // Atualizar limite principal da tela
 const limiteElemento = document.getElementById("limiteDisponivel");
 
 if (limiteElemento && data.limiteBase) {
-  limiteElemento.innerText = data.limiteBase.toLocaleString("pt-BR", {
+  limiteElemento.innerText = limiteMaximoNivel.toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL"
-  });
+});
 }
 
     // 🔔 MOSTRAR PEDIDO APROVADO

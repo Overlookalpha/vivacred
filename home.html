@@ -175,7 +175,7 @@
 
     <div class="hero-number" id="scoreValor">20</div>
 
-    <div class="hero-level">Nível: Iniciante</div>
+   <div class="hero-level" id="nivelTexto"></div>
 
     <p id="limiteNivelTexto"></p>
 
@@ -346,10 +346,15 @@ onAuthStateChanged(auth, async (user) => {
 
     console.log("Usuário já existe");
 
-   const data = userSnap.data();
+ const data = userSnap.data();
 const dadosNivel = calcularNivel(data.score);
-const nivelAtual = dadosNivel.nivel;
+
+const nivelNome = dadosNivel.nome;
+const nivelEmoji = dadosNivel.emoji;
+const nivelCor = dadosNivel.cor;
 const limiteMaximoNivel = dadosNivel.max;
+
+const nivelTexto = document.getElementById("nivelTexto");
 const limiteNivelTexto = document.getElementById("limiteNivelTexto");
 const scoreBar = document.getElementById("scoreBar");
 const progressoNivelTexto = document.getElementById("progressoNivelTexto");
@@ -375,6 +380,7 @@ if (scoreBar) {
   }
 
   scoreBar.style.width = progressoNivel + "%";
+  scoreBar.style.background = nivelCor;
 }
 
 /* ===== NOVA PARTE ===== */

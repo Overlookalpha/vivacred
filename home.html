@@ -519,7 +519,7 @@ function calcularJurosSimples(valor, prazo) {
 
       const valor = parseInt(inputValor.value);
 
-      if (valor < 100) {
+      if (!isNaN(valor) && valor < 100) {
         alert("Valor mínimo é 100.");
         inputValor.value = "";
         return;

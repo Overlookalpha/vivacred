@@ -448,13 +448,13 @@ const totalNivel = fimFaixa - inicioFaixa;
 const faltam = fimFaixa - data.score;
 
 if (progressoNivelTexto) {
-  progressoNivelTexto.innerText = `${pontosNoNivel} / ${totalNivel} pontos no nível`;
+  progressoNivelTexto.innerText = pontosNoNivel + " / " + totalNivel + " pontos no nível";
 }
 
 if (faltamPontosTexto) {
   if (faltam > 0) {
     faltamPontosTexto.innerText =
-      `Faltam ${faltam} ponto${faltam > 1 ? "s" : ""} para o próximo nível`;
+      "Faltam " + faltam + " ponto" + (faltam > 1 ? "s" : "") + " para o próximo nível";
   } else {
     faltamPontosTexto.innerText = "Você pode avançar de nível 🚀";
   }
@@ -470,111 +470,64 @@ if (limiteNivelTexto) {
       currency: "BRL"
     });
 }
-  
-    // Atualizar limite principal da tela
+
 const limiteElemento = document.getElementById("limiteDisponivel");
 
-if (limiteElemento && data.limiteBase) {
+if (limiteElemento) {
   limiteElemento.innerText = limiteMaximoNivel.toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL"
-});
+  });
 }
 
-    // 🔔 MOSTRAR PEDIDO APROVADO
-    if (data.statusAumento === "aprovado") {
+if (data.statusAumento === "aprovado") {
 
-      const info = document.createElement("div");
-      info.style.marginTop = "20px";
-      info.style.padding = "15px";
-      info.style.background = "#1e3d2f";
-      info.style.borderRadius = "10px";
-      info.style.color = "white";
+  const info = document.createElement("div");
+  info.style.marginTop = "20px";
+  info.style.padding = "15px";
+  info.style.background = "#1e3d2f";
+  info.style.borderRadius = "10px";
+  info.style.color = "white";
+  info.style.position = "relative";
 
-     info.innerHTML = `
-  <strong>Pedido de aumento aprovado</strong><br>
-  Limite anterior: ${data.limiteAnterior.toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL"
-  })}<br>
-  Novo limite: ${data.limiteBase.toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL"
-  })}<br>
-  Data da aprovação: ${data.dataAprovacao?.toDate().toLocaleString("pt-BR")}
-`;
-     const area = document.getElementById("areaAvisoTopo");
+  info.innerHTML =
+    "<strong>Pedido de aumento aprovado</strong><br>" +
+    "Limite anterior: " +
+    data.limiteAnterior.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL"
+    }) +
+    "<br>" +
+    "Novo limite: " +
+    data.limiteBase.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL"
+    }) +
+    "<br>" +
+    "Data da aprovação: " +
+    (data.dataAprovacao ? data.dataAprovacao.toDate().toLocaleString("pt-BR") : "");
+
+  const area = document.getElementById("areaAvisoTopo");
   area.innerHTML = "";
   area.appendChild(info);
+
   const fecharBtn = document.createElement("span");
-fecharBtn.innerText = "✕";
-fecharBtn.style.position = "absolute";
-fecharBtn.style.right = "10px";
-fecharBtn.style.top = "8px";
-fecharBtn.style.cursor = "pointer";
-fecharBtn.style.fontWeight = "bold";
+  fecharBtn.innerText = "✕";
+  fecharBtn.style.position = "absolute";
+  fecharBtn.style.right = "10px";
+  fecharBtn.style.top = "8px";
+  fecharBtn.style.cursor = "pointer";
+  fecharBtn.style.fontWeight = "bold";
 
-info.style.position = "relative";
-info.appendChild(fecharBtn);
+  info.appendChild(fecharBtn);
 
-fecharBtn.addEventListener("click", async () => {
-  info.remove();
-
-  await updateDoc(userRef, {
-    statusAumento: "visualizado"
+  fecharBtn.addEventListener("click", async () => {
+    info.remove();
+    await updateDoc(userRef, {
+      statusAumento: "visualizado"
+    });
   });
-});
-    }
-  }
-
-  // ===== MODAL =====
-  const btn = document.getElementById("btnSolicitar");
-  const modal = document.getElementById("modalCredito");
-  const fechar = document.getElementById("fecharModal");
-  const confirmar = document.getElementById("confirmarCredito");
-
-  if (btn && modal && fechar && confirmar) {
-
-
-    btn.addEventListener("click", () => {
-      modal.style.display = "flex";
-    });
-
-    fechar.addEventListener("click", () => {
-      modal.style.display = "none";
-    });
-
-    confirmar.addEventListener("click", async () => {
-
-     const valorInput = document.getElementById("valorSimulado");
-const parcelasSelect = document.getElementById("parcelasSimuladas");
-
-const valorFinal = parseInt(valorInput.value);
-const parcelasFinal = parseInt(parcelasSelect.value);
-
-if (!valorFinal || valorFinal < 100) {
-  alert("Valor mínimo é 100.");
-  return;
 }
-
-      try {
-
-const regras = obterRegrasPorNivel(nivelNomeGlobal);
-
-if (parcelasFinal > regras.maxParcelas) {
-  alert("Seu perfil não permite essa quantidade de parcelas.");
-  return;
-}
-
-const taxa = regras.juros[parcelasFinal];
-
-if (!taxa) {
-  alert("Parcelamento inválido para seu perfil.");
-  return;
-}
-
-const juros = valorFinal * taxa;
-const valorFinalComJuros = valorFinal + juros;
 
 await addDoc(collection(db, "emprestimos"), {
   userId: user.uid,

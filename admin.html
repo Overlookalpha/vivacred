@@ -60,9 +60,11 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-onAuthStateChanged(auth, async (user) => {
+onAuthStateChanged(auth, async ( => {
 
   if (!user) {
+    console.log("Email logado:", user.email);
+    console.log("UID logado:", user.uid);
     window.location.replace("login.html");
     return;
   }

@@ -496,7 +496,15 @@ fecharBtn.addEventListener("click", async () => {
 });
     }
   }
-
+function calcularJurosSimples(valor, prazo) {
+  if (prazo == 15) {
+    return valor * 0.30;
+  } else if (prazo == 30) {
+    return valor * 0.50;
+  } else {
+    return 0;
+  }
+}
   // ===== MODAL =====
   const btn = document.getElementById("btnSolicitar");
   const modal = document.getElementById("modalCredito");

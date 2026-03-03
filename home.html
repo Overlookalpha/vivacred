@@ -330,6 +330,48 @@ onAuthStateChanged(auth, async (user) => {
   }
 
 }
+  function obterTaxaPorNivel(nivelNome) {
+
+  const taxas = {
+    "Essencial": {
+      15: 0.10,
+      30: 0.15,
+      45: 0.20,
+      60: 0.50
+    },
+    "Bronze": {
+      15: 0.08,
+      30: 0.12,
+      45: 0.18,
+      60: 0.30,
+      90: 0.40
+    },
+    "Prata": {
+      15: 0.06,
+      30: 0.10,
+      45: 0.15,
+      60: 0.25,
+      90: 0.35
+    },
+    "Ouro": {
+      15: 0.05,
+      30: 0.08,
+      45: 0.12,
+      60: 0.20,
+      90: 0.30
+    },
+    "Black": {
+      15: 0.04,
+      30: 0.06,
+      45: 0.10,
+      60: 0.18,
+      90: 0.25,
+      120: 0.35
+    }
+  };
+
+  return taxas[nivelNome];
+}
   if (!userSnap.exists()) {
 
     await setDoc(userRef, {
@@ -549,9 +591,18 @@ fecharBtn.addEventListener("click", async () => {
 
       try {
 
-        // cálculo simples de juros
-const juros = prazoFinal == 15 ? 30 : 50;
-const valorFinalComJuros = valorFinal + juros;
+      // cálculo dinâmico baseado no nível
+const tabelaTaxas = obterTaxaPorNivel(nivelNome);
+
+if (!tabelaTaxas[prazoFinal]) {
+  alert("Prazo não permitido para seu nível.");
+  return;
+}
+
+const taxa = tabelaTaxas[prazoFinal];
+
+const valorFinalComJuros = valorFinal + (valorFinal * taxa);
+const juros = valorFinal * taxa;
 
 await addDoc(collection(db, "emprestimos"), {
   userId: user.uid,

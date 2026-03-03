@@ -208,30 +208,26 @@
   </div>
  <div id="modalCredito" class="modal">
   <div class="modal-content">
-    <h3>Simulação de Crédito</h3>
+   <h3>Simulação de Crédito</h3>
 
-    <p>Valor padrão disponível: <strong>R$100</strong></p>
+<label>Valor desejado:</label>
+<input type="number" id="valorSimulado" placeholder="Digite o valor" min="100" />
 
-    <label>
-      <input type="radio" name="prazo" value="15">
-      15 dias – Total: R$130
-    </label>
+<br><br>
 
-    <label>
-      <input type="radio" name="prazo" value="30">
-      30 dias – Total: R$150
-    </label>
+<label>Parcelas:</label>
+<select id="parcelasSelect">
+  <option value="">Selecione</option>
+</select>
 
-    <hr>
+<br><br>
 
-    <p>Ou solicitar outro valor:</p>
+<div id="resultadoSimulacao" style="margin-top:15px;"></div>
 
-    <input type="number" id="outroValor" placeholder="Digite o valor desejado" min="100" />
+<br>
 
-    <br><br>
-
-    <button id="confirmarCredito">Confirmar Solicitação</button>
-    <button id="fecharModal">Cancelar</button>
+<button id="confirmarCredito">Confirmar Solicitação</button>
+<button id="fecharModal">Cancelar</button>
   </div>
 </div>
 <script type="module">

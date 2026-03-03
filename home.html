@@ -329,7 +329,25 @@ onAuthStateChanged(auth, async (user) => {
     const scoreBar = document.getElementById("scoreBar");
 
     if (scoreBar) {
-      scoreBar.style.width = data.score + "%";
+      let progressoNivel = 0;
+
+if (data.score <= 20) {
+  progressoNivel = (data.score / 20) * 100;
+} 
+else if (data.score <= 40) {
+  progressoNivel = ((data.score - 20) / 20) * 100;
+} 
+else if (data.score <= 60) {
+  progressoNivel = ((data.score - 40) / 20) * 100;
+} 
+else if (data.score <= 80) {
+  progressoNivel = ((data.score - 60) / 20) * 100;
+} 
+else {
+  progressoNivel = ((data.score - 80) / 20) * 100;
+}
+
+scoreBar.style.width = progressoNivel + "%";
     }
 
     if (limiteNivelTexto) {

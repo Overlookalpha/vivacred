@@ -606,7 +606,7 @@ const listaDiv = document.getElementById("listaEmprestimos");
 const q = query(
   collection(db, "emprestimos"),
   where("userId", "==", user.uid),
-  where("status", "==", "aprovado")
+  where("status", "==", "ativo")
 );
 
 const querySnapshot = await getDocs(q);

@@ -182,7 +182,8 @@
     <div class="hero-progress">
       <div class="hero-progress-fill" id="scoreBar"></div>
     </div>
-
+     <p id="progressoNivelTexto"></p>
+   <p id="faltamPontosTexto"></p>
     <div class="hero-text">
       Quanto melhor seu histórico, maior seu limite.
     </div>
@@ -321,43 +322,90 @@ onAuthStateChanged(auth, async (user) => {
 
     console.log("Usuário já existe");
 
-    const data = userSnap.data();
-    const dadosNivel = calcularNivel(data.score);
-    const nivelAtual = dadosNivel.nivel;
-    const limiteMaximoNivel = dadosNivel.max;
-    const limiteNivelTexto = document.getElementById("limiteNivelTexto");
-    const scoreBar = document.getElementById("scoreBar");
+   const data = userSnap.data();
+const dadosNivel = calcularNivel(data.score);
+const nivelAtual = dadosNivel.nivel;
+const limiteMaximoNivel = dadosNivel.max;
+const limiteNivelTexto = document.getElementById("limiteNivelTexto");
+const scoreBar = document.getElementById("scoreBar");
+const progressoNivelTexto = document.getElementById("progressoNivelTexto");
+const faltamPontosTexto = document.getElementById("faltamPontosTexto");
 
-    if (scoreBar) {
-      let progressoNivel = 0;
+if (scoreBar) {
+  let progressoNivel = 0;
 
-if (data.score <= 20) {
-  progressoNivel = (data.score / 20) * 100;
-} 
-else if (data.score <= 40) {
-  progressoNivel = ((data.score - 20) / 20) * 100;
-} 
-else if (data.score <= 60) {
-  progressoNivel = ((data.score - 40) / 20) * 100;
-} 
-else if (data.score <= 80) {
-  progressoNivel = ((data.score - 60) / 20) * 100;
-} 
-else {
-  progressoNivel = ((data.score - 80) / 20) * 100;
+  if (data.score <= 20) {
+    progressoNivel = (data.score / 20) * 100;
+  } 
+  else if (data.score <= 40) {
+    progressoNivel = ((data.score - 20) / 20) * 100;
+  } 
+  else if (data.score <= 60) {
+    progressoNivel = ((data.score - 40) / 20) * 100;
+  } 
+  else if (data.score <= 80) {
+    progressoNivel = ((data.score - 60) / 20) * 100;
+  } 
+  else {
+    progressoNivel = ((data.score - 80) / 20) * 100;
+  }
+
+  scoreBar.style.width = progressoNivel + "%";
 }
 
-scoreBar.style.width = progressoNivel + "%";
-    }
+/* ===== NOVA PARTE ===== */
 
-    if (limiteNivelTexto) {
-      limiteNivelTexto.innerText =
-        "Seu perfil permite até " +
-        limiteMaximoNivel.toLocaleString("pt-BR", {
-         style: "currency",
-         currency: "BRL"
-       });
-   }
+let inicioFaixa = 0;
+let fimFaixa = 20;
+
+if (data.score <= 20) {
+  inicioFaixa = 0;
+  fimFaixa = 20;
+} 
+else if (data.score <= 40) {
+  inicioFaixa = 20;
+  fimFaixa = 40;
+} 
+else if (data.score <= 60) {
+  inicioFaixa = 40;
+  fimFaixa = 60;
+} 
+else if (data.score <= 80) {
+  inicioFaixa = 60;
+  fimFaixa = 80;
+} 
+else {
+  inicioFaixa = 80;
+  fimFaixa = 100;
+}
+
+const pontosNoNivel = data.score - inicioFaixa;
+const totalNivel = fimFaixa - inicioFaixa;
+const faltam = fimFaixa - data.score;
+
+if (progressoNivelTexto) {
+  progressoNivelTexto.innerText = ${pontosNoNivel} / ${totalNivel} pontos no nível;
+}
+
+if (faltamPontosTexto) {
+  if (faltam > 0) {
+    faltamPontosTexto.innerText =
+      Faltam ${faltam} ponto${faltam > 1 ? "s" : ""} para o próximo nível;
+  } else {
+    faltamPontosTexto.innerText = "Você pode avançar de nível 🚀";
+  }
+}
+
+/* ===== FIM NOVA PARTE ===== */
+
+if (limiteNivelTexto) {
+  limiteNivelTexto.innerText =
+    "Seu perfil permite até " +
+    limiteMaximoNivel.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL"
+    });
+}
   
     // Atualizar limite principal da tela
 const limiteElemento = document.getElementById("limiteDisponivel");

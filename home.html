@@ -542,7 +542,7 @@ await addDoc(collection(db, "emprestimos"), {
   userId: user.uid,
   email: user.email,
   valor: valorFinal,
-  prazo: parcelasFinal,
+  parcelas: Number(parcelasFinal),
   juros: juros,
   valorFinal: valorFinalComJuros,
   status: "aguardando",

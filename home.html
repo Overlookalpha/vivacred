@@ -327,6 +327,39 @@ onAuthStateChanged(auth, async (user) => {
   }
 
 }
+  function obterRegrasPorNivel(nivelNome) {
+
+  const regras = {
+
+    "Essencial": {
+      maxParcelas: 2,
+      juros: { 1: 0.35, 2: 0.60 }
+    },
+
+    "Bronze": {
+      maxParcelas: 4,
+      juros: { 1: 0.30, 2: 0.45, 3: 0.60, 4: 0.75 }
+    },
+
+    "Prata": {
+      maxParcelas: 6,
+      juros: { 1: 0.25, 2: 0.40, 3: 0.55, 4: 0.70, 5: 0.85, 6: 1.00 }
+    },
+
+    "Ouro": {
+      maxParcelas: 8,
+      juros: { 1: 0.20, 2: 0.30, 3: 0.45, 4: 0.60, 5: 0.75, 6: 0.90, 7: 1.05, 8: 1.20 }
+    },
+
+    "Black": {
+      maxParcelas: 12,
+      juros: { 1: 0.15, 2: 0.25, 3: 0.35, 4: 0.45, 5: 0.55, 6: 0.65, 7: 0.75, 8: 0.85, 9: 0.95, 10: 1.10, 11: 1.25, 12: 1.40 }
+    }
+
+  };
+
+  return regras[nivelNome];
+}
   if (!userSnap.exists()) {
 
     await setDoc(userRef, {
@@ -493,15 +526,7 @@ fecharBtn.addEventListener("click", async () => {
 });
     }
   }
-function calcularJurosSimples(valor, prazo) {
-  if (prazo == 15) {
-    return valor * 0.30;
-  } else if (prazo == 30) {
-    return valor * 0.50;
-  } else {
-    return 0;
-  }
-}
+
   // ===== MODAL =====
   const btn = document.getElementById("btnSolicitar");
   const modal = document.getElementById("modalCredito");
@@ -534,8 +559,21 @@ if (!valorFinal || valorFinal < 100) {
 
       try {
 
-        // cálculo simples de juros
-const juros = calcularJurosSimples(valorFinal, parcelasFinal);
+const regras = obterRegrasPorNivel(nivelNome);
+
+if (parcelasFinal > regras.maxParcelas) {
+  alert("Seu perfil não permite essa quantidade de parcelas.");
+  return;
+}
+
+const taxa = regras.juros[parcelasFinal];
+
+if (!taxa) {
+  alert("Parcelamento inválido para seu perfil.");
+  return;
+}
+
+const juros = valorFinal * taxa;
 const valorFinalComJuros = valorFinal + juros;
 
 await addDoc(collection(db, "emprestimos"), {

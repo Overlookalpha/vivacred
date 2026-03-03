@@ -535,7 +535,7 @@ if (!valorFinal || valorFinal < 100) {
       try {
 
         // cálculo simples de juros
-const juros = calcularJurosSimples(valorFinal, prazoFinal);
+const juros = calcularJurosSimples(valorFinal, parcelasFinal);
 const valorFinalComJuros = valorFinal + juros;
 
 await addDoc(collection(db, "emprestimos"), {

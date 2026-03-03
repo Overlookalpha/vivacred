@@ -68,14 +68,22 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   // 🔐 Verifica se é admin na coleção admins
-  const adminRef = doc(db, "admins", user.uid);
-  const adminSnap = await getDoc(adminRef);
+ let adminSnap;
 
-  if (!adminSnap.exists()) {
-    alert("Acesso negado.");
-    window.location.replace("home.html");
-    return;
-  }
+try {
+  const adminRef = doc(db, "admins", user.uid);
+  adminSnap = await getDoc(adminRef);
+} catch (error) {
+  console.error("Erro ao verificar admin:", error);
+  alert("Erro de permissão no Firestore.");
+  return;
+}
+
+if (!adminSnap.exists()) {
+  alert("Acesso negado.");
+  window.location.replace("home.html");
+  return;
+}
 
   console.log("Admin autenticado");
 
@@ -133,8 +141,14 @@ emprestimosSnapshot.forEach((docSnap) => {
 window.aprovar = async (id) => {
 
   const userRef = doc(db, "usuarios", id);
-  const userSnap = await getDoc(userRef);
-  const data = userSnap.data();
+ const userSnap = await getDoc(userRef);
+
+if (!userSnap.exists()) {
+  alert("Usuário não encontrado.");
+  return;
+}
+
+const data = userSnap.data();
 
   const limiteAnterior = data.limiteBase;
   const novoLimite = data.limiteSolicitado;
@@ -153,10 +167,15 @@ window.aprovarEmprestimo = async (id) => {
 
   const emprestimoRef = doc(db, "emprestimos", id);
 
-  await updateDoc(emprestimoRef, {
-    status: "aprovado",
-    dataAprovacao: new Date()
-  });
+ const hoje = new Date();
+const vencimento = new Date();
+vencimento.setDate(hoje.getDate() + 30);
+
+await updateDoc(emprestimoRef, {
+  status: "aprovado",
+  dataAprovacao: hoje,
+  dataVencimento: vencimento
+});
 
   alert("Empréstimo aprovado!");
   location.reload();

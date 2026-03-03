@@ -501,9 +501,10 @@ fecharBtn.addEventListener("click", async () => {
 
   if (btn && modal && fechar && confirmar) {
 
-    const inputValor = document.getElementById("outroValor");
+   const inputValor = document.getElementById("outroValor");
 
-    inputValor.addEventListener("input", () => {
+if (inputValor) {
+  inputValor.addEventListener("input", () => {
 
       const valor = parseInt(inputValor.value);
 

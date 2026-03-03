@@ -448,19 +448,15 @@ const totalNivel = fimFaixa - inicioFaixa;
 const faltam = fimFaixa - data.score;
 
 if (progressoNivelTexto) {
-  progressoNivelTexto.innerText =
-    pontosNoNivel + " / " + totalNivel + " pontos no nível";
+  progressoNivelTexto.innerText = pontosNoNivel + " / " + totalNivel + " pontos no nível";
 }
 
 if (faltamPontosTexto) {
   if (faltam > 0) {
     faltamPontosTexto.innerText =
-      "Faltam " + faltam + " ponto" +
-      (faltam > 1 ? "s" : "") +
-      " para o próximo nível";
+      "Faltam " + faltam + " ponto" + (faltam > 1 ? "s" : "") + " para o próximo nível";
   } else {
-    faltamPontosTexto.innerText =
-      "Você pode avançar de nível 🚀";
+    faltamPontosTexto.innerText = "Você pode avançar de nível 🚀";
   }
 }
 
@@ -475,15 +471,13 @@ if (limiteNivelTexto) {
     });
 }
 
-const limiteElemento =
-  document.getElementById("limiteDisponivel");
+const limiteElemento = document.getElementById("limiteDisponivel");
 
 if (limiteElemento) {
-  limiteElemento.innerText =
-    limiteMaximoNivel.toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL"
-    });
+  limiteElemento.innerText = limiteMaximoNivel.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  });
 }
 
 if (data.statusAumento === "aprovado") {
@@ -511,19 +505,13 @@ if (data.statusAumento === "aprovado") {
     }) +
     "<br>" +
     "Data da aprovação: " +
-    (data.dataAprovacao
-      ? data.dataAprovacao.toDate().toLocaleString("pt-BR")
-      : "");
+    (data.dataAprovacao ? data.dataAprovacao.toDate().toLocaleString("pt-BR") : "");
 
-  const area =
-    document.getElementById("areaAvisoTopo");
-
+  const area = document.getElementById("areaAvisoTopo");
   area.innerHTML = "";
   area.appendChild(info);
 
-  const fecharBtn =
-    document.createElement("span");
-
+  const fecharBtn = document.createElement("span");
   fecharBtn.innerText = "✕";
   fecharBtn.style.position = "absolute";
   fecharBtn.style.right = "10px";
@@ -533,21 +521,40 @@ if (data.statusAumento === "aprovado") {
 
   info.appendChild(fecharBtn);
 
-  fecharBtn.addEventListener(
-    "click",
-    async () => {
-      info.remove();
-      await updateDoc(userRef, {
-        statusAumento: "visualizado"
-      });
-    }
-  );
+  fecharBtn.addEventListener("click", async () => {
+    info.remove();
+    await updateDoc(userRef, {
+      statusAumento: "visualizado"
+    });
+  });
 }
 
-/* ===== LISTAR EMPRÉSTIMOS APROVADOS ===== */
+await addDoc(collection(db, "emprestimos"), {
+  userId: user.uid,
+  email: user.email,
+  valor: valorFinal,
+  parcelas: Number(parcelasFinal),
+  juros: juros,
+  valorFinal: valorFinalComJuros,
+  status: "aguardando",
+  criadoEm: new Date(),
+  dataAprovacao: null,
+  dataVencimento: null
+});
 
-const listaDiv =
-  document.getElementById("listaEmprestimos");
+        alert("Solicitação enviada para análise.");
+        modal.style.display = "none";
+
+      } catch (error) {
+        console.error(error);
+        alert("Erro ao enviar solicitação.");
+      }
+
+    });
+  }
+// ===== LISTAR EMPRÉSTIMOS APROVADOS =====
+
+const listaDiv = document.getElementById("listaEmprestimos");
 
 const q = query(
   collection(db, "emprestimos"),
@@ -558,45 +565,32 @@ const q = query(
 const querySnapshot = await getDocs(q);
 
 if (querySnapshot.empty) {
-
-  listaDiv.innerHTML =
-    "Você não possui empréstimos ativos.";
-
+  listaDiv.innerHTML = "Você não possui empréstimos ativos.";
 } else {
-
   listaDiv.innerHTML = "";
 
   querySnapshot.forEach((docSnap) => {
-
     const dados = docSnap.data();
 
-    const item =
-      document.createElement("div");
-
+    const item = document.createElement("div");
     item.style.marginBottom = "10px";
     item.style.padding = "10px";
-    item.style.background =
-      "rgba(255,255,255,0.05)";
+    item.style.background = "rgba(255,255,255,0.05)";
     item.style.borderRadius = "8px";
 
-    item.innerHTML =
-      "Valor: " +
-      dados.valor.toLocaleString("pt-BR", {
+    item.innerHTML = `
+      Valor: ${dados.valor.toLocaleString("pt-BR", {
         style: "currency",
         currency: "BRL"
-      }) +
-      "<br>" +
-      "Parcelas: " +
-      dados.parcelas +
-      "<br>" +
-      "Status: " +
-      dados.status;
+      })}<br>
+      Prazo: ${dados.prazo} dias<br>
+      Status: ${dados.status}
+    `;
 
     listaDiv.appendChild(item);
-
   });
-
 }
+});
 </script>
 
 </body>

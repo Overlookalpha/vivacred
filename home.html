@@ -262,7 +262,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-
+let nivelNomeGlobal = null;
 onAuthStateChanged(auth, async (user) => {
 
   if (!user) {
@@ -379,7 +379,7 @@ onAuthStateChanged(auth, async (user) => {
  const data = userSnap.data();
 const dadosNivel = calcularNivel(data.score);
 
-const nivelNome = dadosNivel.nome;
+nivelNomeGlobal = dadosNivel.nome;
 const nivelEmoji = dadosNivel.emoji;
 const nivelCor = dadosNivel.cor;
 const limiteMaximoNivel = dadosNivel.max;
@@ -559,7 +559,7 @@ if (!valorFinal || valorFinal < 100) {
 
       try {
 
-const regras = obterRegrasPorNivel(nivelNome);
+const regras = obterRegrasPorNivel(nivelNomeGlobal);
 
 if (parcelasFinal > regras.maxParcelas) {
   alert("Seu perfil não permite essa quantidade de parcelas.");

@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -282,12 +281,8 @@ for (let i = 1; i <= dados.parcelas; i++) {
 
  const parcelaRef = doc(db, "parcelas", parcelaId);
  const parcelaSnap = await getDoc(parcelaRef);
-const dados = parcelaSnap.data();
+ const dados = parcelaSnap.data();
 
-if(valorPago > dados.valor){
-  alert("Valor maior que a parcela.");
-  return;
-}
  const novoPago = dados.pago + valorPago;
  const novoRestante = dados.valor - novoPago;
 

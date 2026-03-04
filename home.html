@@ -289,11 +289,20 @@ snapshotParcelas.forEach((docSnap) => {
 
   const div = document.createElement("div");
 
-  div.innerHTML =
-  "Parcela " + dados.numero + "<br>" +
-  "Valor: " + dados.valor + "<br>" +
-  "Pago: " + dados.pago + "<br>" +
-  "Restante: " + dados.restante + "<br><br>";
+  let status = "🔴 Pendente";
+
+if(dados.restante === 0){
+    status = "🟢 PAGO";
+}
+else if(dados.pago > 0){
+    status = "🟡 Parcial";
+}
+
+div.innerHTML =
+"Parcela " + dados.numero + " - " + status + "<br>" +
+"Valor: " + dados.valor + "<br>" +
+"Pago: " + dados.pago + "<br>" +
+"Restante: " + dados.restan
 
   containerParcelas.appendChild(div);
 

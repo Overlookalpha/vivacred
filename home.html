@@ -628,13 +628,13 @@ await addDoc(collection(db, "emprestimos"), {
 
 const listaDiv = document.getElementById("listaEmprestimos");
 
-const q = query(
+const qEmprestimos = query(
   collection(db, "emprestimos"),
   where("userId", "==", user.uid),
   where("status", "==", "ativo")
 );
 
-const querySnapshot = await getDocs(q);
+const querySnapshot = await getDocs(qEmprestimos);
 
 if (querySnapshot.empty) {
 

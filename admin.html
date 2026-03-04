@@ -197,6 +197,7 @@ const data = userSnap.data();
 };
 
 window.abrirParcelas = async (emprestimoId) => {
+  alert("ID recebido: " + emprestimoId);
 
  const parcelasSnapshot = await getDocs(collection(db, "parcelas"));
 

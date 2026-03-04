@@ -1,33 +1,39 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>VivaCred Admin</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body{
-      font-family: Arial;
-      background:#111;
-      color:white;
-      padding:20px;
-    }
-    .card{
-      background:#1c1c1c;
-      padding:15px;
-      margin-bottom:15px;
-      border-radius:10px;
-    }
-    button{
-      padding:6px 12px;
-      border:none;
-      border-radius:6px;
-      cursor:pointer;
-      margin-right:5px;
-    }
-    .aprovar{
-      background:#00c853;
-      color:white;
-    }
-    .menuItem{
+<title>VivaCred Admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+body{
+font-family: Arial;
+background:#111;
+color:white;
+margin:0;
+}
+
+.card{
+background:#1c1c1c;
+padding:15px;
+margin-bottom:15px;
+border-radius:10px;
+}
+
+button{
+padding:6px 12px;
+border:none;
+border-radius:6px;
+cursor:pointer;
+margin-right:5px;
+}
+
+.aprovar{
+background:#00c853;
+color:white;
+}
+
+.menuItem{
 margin-top:15px;
 cursor:pointer;
 padding:8px 10px;
@@ -41,10 +47,15 @@ background:#2a2a2a;
 .menuAtivo{
 background:#3a3a3a;
 }
-  </style>
-</head> 
+
+</style>
+</head>
+
 <body>
+
 <div style="display:flex;">
+
+<!-- MENU LATERAL -->
 
 <div style="
 width:200px;
@@ -65,6 +76,10 @@ color:white;
 <div class="menuItem" onclick="abrirTela('historico')">📊 Histórico</div>
 
 <div class="menuItem">⚙️ Config</div>
+
+</div>
+
+<!-- ÁREA PRINCIPAL -->
 
 <div style="flex:1; padding:30px;">
 
@@ -98,7 +113,7 @@ color:white;
 
 <!-- SOLICITAÇÕES -->
 
-<div id="telaSolicitacoes">
+<div id="telaSolicitacoes" style="display:none;">
 
 <h3>Solicitações de Empréstimo</h3>
 
@@ -108,7 +123,7 @@ color:white;
 
 <!-- EMPRÉSTIMOS -->
 
-<div id="telaEmprestimos">
+<div id="telaEmprestimos" style="display:none;">
 
 <h3>Empréstimos Ativos</h3>
 
@@ -118,7 +133,7 @@ color:white;
 
 <!-- HISTÓRICO -->
 
-<div id="telaHistorico">
+<div id="telaHistorico" style="display:none;">
 
 <h3 onclick="toggleHistorico()" style="cursor:pointer;">
 Histórico de Empréstimos ▼
@@ -131,6 +146,8 @@ Histórico de Empréstimos ▼
 <div id="painelParcelas"></div>
 
 <div id="listaEmprestimos"></div>
+
+</div>
 
 </div>
 

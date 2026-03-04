@@ -6,7 +6,7 @@
   <style>
     body{
       font-family: Arial;
-      backgound:#111;
+      background:#111;
       color:white;
       padding:20px;
     }
@@ -197,7 +197,6 @@ const data = userSnap.data();
 };
 
 window.abrirParcelas = async (emprestimoId) => {
-  alert("ID recebido: " + emprestimoId);
 
  const parcelasSnapshot = await getDocs(collection(db, "parcelas"));
 
@@ -207,10 +206,7 @@ window.abrirParcelas = async (emprestimoId) => {
 
    const dados = docSnap.data();
 
-   if (dados.emprestimoId !== emprestimoId) {
- console.log("não bateu:", dados.emprestimoId, emprestimoId);
- return;
-}
+   if (dados.emprestimoId !== emprestimoId) return;
 
    texto += "Parcela " + dados.numero + "\n";
    texto += "Valor: " + dados.valor + "\n";

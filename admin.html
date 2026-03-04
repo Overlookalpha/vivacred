@@ -247,7 +247,7 @@ for (let i = 1; i <= dados.parcelas; i++) {
   vencimentoParcela.setMonth(vencimentoParcela.getMonth() + i);
 
   await addDoc(collection(db, "parcelas"), {
-    emprestimoId: emprestimoId,
+    emprestimoId: id,
     userId: dados.userId,
     numero: i,
     valor: valorParcela,

@@ -130,7 +130,7 @@ emprestimosSnapshot.forEach((docSnap) => {
   div.innerHTML = `
     <strong>${dados.email}</strong><br>
     Valor: ${dados.valor}<br>
-    Prazo: ${dados.prazo} dias<br>
+    Parcelas: ${dados.parcelas}<br>
     Juros: ${dados.juros}<br><br>
     <button class="aprovar" onclick="aprovarEmprestimo('${docSnap.id}')">
       Aprovar Empréstimo

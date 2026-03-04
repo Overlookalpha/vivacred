@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -324,38 +325,30 @@ snapshot.forEach((docSnap)=>{
 
 if(todasPagas){
 
-   const emprestimoRef = doc(db,"emprestimos",emprestimoId);
-const emprestimoSnap = await getDoc(emprestimoRef);
-const dadosEmprestimo = emprestimoSnap.data();
-
-if(dadosEmprestimo.finalizado){
+    const emprestimoRef = doc(db,"emprestimos",emprestimoId);
+    const emprestimoSnap = await getDoc(emprestimoRef);
+    const dadosEmprestimo = emprestimoSnap.data();
+    if(dadosEmprestimo.finalizado){
     return;
-}
+   }
+    const userRef = doc(db,"usuarios",dadosEmprestimo.userId);
+    const userSnap = await getDoc(userRef);
 
-const userRef = doc(db,"usuarios",dadosEmprestimo.userId);
-const userSnap = await getDoc(userRef);
+    const dadosUser = userSnap.data();
 
-const dadosUser = userSnap.data();
+    const novoScore = dadosUser.score + 10;
 
-const novoScore = dadosUser.score + 10;
-
-await updateDoc(userRef,{
-    score: novoScore
-});
-
-await updateDoc(emprestimoRef,{
+    await updateDoc(userRef,{
+        score: novoScore
+    });
+    await updateDoc(emprestimoRef,{
     finalizado: true
 });
-
-alert("Score do cliente atualizado!");
-
-location.reload();
-
 }
+    
+ alert("Pagamento registrado!");
 
-alert("Pagamento registrado!");
-
-location.reload();
+ location.reload();
 
 };
 </script>

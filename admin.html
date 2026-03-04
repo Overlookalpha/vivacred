@@ -177,25 +177,27 @@ emprestimosSnapshot.forEach((docSnap) => {
 
  containerAtivos.innerHTML = "";
 
- ativosSnapshot.forEach((docSnap) => {
+ativosSnapshot.forEach((docSnap) => {
+
+  const dados = docSnap.data();
+
+  if (dados.status !== "ativo") return;
+
   totalEmprestado += dados.valorFinal;
 
-   const dados = docSnap.data();
+  const div = document.createElement("div");
+  div.className = "card";
 
-   if (dados.status !== "ativo") return;
+  div.innerHTML =
+    "<strong>" + dados.email + "</strong><br>" +
+    "Valor Total: " + dados.valorFinal + "<br>" +
+    "Parcelas: " + dados.parcelas + "<br><br>" +
+    "<button onclick=\"abrirParcelas('" + docSnap.id + "')\">Gerenciar Parcelas</button>";
 
-   const div = document.createElement("div");
-   div.className = "card";
+  containerAtivos.appendChild(div);
 
-   div.innerHTML =
-     "<strong>" + dados.email + "</strong><br>" +
-     "Valor Total: " + dados.valorFinal + "<br>" +
-     "Parcelas: " + dados.parcelas + "<br><br>" +
-     "<button onclick=\"abrirParcelas('" + docSnap.id + "')\">Gerenciar Parcelas</button>";
-
-   containerAtivos.appendChild(div);
-
- });
+});
+  atualizarFinanceiro();
   
 window.aprovar = async (id) => {
 

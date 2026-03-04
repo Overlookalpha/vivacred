@@ -54,8 +54,10 @@
 <div id="listaUsuarios"></div>
 <h3>Solicitações de Empréstimo</h3>
 <h3>Empréstimos Ativos</h3>
-<h3>Histórico de Empréstimos</h3>
-<div id="historicoEmprestimos"></div>
+<h3 onclick="toggleHistorico()" style="cursor:pointer;">
+Histórico de Empréstimos ▼
+</h3>
+<div id="historicoEmprestimos" style="display:none;"></div>
 <div id="listaEmprestimosAtivos"></div>
 <div id="painelParcelas"></div>
 <div id="listaEmprestimos"></div>
@@ -416,6 +418,17 @@ window.salvarCapital = () => {
  document.getElementById("saldoDisponivel").innerText = saldo;
 
 }
+  window.toggleHistorico = () => {
+
+ const historico = document.getElementById("historicoEmprestimos");
+
+ if (historico.style.display === "none") {
+   historico.style.display = "block";
+ } else {
+   historico.style.display = "none";
+ }
+
+};
 </script>
 
 </body>

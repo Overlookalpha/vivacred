@@ -233,14 +233,14 @@ if (!adminSnap.exists()) {
 // ===== LISTAR EMPRÉSTIMOS AGUARDANDO =====
 
 const emprestimosSnapshot = await getDocs(collection(db, "emprestimos"));
-const containerEmprestimos = document.getElementById("listaUsuarios");
+const containerEmprestimos = document.getElementById("listaEmprestimosAtivos");
 containerEmprestimos.innerHTML = "";
 
 emprestimosSnapshot.forEach((docSnap) => {
 
   const dados = docSnap.data();
 
- if (dados.status !== "pendente") return;
+ if (dados.status !== "ativo" || dados.finalizado === true) return;
 
   const div = document.createElement("div");
   div.className = "card";
@@ -271,7 +271,7 @@ ativosSnapshot.forEach((docSnap) => {
 
   const dados = docSnap.data();
 
- if (dados.status !== "ativo" || dados.finalizado === true) return;
+  if (dados.status !== "ativo") return;
 
   totalEmprestado += dados.valorFinal;
 
@@ -546,6 +546,7 @@ if(tela === "historico"){
 document.getElementById("telaHistorico").style.display = "block";
 menu[3].classList.add("menuAtivo");
 }
+
 }
   abrirTela("dashboard");
 </script>

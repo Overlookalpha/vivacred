@@ -145,8 +145,6 @@ Histórico de Empréstimos ▼
 
 <div id="painelParcelas"></div>
 
-<div id="listaEmprestimos"></div>
-
 </div>
 
 </div>
@@ -235,7 +233,7 @@ if (!adminSnap.exists()) {
 // ===== LISTAR EMPRÉSTIMOS AGUARDANDO =====
 
 const emprestimosSnapshot = await getDocs(collection(db, "emprestimos"));
-const containerEmprestimos = document.getElementById("listaEmprestimos");
+const containerEmprestimos = document.getElementById("listaEmprestimosAtivos");
 containerEmprestimos.innerHTML = "";
 
 emprestimosSnapshot.forEach((docSnap) => {

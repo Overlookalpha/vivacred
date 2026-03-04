@@ -27,6 +27,20 @@
       background:#00c853;
       color:white;
     }
+    .menuItem{
+margin-top:15px;
+cursor:pointer;
+padding:8px 10px;
+border-radius:6px;
+}
+
+.menuItem:hover{
+background:#2a2a2a;
+}
+
+.menuAtivo{
+background:#3a3a3a;
+}
   </style>
 </head> 
 <body>
@@ -42,25 +56,15 @@ color:white;
 
 <h3>VivaCred</h3>
 
-<div style="margin-top:30px; cursor:pointer;" onclick="abrirTela('dashboard')">
-🏠 Dashboard
-</div>
+<div class="menuItem" onclick="abrirTela('dashboard')">🏠 Dashboard</div>
 
-<div style="margin-top:15px; cursor:pointer;" onclick="abrirTela('emprestimos')">
-💰 Empréstimos
-</div>
+<div class="menuItem" onclick="abrirTela('emprestimos')">💰 Empréstimos</div>
 
-<div style="margin-top:15px; cursor:pointer;" onclick="abrirTela('solicitacoes')">
-📥 Solicitações
-</div>
+<div class="menuItem" onclick="abrirTela('solicitacoes')">📥 Solicitações</div>
 
-<div style="margin-top:15px; cursor:pointer;" onclick="abrirTela('historico')">
-📊 Histórico
-</div>
+<div class="menuItem" onclick="abrirTela('historico')">📊 Histórico</div>
 
-<div style="margin-top:15px; cursor:pointer;">
-⚙️ Config
-</div>
+<div class="menuItem">⚙️ Config</div>
 
 <div style="flex:1; padding:30px;">
 
@@ -498,27 +502,34 @@ window.salvarCapital = () => {
  }
 
 };
-  function abrirTela(tela){
+function abrirTela(tela){
 
 document.getElementById("telaDashboard").style.display = "none";
 document.getElementById("telaSolicitacoes").style.display = "none";
 document.getElementById("telaEmprestimos").style.display = "none";
 document.getElementById("telaHistorico").style.display = "none";
 
+const menu = document.querySelectorAll(".menuItem");
+menu.forEach(btn => btn.classList.remove("menuAtivo"));
+
 if(tela === "dashboard"){
 document.getElementById("telaDashboard").style.display = "block";
-}
-
-if(tela === "solicitacoes"){
-document.getElementById("telaSolicitacoes").style.display = "block";
+menu[0].classList.add("menuAtivo");
 }
 
 if(tela === "emprestimos"){
 document.getElementById("telaEmprestimos").style.display = "block";
+menu[1].classList.add("menuAtivo");
+}
+
+if(tela === "solicitacoes"){
+document.getElementById("telaSolicitacoes").style.display = "block";
+menu[2].classList.add("menuAtivo");
 }
 
 if(tela === "historico"){
 document.getElementById("telaHistorico").style.display = "block";
+menu[3].classList.add("menuAtivo");
 }
 
 }

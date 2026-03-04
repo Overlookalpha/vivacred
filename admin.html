@@ -296,6 +296,49 @@ for (let i = 1; i <= dados.parcelas; i++) {
    status: novoStatus
  });
 
+const emprestimoId = dados.emprestimoId;
+
+const parcelasRef = collection(db,"parcelas");
+
+const q = query(parcelasRef, where("emprestimoId","==",emprestimoId));
+
+const snapshot = await getDocs(q);
+
+let todasPagas = true;
+
+snapshot.forEach((docSnap)=>{
+
+    const p = docSnap.data();
+
+    if(p.restante > 0){
+        todasPagas = false;
+    }
+
+});
+
+if(todasPagas){
+
+    const emprestimoRef = doc(db,"emprestimos",emprestimoId);
+    const emprestimoSnap = await getDoc(emprestimoRef);
+    const dadosEmprestimo = emprestimoSnap.data();
+    if(dadosEmprestimo.finalizado){
+    return;
+   }
+    const userRef = doc(db,"usuarios",dadosEmprestimo.userId);
+    const userSnap = await getDoc(userRef);
+
+    const dadosUser = userSnap.data();
+
+    const novoScore = dadosUser.score + 10;
+
+    await updateDoc(userRef,{
+        score: novoScore
+    });
+    await updateDoc(emprestimoRef,{
+    finalizado: true
+});
+}
+    
  alert("Pagamento registrado!");
 
  location.reload();

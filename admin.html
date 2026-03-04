@@ -28,43 +28,109 @@
       color:white;
     }
   </style>
-</head>
+</head> 
 <body>
+<div style="display:flex;">
+
+<div style="
+width:200px;
+background:#1e293b;
+min-height:100vh;
+padding:20px;
+color:white;
+">
+
+<h3>VivaCred</h3>
+
+<div style="margin-top:30px; cursor:pointer;" onclick="abrirTela('dashboard')">
+🏠 Dashboard
+</div>
+
+<div style="margin-top:15px; cursor:pointer;" onclick="abrirTela('emprestimos')">
+💰 Empréstimos
+</div>
+
+<div style="margin-top:15px; cursor:pointer;" onclick="abrirTela('solicitacoes')">
+📥 Solicitações
+</div>
+
+<div style="margin-top:15px; cursor:pointer;" onclick="abrirTela('historico')">
+📊 Histórico
+</div>
+
+<div style="margin-top:15px; cursor:pointer;">
+⚙️ Config
+</div>
+
+<div style="flex:1; padding:30px;">
+
+<!-- DASHBOARD -->
+
+<div id="telaDashboard">
 
 <h2>Painel Administrativo VivaCred</h2>
+
 <div id="painelFinanceiro" style="display:flex; gap:20px; margin-bottom:20px;">
 
-  <div class="card">
-    <strong>Capital</strong><br>
-    <input id="capitalInput" type="number" value="1000" style="width:100px;">
-    <button onclick="salvarCapital()">Salvar</button>
-  </div>
+<div class="card">
+<strong>Capital</strong><br>
+<input id="capitalInput" type="number" value="1000" style="width:100px;">
+<button onclick="salvarCapital()">Salvar</button>
+</div>
 
-  <div class="card">
-    <strong>Valor Emprestado</strong><br>
-    <span id="valorEmprestado">0</span>
-  </div>
+<div class="card">
+<strong>Valor Emprestado</strong><br>
+<span id="valorEmprestado">0</span>
+</div>
 
-  <div class="card">
-    <strong>Saldo Disponível</strong><br>
-    <span id="saldoDisponivel">0</span>
-  </div>
+<div class="card">
+<strong>Saldo Disponível</strong><br>
+<span id="saldoDisponivel">0</span>
+</div>
 
 </div>
-<div id="listaUsuarios"></div>
+
+</div>
+
+<!-- SOLICITAÇÕES -->
+
+<div id="telaSolicitacoes">
+
 <h3>Solicitações de Empréstimo</h3>
+
+<div id="listaUsuarios"></div>
+
+</div>
+
+<!-- EMPRÉSTIMOS -->
+
+<div id="telaEmprestimos">
+
 <h3>Empréstimos Ativos</h3>
+
+<div id="listaEmprestimosAtivos"></div>
+
+</div>
+
+<!-- HISTÓRICO -->
+
+<div id="telaHistorico">
+
 <h3 onclick="toggleHistorico()" style="cursor:pointer;">
 Histórico de Empréstimos ▼
 </h3>
 
 <div id="caixaHistorico" style="display:none;">
-    <div id="historicoEmprestimos"></div>
+<div id="historicoEmprestimos"></div>
 </div>
-<div id="listaEmprestimosAtivos"></div>
+
 <div id="painelParcelas"></div>
+
 <div id="listaEmprestimos"></div>
 
+</div>
+
+</div>
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
@@ -432,6 +498,31 @@ window.salvarCapital = () => {
  }
 
 };
+  function abrirTela(tela){
+
+document.getElementById("telaDashboard").style.display = "none";
+document.getElementById("telaSolicitacoes").style.display = "none";
+document.getElementById("telaEmprestimos").style.display = "none";
+document.getElementById("telaHistorico").style.display = "none";
+
+if(tela === "dashboard"){
+document.getElementById("telaDashboard").style.display = "block";
+}
+
+if(tela === "solicitacoes"){
+document.getElementById("telaSolicitacoes").style.display = "block";
+}
+
+if(tela === "emprestimos"){
+document.getElementById("telaEmprestimos").style.display = "block";
+}
+
+if(tela === "historico"){
+document.getElementById("telaHistorico").style.display = "block";
+}
+
+}
+  abrirTela("dashboard");
 </script>
 
 </body>

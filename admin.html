@@ -195,6 +195,30 @@ const data = userSnap.data();
   alert("Pedido aprovado!");
   location.reload();
 };
+
+window.abrirParcelas = async (emprestimoId) => {
+
+ const parcelasSnapshot = await getDocs(collection(db, "parcelas"));
+
+ let texto = "PARCELAS:\n\n";
+
+ parcelasSnapshot.forEach((docSnap) => {
+
+   const dados = docSnap.data();
+
+   if (dados.emprestimoId !== emprestimoId) return;
+
+   texto += "Parcela " + dados.numero + "\n";
+   texto += "Valor: " + dados.valor + "\n";
+   texto += "Pago: " + dados.pago + "\n";
+   texto += "Restante: " + dados.restante + "\n\n";
+
+ });
+
+ alert(texto);
+
+};
+  
 window.aprovarEmprestimo = async (id) => {
 
   const emprestimoRef = doc(db, "emprestimos", id);

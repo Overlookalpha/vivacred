@@ -35,6 +35,8 @@
 
 <div id="listaUsuarios"></div>
 <h3>Solicitações de Empréstimo</h3>
+<h3>Empréstimos Ativos</h3>
+<div id="listaEmprestimosAtivos"></div>
 <div id="listaEmprestimos"></div>
 
 <script type="module">
@@ -141,6 +143,33 @@ emprestimosSnapshot.forEach((docSnap) => {
 });
 });
 
+
+// EMPRÉSTIMOS ATIVOS
+
+ const ativosSnapshot = await getDocs(collection(db, "emprestimos"));
+ const containerAtivos = document.getElementById("listaEmprestimosAtivos");
+
+ containerAtivos.innerHTML = "";
+
+ ativosSnapshot.forEach((docSnap) => {
+
+   const dados = docSnap.data();
+
+   if (dados.status !== "ativo") return;
+
+   const div = document.createElement("div");
+   div.className = "card";
+
+   div.innerHTML =
+     "<strong>" + dados.email + "</strong><br>" +
+     "Valor Total: " + dados.valorFinal + "<br>" +
+     "Parcelas: " + dados.parcelas + "<br><br>" +
+     "<button onclick=\"abrirParcelas('" + docSnap.id + "')\">Gerenciar Parcelas</button>";
+
+   containerAtivos.appendChild(div);
+
+ });
+  
 window.aprovar = async (id) => {
 
   const userRef = doc(db, "usuarios", id);

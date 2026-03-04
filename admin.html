@@ -57,7 +57,10 @@
 <h3 onclick="toggleHistorico()" style="cursor:pointer;">
 Histórico de Empréstimos ▼
 </h3>
-<div id="historicoEmprestimos" style="display:none;"></div>
+
+<div id="caixaHistorico" style="display:none;">
+    <div id="historicoEmprestimos"></div>
+</div>
 <div id="listaEmprestimosAtivos"></div>
 <div id="painelParcelas"></div>
 <div id="listaEmprestimos"></div>
@@ -420,7 +423,7 @@ window.salvarCapital = () => {
 }
   window.toggleHistorico = () => {
 
- const historico = document.getElementById("historicoEmprestimos");
+ const historico = document.getElementById("caixaHistorico");
 
  if (historico.style.display === "none") {
    historico.style.display = "block";

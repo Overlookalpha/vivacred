@@ -204,7 +204,9 @@
   <div id="listaEmprestimos" style="margin-top:15px; font-size:14px;">
     Carregando...
   </div>
-</div>
+<div class="card">
+<strong>Minhas Parcelas</strong>
+    <div id="minhasParcelas"></div>
   </div>
  <div id="modalCredito" class="modal">
   <div class="modal-content">
@@ -243,7 +245,9 @@ import {
   collection,
   query,
   where,
-  getDocs
+  getDocs,
+  query,
+  where
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
 
 import { 
@@ -272,7 +276,30 @@ onAuthStateChanged(auth, async (user) => {
 
   document.getElementById("userEmail").innerText =
     "Logado como: " + user.email;
+  const parcelasRef = collection(db, "parcelas");
+const q = query(parcelasRef, where("userId", "==", user.uid));
 
+const snapshotParcelas = await getDocs(q);
+
+const containerParcelas = document.getElementById("minhasParcelas");
+
+containerParcelas.innerHTML = "";
+
+snapshotParcelas.forEach((docSnap) => {
+
+  const dados = docSnap.data();
+
+  const div = document.createElement("div");
+
+  div.innerHTML =
+  "Parcela " + dados.numero + "<br>" +
+  "Valor: " + dados.valor + "<br>" +
+  "Pago: " + dados.pago + "<br>" +
+  "Restante: " + dados.restante + "<br><br>";
+
+  containerParcelas.appendChild(div);
+
+});
   const userRef = doc(db, "usuarios", user.uid);
   const adminRef = doc(db, "admins", user.uid);
   const adminSnap = await getDoc(adminRef);

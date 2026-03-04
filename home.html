@@ -414,6 +414,25 @@ div.innerHTML =
 const dadosNivel = calcularNivel(data.score);
 
 nivelNomeGlobal = dadosNivel.nome;
+const regrasNivel = obterRegrasPorNivel(nivelNomeGlobal);
+
+const selectParcelas = document.getElementById("parcelasSimuladas");
+
+if (selectParcelas) {
+
+  selectParcelas.innerHTML = "";
+
+  for (let i = 1; i <= regrasNivel.maxParcelas; i++) {
+
+    const option = document.createElement("option");
+
+    option.value = i;
+    option.textContent = i + "x";
+
+    selectParcelas.appendChild(option);
+  }
+
+}
 const nivelEmoji = dadosNivel.emoji;
 const nivelCor = dadosNivel.cor;
 const limiteMaximoNivel = dadosNivel.max;

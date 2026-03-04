@@ -297,7 +297,8 @@ if(dados.restante === 0){
 else if(dados.pago > 0){
     status = "🟡 Parcial";
 }
-
+  
+let restante = dados.valor - dados.pago;
 div.innerHTML =
 "Parcela " + dados.numero + " - " + status + "<br>" +
 "Valor: " + dados.valor + "<br>" +

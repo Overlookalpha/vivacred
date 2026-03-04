@@ -267,6 +267,40 @@ for (let i = 1; i <= dados.parcelas; i++) {
   alert("Empréstimo aprovado!");
   location.reload();
 };
+  window.registrarPagamento = async (parcelaId) => {
+
+ const input = document.getElementById("pagamento_" + parcelaId);
+ const valorPago = Number(input.value);
+
+ if (!valorPago || valorPago <= 0) {
+   alert("Digite um valor válido.");
+   return;
+ }
+
+ const parcelaRef = doc(db, "parcelas", parcelaId);
+ const parcelaSnap = await getDoc(parcelaRef);
+ const dados = parcelaSnap.data();
+
+ const novoPago = dados.pago + valorPago;
+ const novoRestante = dados.valor - novoPago;
+
+ let novoStatus = "pendente";
+
+ if (novoRestante <= 0) {
+   novoStatus = "pago";
+ }
+
+ await updateDoc(parcelaRef, {
+   pago: novoPago,
+   restante: novoRestante < 0 ? 0 : novoRestante,
+   status: novoStatus
+ });
+
+ alert("Pagamento registrado!");
+
+ location.reload();
+
+};
 </script>
 
 </body>

@@ -207,7 +207,10 @@ window.abrirParcelas = async (emprestimoId) => {
 
    const dados = docSnap.data();
 
-   if (dados.emprestimoId != emprestimoId) return;
+   if (dados.emprestimoId !== emprestimoId) {
+ console.log("não bateu:", dados.emprestimoId, emprestimoId);
+ return;
+}
 
    texto += "Parcela " + dados.numero + "\n";
    texto += "Valor: " + dados.valor + "\n";

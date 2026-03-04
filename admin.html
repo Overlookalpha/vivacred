@@ -37,6 +37,7 @@
 <h3>Solicitações de Empréstimo</h3>
 <h3>Empréstimos Ativos</h3>
 <div id="listaEmprestimosAtivos"></div>
+<div id="painelParcelas"></div>
 <div id="listaEmprestimos"></div>
 
 <script type="module">
@@ -198,9 +199,10 @@ const data = userSnap.data();
 
 window.abrirParcelas = async (emprestimoId) => {
 
- const parcelasSnapshot = await getDocs(collection(db, "parcelas"));
+ const painel = document.getElementById("painelParcelas");
+ painel.innerHTML = "<h3>Parcelas</h3>";
 
- let texto = "PARCELAS:\n\n";
+ const parcelasSnapshot = await getDocs(collection(db, "parcelas"));
 
  parcelasSnapshot.forEach((docSnap) => {
 
@@ -208,14 +210,22 @@ window.abrirParcelas = async (emprestimoId) => {
 
    if (dados.emprestimoId !== emprestimoId) return;
 
-   texto += "Parcela " + dados.numero + "\n";
-   texto += "Valor: " + dados.valor + "\n";
-   texto += "Pago: " + dados.pago + "\n";
-   texto += "Restante: " + dados.restante + "\n\n";
+   const div = document.createElement("div");
+   div.className = "card";
+
+   div.innerHTML =
+     "Parcela " + dados.numero + "<br>" +
+     "Valor: " + dados.valor + "<br>" +
+     "Pago: " + dados.pago + "<br>" +
+     "Restante: " + dados.restante + "<br><br>" +
+
+     "<input type='number' id='pagamento_" + docSnap.id + "' placeholder='Valor pago'>" +
+
+     "<button onclick=\"registrarPagamento('" + docSnap.id + "')\">Registrar</button>";
+
+   painel.appendChild(div);
 
  });
-
- alert(texto);
 
 };
   

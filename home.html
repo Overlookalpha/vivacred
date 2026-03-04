@@ -665,22 +665,34 @@ if (querySnapshot.empty) {
 
     let parcelasHTML = "";
 
-    for (let i = 1; i <= dados.parcelas; i++) {
+   for (let i = 1; i <= dados.parcelas; i++) {
 
-      const dataVencimento = new Date(hoje);
-      dataVencimento.setMonth(hoje.getMonth() + i);
+  const dataVencimento = new Date(hoje);
+  dataVencimento.setMonth(hoje.getMonth() + i);
 
-      parcelasHTML +=
-        "Parcela " + i +
-        " - " +
-        valorParcela.toLocaleString("pt-BR", {
-          style: "currency",
-          currency: "BRL"
-        }) +
-        " - Vencimento: " +
-        dataVencimento.toLocaleDateString("pt-BR") +
-        "<br>";
-    }
+  let status = "🔴 PENDENTE";
+
+  const parcelaPaga = snapshotParcelas.docs.find(p => {
+    const d = p.data();
+    return d.numero === i && d.pago >= d.valor;
+  });
+
+  if (parcelaPaga) {
+    status = "🟢 PAGO";
+  }
+
+  parcelasHTML +=
+    "Parcela " + i +
+    " - " +
+    valorParcela.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL"
+    }) +
+    " - " + status +
+    " - Vencimento: " +
+    dataVencimento.toLocaleDateString("pt-BR") +
+    "<br>";
+}
 
     const item = document.createElement("div");
     item.style.marginBottom = "15px";

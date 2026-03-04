@@ -47,7 +47,8 @@ import {
   getDocs, 
   doc, 
   getDoc,
-  updateDoc 
+  updateDoc,
+  addDoc
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -178,7 +179,28 @@ await updateDoc(emprestimoRef, {
   dataAprovacao: hoje,
   dataVencimento: vencimento
 });
+const emprestimoSnap = await getDoc(emprestimoRef);
+const dados = emprestimoSnap.data();
 
+const valorParcela = Number((dados.valorFinal / dados.parcelas).toFixed(2));
+
+for (let i = 1; i <= dados.parcelas; i++) {
+
+  const vencimentoParcela = new Date();
+  vencimentoParcela.setMonth(vencimentoParcela.getMonth() + i);
+
+  await addDoc(collection(db, "parcelas"), {
+    emprestimoId: id,
+    userId: dados.userId,
+    numero: i,
+    valor: valorParcela,
+    pago: 0,
+    restante: valorParcela,
+    status: "pendente",
+    vencimento: vencimentoParcela
+  });
+
+}
   alert("Empréstimo aprovado!");
   location.reload();
 };

@@ -324,30 +324,38 @@ snapshot.forEach((docSnap)=>{
 
 if(todasPagas){
 
-    const emprestimoRef = doc(db,"emprestimos",emprestimoId);
-    const emprestimoSnap = await getDoc(emprestimoRef);
-    const dadosEmprestimo = emprestimoSnap.data();
-    if(dadosEmprestimo.finalizado){
+   const emprestimoRef = doc(db,"emprestimos",emprestimoId);
+const emprestimoSnap = await getDoc(emprestimoRef);
+const dadosEmprestimo = emprestimoSnap.data();
+
+if(dadosEmprestimo.finalizado){
     return;
-   }
-    const userRef = doc(db,"usuarios",dadosEmprestimo.userId);
-    const userSnap = await getDoc(userRef);
+}
 
-    const dadosUser = userSnap.data();
+const userRef = doc(db,"usuarios",dadosEmprestimo.userId);
+const userSnap = await getDoc(userRef);
 
-    const novoScore = dadosUser.score + 10;
+const dadosUser = userSnap.data();
 
-    await updateDoc(userRef,{
-        score: novoScore
-    });
-    await updateDoc(emprestimoRef,{
+const novoScore = dadosUser.score + 10;
+
+await updateDoc(userRef,{
+    score: novoScore
+});
+
+await updateDoc(emprestimoRef,{
     finalizado: true
 });
-}
-    
- alert("Pagamento registrado!");
 
- location.reload();
+alert("Score do cliente atualizado!");
+
+location.reload();
+
+}
+
+alert("Pagamento registrado!");
+
+location.reload();
 
 };
 </script>

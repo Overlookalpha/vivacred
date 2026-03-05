@@ -284,7 +284,7 @@ ativosSnapshot.forEach((docSnap) => {
     "<strong>" + dados.email + "</strong><br>" +
     "Valor Total: " + dados.valorFinal + "<br>" +
     "Parcelas: " + dados.parcelas + "<br><br>" +
-    "<button onclick=\"abrirParcelas('" + docSnap.id + "')\">Gerenciar Parcelas</button>";
+    "<button onclick=\"abrirParcelas('" + docSnap.id + "')\">Registrar Pagamento</button>";
 
   containerAtivos.appendChild(div);
 
@@ -341,37 +341,7 @@ const data = userSnap.data();
   location.reload();
 };
 
-window.abrirParcelas = async (emprestimoId) => {
 
- const painel = document.getElementById("painelParcelas");
- painel.innerHTML = "<h3>Parcelas</h3>";
-
- const parcelasSnapshot = await getDocs(collection(db, "parcelas"));
-
- parcelasSnapshot.forEach((docSnap) => {
-
-   const dados = docSnap.data();
-
-   if (dados.emprestimoId !== emprestimoId) return;
-
-   const div = document.createElement("div");
-   div.className = "card";
-
-   div.innerHTML =
-     "Parcela " + dados.numero + "<br>" +
-     "Valor: " + dados.valor + "<br>" +
-     "Pago: " + dados.pago + "<br>" +
-     "Restante: " + dados.restante + "<br><br>" +
-
-     "<input type='number' id='pagamento_" + docSnap.id + "' placeholder='Valor pago'>" +
-
-     "<button onclick=\"registrarPagamento('" + docSnap.id + "')\">Registrar</button>";
-
-   painel.appendChild(div);
-
- });
-
-};
   
 window.aprovarEmprestimo = async (id) => {
 
@@ -411,85 +381,53 @@ for (let i = 1; i <= dados.parcelas; i++) {
   alert("Empréstimo aprovado!");
   location.reload();
 };
-  window.registrarPagamento = async (parcelaId) => {
 
- const input = document.getElementById("pagamento_" + parcelaId);
- const valorPago = Number(input.value);
+window.abrirParcelas = async (emprestimoId)=>{
 
- if (!valorPago || valorPago <= 0) {
-   alert("Digite um valor válido.");
-   return;
- }
+ const ref = doc(db,"emprestimos",emprestimoId);
+ const snap = await getDoc(ref);
+ const dados = snap.data();
 
- const parcelaRef = doc(db, "parcelas", parcelaId);
- const parcelaSnap = await getDoc(parcelaRef);
- const dados = parcelaSnap.data();
+ const painel = document.getElementById("painelParcelas");
 
- const novoPago = dados.pago + valorPago;
- const novoRestante = dados.valor - novoPago;
+ const restantes = dados.parcelas - (dados.parcelasPagas || 0);
 
- let novoStatus = "pendente";
+ painel.innerHTML =
+ "<div class='card'>" +
+ "<strong>"+dados.email+"</strong><br>" +
+ "Valor: "+dados.valorFinal+"<br>" +
+ "Parcelas totais: "+dados.parcelas+"<br>" +
+ "Pagas: "+(dados.parcelasPagas || 0)+"<br>" +
+ "Restantes: "+restantes+"<br><br>" +
 
- if (novoRestante <= 0) {
-   novoStatus = "pago";
- }
+ "<button onclick=\"pagarParcela('"+emprestimoId+"')\">Registrar Pagamento</button>" +
+ "</div>";
 
- await updateDoc(parcelaRef, {
-   pago: novoPago,
-   restante: novoRestante < 0 ? 0 : novoRestante,
-   status: novoStatus
+};
+  
+window.pagarParcela = async (emprestimoId)=>{
+
+ const ref = doc(db,"emprestimos",emprestimoId);
+ const snap = await getDoc(ref);
+ const dados = snap.data();
+
+ let pagas = dados.parcelasPagas || 0;
+
+ pagas++;
+
+ const finalizado = pagas >= dados.parcelas;
+
+ await updateDoc(ref,{
+   parcelasPagas: pagas,
+   finalizado: finalizado
  });
 
-const emprestimoId = dados.emprestimoId;
-
-const parcelasRef = collection(db,"parcelas");
-
-const q = query(parcelasRef, where("emprestimoId","==",emprestimoId));
-
-const snapshot = await getDocs(q);
-
-let todasPagas = true;
-
-snapshot.forEach((docSnap)=>{
-
-    const p = docSnap.data();
-
-    if(p.restante > 0){
-        todasPagas = false;
-    }
-
-});
-
-if(todasPagas){
-
-    const emprestimoRef = doc(db,"emprestimos",emprestimoId);
-    const emprestimoSnap = await getDoc(emprestimoRef);
-    const dadosEmprestimo = emprestimoSnap.data();
-    if(dadosEmprestimo.finalizado){
-    return;
-   }
-    const userRef = doc(db,"usuarios",dadosEmprestimo.userId);
-    const userSnap = await getDoc(userRef);
-
-    const dadosUser = userSnap.data();
-
-    const novoScore = dadosUser.score + 10;
-
-    await updateDoc(userRef,{
-        score: novoScore
-    });
-    await updateDoc(emprestimoRef,{
-    finalizado: true
-});
-}
-    
- alert("Pagamento registrado!");
+ alert("Parcela registrada");
 
  location.reload();
 
 };
-
-
+  
 window.salvarCapital = () => {
 
  const input = document.getElementById("capitalInput");

@@ -210,13 +210,13 @@ if (!adminSnap.exists()) {
 
   console.log("Admin autenticado");
 
-  const snapshot = await getDocs(collection(db, "solicitacoes"));
+  const snapshot = await getDocs(collection(db, "emprestimos"));
   const container = document.getElementById("listaUsuarios");
   container.innerHTML = "";
 
   snapshot.forEach((docSnap) => {
     const data = docSnap.data();
-  if (data.status !== "pendente") return;
+  if (data.status !== "aguardando") return;
     const div = document.createElement("div");
     div.className = "card";
 

@@ -354,8 +354,20 @@ await updateDoc(solicitacaoRef, {
   dataAprovacao: hoje,
   dataVencimento: vencimento
 });
-const emprestimoSnap = await getDoc(emprestimoRef);
+const emprestimoSnap = await getDoc(solicitacaoRef);
 const dados = emprestimoSnap.data();
+await addDoc(collection(db,"emprestimos"),{
+  email: dados.email,
+  userId: dados.userId,
+  valor: dados.valor,
+  valorFinal: dados.valorFinal,
+  parcelas: dados.parcelas,
+  parcelasPagas: 0,
+  status: "ativo",
+  finalizado: false,
+  dataAprovacao: hoje,
+  dataVencimento: vencimento
+});
 
 const valorParcela = Number((dados.valorFinal / dados.parcelas).toFixed(2));
 

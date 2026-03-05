@@ -597,6 +597,34 @@ window.scrollTo(0,0);
  location.reload();
 
 }
+  window.confirmarParcela = async (parcelaId)=>{
+
+ const ref = doc(db,"parcelas",parcelaId);
+ const snap = await getDoc(ref);
+ const dados = snap.data();
+
+ await updateDoc(ref,{
+  status:"pago"
+ });
+
+ const emprestimoRef = doc(db,"emprestimos",dados.emprestimoId);
+ const emprestimoSnap = await getDoc(emprestimoRef);
+ const emprestimo = emprestimoSnap.data();
+
+ const novasPagas = (emprestimo.parcelasPagas || 0) + 1;
+
+ const finalizado = novasPagas >= emprestimo.parcelas;
+
+ await updateDoc(emprestimoRef,{
+  parcelasPagas: novasPagas,
+  finalizado: finalizado
+ });
+
+ alert("Parcela confirmada");
+
+ location.reload();
+
+}
 </script>
 <div id="modalParcelas" style="
 display:none;

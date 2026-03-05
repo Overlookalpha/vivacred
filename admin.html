@@ -519,6 +519,41 @@ window.scrollTo(0,0);
  location.reload();
 
 }
+  window.editarEmprestimo = async (id)=>{
+
+ const ref = doc(db,"emprestimos",id);
+ const snap = await getDoc(ref);
+
+ if(!snap.exists()){
+   alert("Empréstimo não encontrado");
+   return;
+ }
+
+ const dados = snap.data();
+
+ const novoValor = prompt("Valor:", dados.valor);
+ const novasParcelas = prompt("Parcelas:", dados.parcelas);
+ const novosJuros = prompt("Juros:", dados.juros);
+
+ if(!novoValor || !novasParcelas || !novosJuros){
+   alert("Edição cancelada");
+   return;
+ }
+
+ const total = Number(novoValor) + Number(novosJuros);
+
+ await updateDoc(ref,{
+  valor: Number(novoValor),
+  parcelas: Number(novasParcelas),
+  juros: Number(novosJuros),
+  valorFinal: total
+ });
+
+ alert("Proposta atualizada");
+
+ location.reload();
+
+};
 </script>
 
 </body>

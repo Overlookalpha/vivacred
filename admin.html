@@ -345,53 +345,65 @@ const data = userSnap.data();
 window.aprovarEmprestimo = async (id) => {
 
  const solicitacaoRef = doc(db, "solicitacoes", id);
+ const solicitacaoSnap = await getDoc(solicitacaoRef);
+
+ if (!solicitacaoSnap.exists()) {
+   alert("Solicitação não encontrada");
+   return;
+ }
+
+ const dados = solicitacaoSnap.data();
+
  const hoje = new Date();
-const vencimento = new Date();
-vencimento.setDate(hoje.getDate() + 30);
+ const vencimento = new Date();
+ vencimento.setDate(hoje.getDate() + 30);
 
-await updateDoc(solicitacaoRef, {
-  status: "ativo",
-  dataAprovacao: hoje,
-  dataVencimento: vencimento
-});
-const emprestimoSnap = await getDoc(solicitacaoRef);
-const dados = emprestimoSnap.data();
-await addDoc(collection(db,"emprestimos"),{
-  email: dados.email,
-  userId: dados.userId,
-  valor: dados.valor,
-  valorFinal: dados.valorFinal,
-  parcelas: dados.parcelas,
-  parcelasPagas: 0,
-  status: "ativo",
-  finalizado: false,
-  dataAprovacao: hoje,
-  dataVencimento: vencimento
-});
+ // marca solicitação como aprovada
+ await updateDoc(solicitacaoRef, {
+   status: "aprovado",
+   dataAprovacao: hoje
+ });
 
-const valorParcela = Number((dados.valorFinal / dados.parcelas).toFixed(2));
+ // cria empréstimo
+ const emprestimoRef = await addDoc(collection(db, "emprestimos"), {
+   email: dados.email,
+   userId: dados.userId,
+   valor: dados.valor,
+   valorFinal: dados.valorFinal,
+   parcelas: dados.parcelas,
+   parcelasPagas: 0,
+   status: "ativo",
+   finalizado: false,
+   dataAprovacao: hoje,
+   dataVencimento: vencimento
+ });
 
-for (let i = 1; i <= dados.parcelas; i++) {
+ const emprestimoId = emprestimoRef.id;
 
-  const vencimentoParcela = new Date();
-  vencimentoParcela.setMonth(vencimentoParcela.getMonth() + i);
+ const valorParcela = Number((dados.valorFinal / dados.parcelas).toFixed(2));
 
-  await addDoc(collection(db, "parcelas"), {
-    emprestimoId: id,
-    userId: dados.userId,
-    numero: i,
-    valor: valorParcela,
-    pago: 0,
-    restante: valorParcela,
-    status: "pendente",
-    vencimento: vencimentoParcela
-  });
+ // cria parcelas
+ for (let i = 1; i <= dados.parcelas; i++) {
 
-}
-  alert("Empréstimo aprovado!");
-  location.reload();
+   const vencimentoParcela = new Date();
+   vencimentoParcela.setMonth(vencimentoParcela.getMonth() + i);
+
+   await addDoc(collection(db, "parcelas"), {
+     emprestimoId: emprestimoId,
+     userId: dados.userId,
+     numero: i,
+     valor: valorParcela,
+     pago: 0,
+     restante: valorParcela,
+     status: "pendente",
+     vencimento: vencimentoParcela
+   });
+
+ }
+
+ alert("Empréstimo aprovado!");
+ location.reload();
 };
-
 window.abrirParcelas = async (emprestimoId)=>{
 
  const ref = doc(db,"emprestimos",emprestimoId);

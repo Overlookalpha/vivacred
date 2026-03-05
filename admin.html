@@ -226,16 +226,16 @@ snapshot.forEach((docSnap)=>{
 
  div.className = "card";
 
- div.innerHTML =
- "<strong>"+dados.email+"</strong><br>"+
- "Valor: "+dados.valor+"<br>"+
- "Parcelas: "+dados.parcelas+"<br>"+
- "Juros: "+dados.juros+"<br>"+
- "Total: "+dados.valorFinal+"<br><br>"+
+div.innerHTML =
+"<strong>"+dados.email+"</strong><br>"+
+"Valor: "+dados.valor+"<br>"+
+"Parcelas: "+dados.parcelas+"<br>"+
+"Juros: "+dados.juros+"<br>"+
+"Total: "+dados.valorFinal+"<br><br>"+
 
- "<button onclick=\"aprovarEmprestimo('"+docSnap.id+"')\">Aprovar</button>"+
- "<button onclick=\"editarEmprestimo('"+docSnap.id+"')\">Editar</button>"+
- "<button onclick=\"rejeitarEmprestimo('"+docSnap.id+"')\">Rejeitar</button>";
+"<button onclick=\"aprovarEmprestimo('"+docSnap.id+"')\">Aprovar</button>"+
+"<button onclick=\"editarEmprestimo('"+docSnap.id+"')\">Editar</button>"+
+"<button onclick=\"rejeitarEmprestimo('"+docSnap.id+"')\">Rejeitar</button>";
 
  container.appendChild(div);
 

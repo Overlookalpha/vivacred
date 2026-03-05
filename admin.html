@@ -210,27 +210,36 @@ if (!adminSnap.exists()) {
 
   console.log("Admin autenticado");
 
-  const snapshot = await getDocs(collection(db, "emprestimos"));
-  const container = document.getElementById("listaUsuarios");
-  container.innerHTML = "";
+const snapshot = await getDocs(collection(db,"emprestimos"));
 
-  snapshot.forEach((docSnap) => {
-    const data = docSnap.data();
-  if (data.status !== "aguardando") return;
-    const div = document.createElement("div");
-    div.className = "card";
+const container = document.getElementById("listaUsuarios");
 
-    div.innerHTML = `
-      <strong>${data.email}</strong><br>
-     Valor solicitado: ${data.valor}<br>
-     Prazo: ${data.prazo} dias<br>
-     <button class="aprovar" onclick="aprovarEmprestimo('${docSnap.id}')">
-    Aprovar Empréstimo
-    </button>
-    `;
+container.innerHTML = "";
 
-    container.appendChild(div);
-  });
+snapshot.forEach((docSnap)=>{
+
+ const dados = docSnap.data();
+
+ if(dados.status !== "aguardando") return;
+
+ const div = document.createElement("div");
+
+ div.className = "card";
+
+ div.innerHTML =
+ "<strong>"+dados.email+"</strong><br>"+
+ "Valor: "+dados.valor+"<br>"+
+ "Parcelas: "+dados.parcelas+"<br>"+
+ "Juros: "+dados.juros+"<br>"+
+ "Total: "+dados.valorFinal+"<br><br>"+
+
+ "<button onclick=\"aprovarEmprestimo('"+docSnap.id+"')\">Aprovar</button>"+
+ "<button onclick=\"editarEmprestimo('"+docSnap.id+"')\">Editar</button>"+
+ "<button onclick=\"rejeitarEmprestimo('"+docSnap.id+"')\">Rejeitar</button>";
+
+ container.appendChild(div);
+
+});
 // ===== LISTAR EMPRÉSTIMOS AGUARDANDO =====
 
 const emprestimosSnapshot = await getDocs(collection(db, "emprestimos"));
@@ -495,6 +504,19 @@ menu[3].classList.add("menuAtivo");
 }
 
 window.scrollTo(0,0);
+
+}
+  window.rejeitarEmprestimo = async(id)=>{
+
+ const ref = doc(db,"emprestimos",id);
+
+ await updateDoc(ref,{
+  status:"rejeitado"
+ });
+
+ alert("Solicitação rejeitada");
+
+ location.reload();
 
 }
 </script>

@@ -344,52 +344,37 @@ const data = userSnap.data();
   
 window.aprovarEmprestimo = async (id) => {
 
- const solicitacaoRef = doc(db, "solicitacoes", id);
- const solicitacaoSnap = await getDoc(solicitacaoRef);
+ const emprestimoRef = doc(db, "emprestimos", id);
+ const emprestimoSnap = await getDoc(emprestimoRef);
 
- if (!solicitacaoSnap.exists()) {
-   alert("Solicitação não encontrada");
+ if (!emprestimoSnap.exists()) {
+   alert("Empréstimo não encontrado");
    return;
  }
 
- const dados = solicitacaoSnap.data();
+ const dados = emprestimoSnap.data();
 
  const hoje = new Date();
  const vencimento = new Date();
  vencimento.setDate(hoje.getDate() + 30);
 
- // marca solicitação como aprovada
- await updateDoc(solicitacaoRef, {
-   status: "aprovado",
-   dataAprovacao: hoje
- });
-
- // cria empréstimo
- const emprestimoRef = await addDoc(collection(db, "emprestimos"), {
-   email: dados.email,
-   userId: dados.userId,
-   valor: dados.valor,
-   valorFinal: dados.valorFinal,
-   parcelas: dados.parcelas,
-   parcelasPagas: 0,
+ await updateDoc(emprestimoRef, {
    status: "ativo",
-   finalizado: false,
    dataAprovacao: hoje,
-   dataVencimento: vencimento
+   dataVencimento: vencimento,
+   parcelasPagas: 0,
+   finalizado: false
  });
-
- const emprestimoId = emprestimoRef.id;
 
  const valorParcela = Number((dados.valorFinal / dados.parcelas).toFixed(2));
 
- // cria parcelas
  for (let i = 1; i <= dados.parcelas; i++) {
 
    const vencimentoParcela = new Date();
    vencimentoParcela.setMonth(vencimentoParcela.getMonth() + i);
 
    await addDoc(collection(db, "parcelas"), {
-     emprestimoId: emprestimoId,
+     emprestimoId: id,
      userId: dados.userId,
      numero: i,
      valor: valorParcela,

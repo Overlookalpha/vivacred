@@ -574,6 +574,29 @@ window.scrollTo(0,0);
   window.fecharModalParcelas = ()=>{
  document.getElementById("modalParcelas").style.display = "none";
 }
+  window.adicionarPagamento = async (parcelaId)=>{
+
+ const valor = prompt("Digite o valor pago:");
+
+ if(!valor) return;
+
+ const ref = doc(db,"parcelas",parcelaId);
+ const snap = await getDoc(ref);
+ const dados = snap.data();
+
+ const novoPago = Number(dados.pago) + Number(valor);
+ const restante = dados.valor - novoPago;
+
+ await updateDoc(ref,{
+  pago: novoPago,
+  restante: restante
+ });
+
+ alert("Pagamento registrado");
+
+ location.reload();
+
+}
 </script>
 <div id="modalParcelas" style="
 display:none;

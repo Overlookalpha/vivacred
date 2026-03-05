@@ -1,157 +1,46 @@
+
 <!DOCTYPE html>
 <html>
 <head>
-<title>VivaCred Admin</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<style>
-
-body{
-font-family: Arial;
-background:#111;
-color:white;
-margin:0;
-}
-
-.card{
-background:#1c1c1c;
-padding:15px;
-margin-bottom:15px;
-border-radius:10px;
-}
-
-button{
-padding:6px 12px;
-border:none;
-border-radius:6px;
-cursor:pointer;
-margin-right:5px;
-}
-
-.aprovar{
-background:#00c853;
-color:white;
-}
-
-.menuItem{
-margin-top:15px;
-cursor:pointer;
-padding:8px 10px;
-border-radius:6px;
-}
-
-.menuItem:hover{
-background:#2a2a2a;
-}
-
-.menuAtivo{
-background:#3a3a3a;
-}
-
-</style>
+  <title>VivaCred Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body{
+      font-family: Arial;
+      background:#111;
+      color:white;
+      padding:20px;
+    }
+    .card{
+      background:#1c1c1c;
+      padding:15px;
+      margin-bottom:15px;
+      border-radius:10px;
+    }
+    button{
+      padding:6px 12px;
+      border:none;
+      border-radius:6px;
+      cursor:pointer;
+      margin-right:5px;
+    }
+    .aprovar{
+      background:#00c853;
+      color:white;
+    }
+  </style>
 </head>
-
 <body>
-
-<div style="display:flex;">
-
-<!-- MENU LATERAL -->
-
-<div style="
-width:200px;
-background:#1e293b;
-min-height:100vh;
-padding:20px;
-color:white;
-">
-
-<h3>VivaCred</h3>
-
-<div class="menuItem" onclick="abrirTela('dashboard')">🏠 Dashboard</div>
-
-<div class="menuItem" onclick="abrirTela('emprestimos')">💰 Empréstimos</div>
-
-<div class="menuItem" onclick="abrirTela('solicitacoes')">📥 Solicitações</div>
-
-<div class="menuItem" onclick="abrirTela('historico')">📊 Histórico</div>
-
-<div class="menuItem">⚙️ Config</div>
-
-</div>
-
-<!-- ÁREA PRINCIPAL -->
-
-<div style="flex:1; padding:30px;">
-
-<!-- DASHBOARD -->
-
-<div id="telaDashboard">
 
 <h2>Painel Administrativo VivaCred</h2>
 
-<div id="painelFinanceiro" style="display:flex; gap:20px; margin-bottom:20px;">
-
-<div class="card">
-<strong>Capital</strong><br>
-<input id="capitalInput" type="number" value="1000" style="width:100px;">
-<button onclick="salvarCapital()">Salvar</button>
-</div>
-
-<div class="card">
-<strong>Valor Emprestado</strong><br>
-<span id="valorEmprestado">0</span>
-</div>
-
-<div class="card">
-<strong>Saldo Disponível</strong><br>
-<span id="saldoDisponivel">0</span>
-</div>
-
-</div>
-
-</div>
-
-<!-- SOLICITAÇÕES -->
-
-<div id="telaSolicitacoes" style="display:none;">
-
-<h3>Solicitações de Empréstimo</h3>
-
 <div id="listaUsuarios"></div>
-
-</div>
-
-<!-- EMPRÉSTIMOS -->
-
-<div id="telaEmprestimos" style="display:none;">
-
+<h3>Solicitações de Empréstimo</h3>
 <h3>Empréstimos Ativos</h3>
-
 <div id="listaEmprestimosAtivos"></div>
-
-</div>
-
-<!-- HISTÓRICO -->
-
-<div id="telaHistorico" style="display:none;">
-
-<h3 onclick="toggleHistorico()" style="cursor:pointer;">
-Histórico de Empréstimos ▼
-</h3>
-
-<div id="caixaHistorico" style="display:none;">
-<div id="historicoEmprestimos"></div>
-</div>
-
 <div id="painelParcelas"></div>
-
 <div id="listaEmprestimos"></div>
 
-</div>
-
-</div>
-
-</div>
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
@@ -168,9 +57,6 @@ import {
   where
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
 
-let totalEmprestado = 0;
-let capital = 1000;
-  
 const firebaseConfig = {
   apiKey: "AIzaSyDJHtQp7OUxgYqtcD_2eTqzh1BRpufvKrY",
   authDomain: "vivacred-5a5b8.firebaseapp.com",
@@ -210,23 +96,24 @@ if (!adminSnap.exists()) {
 
   console.log("Admin autenticado");
 
-  const snapshot = await getDocs(collection(db, "emprestimos"));
+  const snapshot = await getDocs(collection(db, "usuarios"));
   const container = document.getElementById("listaUsuarios");
   container.innerHTML = "";
 
   snapshot.forEach((docSnap) => {
     const data = docSnap.data();
-  if (data.status !== "aguardando") return;
+  if (data.statusAumento !== "pendente") return;
     const div = document.createElement("div");
     div.className = "card";
 
     div.innerHTML = `
       <strong>${data.email}</strong><br>
-     Valor solicitado: ${data.valor}<br>
-     Prazo: ${data.prazo} dias<br>
-     <button class="aprovar" onclick="aprovarEmprestimo('${docSnap.id}')">
-    Aprovar Empréstimo
-    </button>
+      Score: ${data.score}<br>
+      Limite Atual: ${data.limiteBase}<br>
+      Limite Solicitado: ${data.limiteSolicitado}<br><br>
+      <button class="aprovar" onclick="aprovar('${docSnap.id}', ${data.limiteSolicitado})">
+       Aprovar Pedido
+       </button>
     `;
 
     container.appendChild(div);
@@ -241,7 +128,7 @@ emprestimosSnapshot.forEach((docSnap) => {
 
   const dados = docSnap.data();
 
- if (dados.status !== "ativo" || dados.finalizado === true) return;
+  if (dados.status !== "aguardando") return;
 
   const div = document.createElement("div");
   div.className = "card";
@@ -268,51 +155,24 @@ emprestimosSnapshot.forEach((docSnap) => {
 
  containerAtivos.innerHTML = "";
 
-ativosSnapshot.forEach((docSnap) => {
+ ativosSnapshot.forEach((docSnap) => {
 
-  const dados = docSnap.data();
+   const dados = docSnap.data();
 
-  if (dados.status !== "ativo") return;
+   if (dados.status !== "ativo") return;
 
-  totalEmprestado += dados.valorFinal;
+   const div = document.createElement("div");
+   div.className = "card";
 
-  const div = document.createElement("div");
-  div.className = "card";
+   div.innerHTML =
+     "<strong>" + dados.email + "</strong><br>" +
+     "Valor Total: " + dados.valorFinal + "<br>" +
+     "Parcelas: " + dados.parcelas + "<br><br>" +
+     "<button onclick=\"abrirParcelas('" + docSnap.id + "')\">Gerenciar Parcelas</button>";
 
-  div.innerHTML =
-    "<strong>" + dados.email + "</strong><br>" +
-    "Valor Total: " + dados.valorFinal + "<br>" +
-    "Parcelas: " + dados.parcelas + "<br><br>" +
-    "<button onclick=\"abrirParcelas('" + docSnap.id + "')\">Registrar Pagamento</button>";
+   containerAtivos.appendChild(div);
 
-  containerAtivos.appendChild(div);
-
-});
-  atualizarFinanceiro();
-
-// ===== HISTÓRICO DE EMPRÉSTIMOS =====
-
-const historicoContainer = document.getElementById("historicoEmprestimos");
-historicoContainer.innerHTML = "";
-
-ativosSnapshot.forEach((docSnap) => {
-
-  const dados = docSnap.data();
-
-  if (dados.finalizado !== true) return;
-
-  const div = document.createElement("div");
-  div.className = "card";
-
-  div.innerHTML =
-    "<strong>" + dados.email + "</strong><br>" +
-    "Valor Total: " + dados.valorFinal + "<br>" +
-    "Parcelas: " + dados.parcelas + "<br>" +
-    "Status: Finalizado";
-
-  historicoContainer.appendChild(div);
-
-});
+ });
   
 window.aprovar = async (id) => {
 
@@ -340,162 +200,157 @@ const data = userSnap.data();
   location.reload();
 };
 
+window.abrirParcelas = async (emprestimoId) => {
 
+ const painel = document.getElementById("painelParcelas");
+ painel.innerHTML = "<h3>Parcelas</h3>";
+
+ const parcelasSnapshot = await getDocs(collection(db, "parcelas"));
+
+ parcelasSnapshot.forEach((docSnap) => {
+
+   const dados = docSnap.data();
+
+   if (dados.emprestimoId !== emprestimoId) return;
+
+   const div = document.createElement("div");
+   div.className = "card";
+
+   div.innerHTML =
+     "Parcela " + dados.numero + "<br>" +
+     "Valor: " + dados.valor + "<br>" +
+     "Pago: " + dados.pago + "<br>" +
+     "Restante: " + dados.restante + "<br><br>" +
+
+     "<input type='number' id='pagamento_" + docSnap.id + "' placeholder='Valor pago'>" +
+
+     "<button onclick=\"registrarPagamento('" + docSnap.id + "')\">Registrar</button>";
+
+   painel.appendChild(div);
+
+ });
+
+};
   
 window.aprovarEmprestimo = async (id) => {
 
- const emprestimoRef = doc(db, "emprestimos", id);
- const emprestimoSnap = await getDoc(emprestimoRef);
+  const emprestimoRef = doc(db, "emprestimos", id);
 
- if (!emprestimoSnap.exists()) {
-   alert("Empréstimo não encontrado");
+ const hoje = new Date();
+const vencimento = new Date();
+vencimento.setDate(hoje.getDate() + 30);
+
+await updateDoc(emprestimoRef, {
+  status: "ativo",
+  dataAprovacao: hoje,
+  dataVencimento: vencimento
+});
+const emprestimoSnap = await getDoc(emprestimoRef);
+const dados = emprestimoSnap.data();
+
+const valorParcela = Number((dados.valorFinal / dados.parcelas).toFixed(2));
+
+for (let i = 1; i <= dados.parcelas; i++) {
+
+  const vencimentoParcela = new Date();
+  vencimentoParcela.setMonth(vencimentoParcela.getMonth() + i);
+
+  await addDoc(collection(db, "parcelas"), {
+    emprestimoId: id,
+    userId: dados.userId,
+    numero: i,
+    valor: valorParcela,
+    pago: 0,
+    restante: valorParcela,
+    status: "pendente",
+    vencimento: vencimentoParcela
+  });
+
+}
+  alert("Empréstimo aprovado!");
+  location.reload();
+};
+  window.registrarPagamento = async (parcelaId) => {
+
+ const input = document.getElementById("pagamento_" + parcelaId);
+ const valorPago = Number(input.value);
+
+ if (!valorPago || valorPago <= 0) {
+   alert("Digite um valor válido.");
    return;
  }
 
- const dados = emprestimoSnap.data();
+ const parcelaRef = doc(db, "parcelas", parcelaId);
+ const parcelaSnap = await getDoc(parcelaRef);
+const dados = parcelaSnap.data();
 
- const hoje = new Date();
- const vencimento = new Date();
- vencimento.setDate(hoje.getDate() + 30);
+if(valorPago > dados.valor){
+  alert("Valor maior que a parcela.");
+  return;
+}
+ const novoPago = dados.pago + valorPago;
+ const novoRestante = dados.valor - novoPago;
 
- await updateDoc(emprestimoRef, {
-   status: "ativo",
-   dataAprovacao: hoje,
-   dataVencimento: vencimento,
-   parcelasPagas: 0,
-   finalizado: false
- });
+ let novoStatus = "pendente";
 
- const valorParcela = Number((dados.valorFinal / dados.parcelas).toFixed(2));
-
- for (let i = 1; i <= dados.parcelas; i++) {
-
-   const vencimentoParcela = new Date();
-   vencimentoParcela.setMonth(vencimentoParcela.getMonth() + i);
-
-   await addDoc(collection(db, "parcelas"), {
-     emprestimoId: id,
-     userId: dados.userId,
-     numero: i,
-     valor: valorParcela,
-     pago: 0,
-     restante: valorParcela,
-     status: "pendente",
-     vencimento: vencimentoParcela
-   });
-
+ if (novoRestante <= 0) {
+   novoStatus = "pago";
  }
 
- alert("Empréstimo aprovado!");
- location.reload();
-};
-window.abrirParcelas = async (emprestimoId)=>{
-
- const ref = doc(db,"emprestimos",emprestimoId);
- const snap = await getDoc(ref);
- const dados = snap.data();
-
- const painel = document.getElementById("painelParcelas");
-
- const restantes = dados.parcelas - (dados.parcelasPagas || 0);
-
- painel.innerHTML =
- "<div class='card'>" +
- "<strong>"+dados.email+"</strong><br>" +
- "Valor: "+dados.valorFinal+"<br>" +
- "Parcelas totais: "+dados.parcelas+"<br>" +
- "Pagas: "+(dados.parcelasPagas || 0)+"<br>" +
- "Restantes: "+restantes+"<br><br>" +
-
- "<button onclick=\"pagarParcela('"+emprestimoId+"')\">Registrar Pagamento</button>" +
- "</div>";
-
-};
-  
-window.pagarParcela = async (emprestimoId)=>{
-
- const ref = doc(db,"emprestimos",emprestimoId);
- const snap = await getDoc(ref);
- const dados = snap.data();
-
- let pagas = dados.parcelasPagas || 0;
-
- pagas++;
-
- const finalizado = pagas >= dados.parcelas;
-
- await updateDoc(ref,{
-   parcelasPagas: pagas,
-   finalizado: finalizado
+ await updateDoc(parcelaRef, {
+   pago: novoPago,
+   restante: novoRestante < 0 ? 0 : novoRestante,
+   status: novoStatus
  });
 
- alert("Parcela registrada");
+const emprestimoId = dados.emprestimoId;
+
+const parcelasRef = collection(db,"parcelas");
+
+const q = query(parcelasRef, where("emprestimoId","==",emprestimoId));
+
+const snapshot = await getDocs(q);
+
+let todasPagas = true;
+
+snapshot.forEach((docSnap)=>{
+
+    const p = docSnap.data();
+
+    if(p.restante > 0){
+        todasPagas = false;
+    }
+
+});
+
+if(todasPagas){
+
+    const emprestimoRef = doc(db,"emprestimos",emprestimoId);
+    const emprestimoSnap = await getDoc(emprestimoRef);
+    const dadosEmprestimo = emprestimoSnap.data();
+    if(dadosEmprestimo.finalizado){
+    return;
+   }
+    const userRef = doc(db,"usuarios",dadosEmprestimo.userId);
+    const userSnap = await getDoc(userRef);
+
+    const dadosUser = userSnap.data();
+
+    const novoScore = dadosUser.score + 10;
+
+    await updateDoc(userRef,{
+        score: novoScore
+    });
+    await updateDoc(emprestimoRef,{
+    finalizado: true
+});
+}
+    
+ alert("Pagamento registrado!");
 
  location.reload();
 
 };
-  
-window.salvarCapital = () => {
-
- const input = document.getElementById("capitalInput");
- capital = Number(input.value);
-
- atualizarFinanceiro();
-
-};
-  function atualizarFinanceiro(){
-
- const valorEmprestado = totalEmprestado;
-
- const saldo = capital - valorEmprestado;
-
- document.getElementById("valorEmprestado").innerText = valorEmprestado;
- document.getElementById("saldoDisponivel").innerText = saldo;
-
-}
-  window.toggleHistorico = () => {
-
- const historico = document.getElementById("caixaHistorico");
-
- if (historico.style.display === "none") {
-   historico.style.display = "block";
- } else {
-   historico.style.display = "none";
- }
-
-};
-window.abrirTela = function(tela){
-
-document.getElementById("telaDashboard").style.display = "none";
-document.getElementById("telaSolicitacoes").style.display = "none";
-document.getElementById("telaEmprestimos").style.display = "none";
-document.getElementById("telaHistorico").style.display = "none";
-
-const menu = document.querySelectorAll(".menuItem");
-menu.forEach(btn => btn.classList.remove("menuAtivo"));
-
-if(tela === "dashboard"){
-document.getElementById("telaDashboard").style.display = "block";
-menu[0].classList.add("menuAtivo");
-}
-
-if(tela === "emprestimos"){
-document.getElementById("telaEmprestimos").style.display = "block";
-menu[1].classList.add("menuAtivo");
-}
-
-if(tela === "solicitacoes"){
-document.getElementById("telaSolicitacoes").style.display = "block";
-menu[2].classList.add("menuAtivo");
-}
-
-if(tela === "historico"){
-document.getElementById("telaHistorico").style.display = "block";
-menu[3].classList.add("menuAtivo");
-}
-
-}
-  abrirTela("dashboard");
 </script>
 
 </body>

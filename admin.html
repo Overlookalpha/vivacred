@@ -410,18 +410,31 @@ window.abrirParcelas = async (emprestimoId)=>{
 
  const painel = document.getElementById("conteudoParcelas");
 
- const restantes = dados.parcelas - (dados.parcelasPagas || 0);
+ const parcelasRef = collection(db,"parcelas");
+ const q = query(parcelasRef, where("emprestimoId","==",emprestimoId));
+ const parcelasSnap = await getDocs(q);
 
- painel.innerHTML =
- "<div class='card'>" +
- "<strong>"+dados.email+"</strong><br>" +
- "Valor: "+dados.valorFinal+"<br>" +
- "Parcelas totais: "+dados.parcelas+"<br>" +
- "Pagas: "+(dados.parcelasPagas || 0)+"<br>" +
- "Restantes: "+restantes+"<br><br>" +
+ painel.innerHTML = "";
 
- "<button onclick=\"pagarParcela('"+emprestimoId+"')\">Confirmar Pagamento</button>" +
- "</div>";
+ parcelasSnap.forEach((docParcela)=>{
+
+ const parcela = docParcela.data();
+
+ const div = document.createElement("div");
+ div.className = "card";
+
+ div.innerHTML =
+ "Parcela "+parcela.numero+"<br>"+
+ "Valor: "+parcela.valor+"<br>"+
+ "Pago: "+parcela.pago+"<br><br>"+
+
+ "<button onclick=\"adicionarPagamento('"+docParcela.id+"')\">Adicionar Pagamento</button>"+
+
+ "<button onclick=\"confirmarParcela('"+docParcela.id+"')\">Confirmar</button>";
+
+ painel.appendChild(div);
+
+ });
 
 };
   

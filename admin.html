@@ -210,24 +210,23 @@ if (!adminSnap.exists()) {
 
   console.log("Admin autenticado");
 
-  const snapshot = await getDocs(collection(db, "usuarios"));
+  const snapshot = await getDocs(collection(db, "solicitacoes"));
   const container = document.getElementById("listaUsuarios");
   container.innerHTML = "";
 
   snapshot.forEach((docSnap) => {
     const data = docSnap.data();
-  if (data.statusAumento !== "pendente") return;
+  if (data.status !== "pendente") return;
     const div = document.createElement("div");
     div.className = "card";
 
     div.innerHTML = `
       <strong>${data.email}</strong><br>
-      Score: ${data.score}<br>
-      Limite Atual: ${data.limiteBase}<br>
-      Limite Solicitado: ${data.limiteSolicitado}<br><br>
-      <button class="aprovar" onclick="aprovar('${docSnap.id}', ${data.limiteSolicitado})">
-       Aprovar Pedido
-       </button>
+     Valor solicitado: ${data.valor}<br>
+     Prazo: ${data.prazo} dias<br>
+     <button class="aprovar" onclick="aprovarEmprestimo('${docSnap.id}')">
+    Aprovar Empréstimo
+    </button>
     `;
 
     container.appendChild(div);
@@ -345,13 +344,12 @@ const data = userSnap.data();
   
 window.aprovarEmprestimo = async (id) => {
 
-  const emprestimoRef = doc(db, "emprestimos", id);
-
+ const solicitacaoRef = doc(db, "solicitacoes", id);
  const hoje = new Date();
 const vencimento = new Date();
 vencimento.setDate(hoje.getDate() + 30);
 
-await updateDoc(emprestimoRef, {
+await updateDoc(solicitacaoRef, {
   status: "ativo",
   dataAprovacao: hoje,
   dataVencimento: vencimento

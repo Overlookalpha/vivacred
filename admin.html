@@ -583,6 +583,17 @@ window.scrollTo(0,0);
  const ref = doc(db,"parcelas",parcelaId);
  const snap = await getDoc(ref);
  const dados = snap.data();
+const restanteAtual = dados.valor - dados.pago;
+
+if(Number(valor) <= 0){
+ alert("Valor inválido");
+ return;
+}
+
+if(Number(valor) > restanteAtual){
+ alert("Valor maior que o restante da parcela");
+ return;
+}
 
  const novoPago = Number(dados.pago) + Number(valor);
  const restante = dados.valor - novoPago;

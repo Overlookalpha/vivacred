@@ -604,8 +604,10 @@ window.scrollTo(0,0);
  const dados = snap.data();
 
  await updateDoc(ref,{
-  status:"pago"
- });
+ pago: dados.valor,
+ restante: 0,
+ status:"pago"
+});
 
  const emprestimoRef = doc(db,"emprestimos",dados.emprestimoId);
  const emprestimoSnap = await getDoc(emprestimoRef);

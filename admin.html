@@ -406,7 +406,9 @@ window.abrirParcelas = async (emprestimoId)=>{
  const snap = await getDoc(ref);
  const dados = snap.data();
 
- const painel = document.getElementById("painelParcelas");
+ document.getElementById("modalParcelas").style.display = "flex";
+
+ const painel = document.getElementById("conteudoParcelas");
 
  const restantes = dados.parcelas - (dados.parcelasPagas || 0);
 
@@ -418,7 +420,7 @@ window.abrirParcelas = async (emprestimoId)=>{
  "Pagas: "+(dados.parcelasPagas || 0)+"<br>" +
  "Restantes: "+restantes+"<br><br>" +
 
-"<button onclick=\"pagarParcela('"+emprestimoId+"')\">Confirmar Pagamento</button>"
+ "<button onclick=\"pagarParcela('"+emprestimoId+"')\">Confirmar Pagamento</button>" +
  "</div>";
 
 };
@@ -556,7 +558,39 @@ window.scrollTo(0,0);
  location.reload();
 
 };
+  window.fecharModalParcelas = ()=>{
+ document.getElementById("modalParcelas").style.display = "none";
+}
 </script>
+<div id="modalParcelas" style="
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.7);
+justify-content:center;
+align-items:center;
+">
 
+<div style="
+background:#1c1c1c;
+padding:20px;
+border-radius:10px;
+width:400px;
+max-height:80%;
+overflow:auto;
+">
+
+<h3>Gerenciar Parcelas</h3>
+
+<div id="conteudoParcelas"></div>
+
+<button onclick="fecharModalParcelas()">Fechar</button>
+
+</div>
+
+</div>
 </body>
 </html>

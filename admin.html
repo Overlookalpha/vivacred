@@ -298,7 +298,7 @@ emprestimosSnapshot.forEach((docSnap) => {
 
   const dados = docSnap.data();
 
-if (dados.status !== "ativo" || dados.oculto === true) return;
+if (dados.status !== "ativo" || dados.arquivado === true) return;
 
   const div = document.createElement("div");
   div.className = "card";

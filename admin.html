@@ -306,8 +306,9 @@ ativosSnapshot.forEach((docSnap) => {
 const historicoContainer = document.getElementById("historicoEmprestimos");
 historicoContainer.innerHTML = "";
 
-ativosSnapshot.forEach((docSnap) => {
+const historicoSnapshot = await getDocs(collection(db,"emprestimos"));
 
+historicoSnapshot.forEach((docSnap) => {
   const dados = docSnap.data();
 
   if (dados.finalizado !== true) return;

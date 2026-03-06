@@ -298,7 +298,7 @@ emprestimosSnapshot.forEach((docSnap) => {
 
   const dados = docSnap.data();
 
-if (dados.status !== "ativo") return;
+if (dados.status !== "ativo" || dados.oculto === true) return;
 
   const div = document.createElement("div");
   div.className = "card";
@@ -472,15 +472,15 @@ window.aprovarEmprestimo = async (id) => {
  alert("Empréstimo aprovado!");
  location.reload();
 };
-  window.fecharEmprestimo = async (id) => {
+ window.fecharEmprestimo = async (id) => {
 
- const ref = doc(db, "emprestimos", id);
+ const ref = doc(db,"emprestimos",id);
 
  await updateDoc(ref,{
-  finalizado: true
+   arquivado: true
  });
 
- alert("Empréstimo movido para histórico");
+ alert("Empréstimo arquivado");
 
  location.reload();
 

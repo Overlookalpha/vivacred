@@ -277,15 +277,27 @@ if(dados.finalizado === true){
  return;
 }
  div.innerHTML =
- "<strong>"+dados.email+"</strong><br>"+
- "Valor: "+dados.valor+"<br>"+
- "Parcelas: "+dados.parcelas+"<br>"+
- "Juros: "+dados.juros+"<br>"+
- "Total: "+dados.valorFinal+"<br><br>"+
+"<strong>"+dados.email+"</strong><br><br>"+
 
- "<button onclick=\"aprovarEmprestimo('"+docSnap.id+"')\">Aprovar</button>"+
- "<button onclick=\"editarEmprestimo('"+docSnap.id+"')\">Editar</button>"+
- "<button onclick=\"rejeitarEmprestimo('"+docSnap.id+"')\">Rejeitar</button>";
+"<b>Cliente</b><br>"+
+"Nome: "+(dados.nomeCliente || "-")+"<br>"+
+"Telefone: "+(dados.telefoneCliente || "-")+"<br>"+
+"CPF: "+(dados.cpfCliente || "-")+"<br>"+
+"Pix: "+(dados.pixCliente || "-")+"<br><br>"+
+
+"<b>Avalista</b><br>"+
+"Nome: "+(dados.nomeAvalista || "-")+"<br>"+
+"Telefone: "+(dados.telefoneAvalista || "-")+"<br>"+
+"CPF: "+(dados.cpfAvalista || "-")+"<br><br>"+
+
+"Valor: "+dados.valor+"<br>"+
+"Parcelas: "+dados.parcelas+"<br>"+
+"Juros: "+dados.juros+"<br>"+
+"Total: "+dados.valorFinal+"<br><br>"+
+
+"<button onclick=\"aprovarEmprestimo('"+docSnap.id+"')\">Aprovar</button>"+
+"<button onclick=\"editarEmprestimo('"+docSnap.id+"')\">Editar</button>"+
+"<button onclick=\"rejeitarEmprestimo('"+docSnap.id+"')\">Rejeitar</button>";
 
  container.appendChild(div);
 

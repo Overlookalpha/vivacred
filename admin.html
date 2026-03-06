@@ -294,7 +294,7 @@ ativosSnapshot.forEach((docSnap) => {
 
   if (dados.status !== "ativo") return;
 
-  totalEmprestado += dados.valorFinal;
+  totalEmprestado += dados.valor;
 
   const div = document.createElement("div");
   div.className = "card";
@@ -505,9 +505,8 @@ window.salvarCapital = () => {
 
  const recebido = totalRecebido;
 
- const lucro = totalRecebido - totalEmprestado;
- const saldo = capital - dinheiroRua + lucro;
-
+ const lucro = totalRecebido - capitalEmprestado;
+ const saldo = capital + lucro;
  document.getElementById("dinheiroRua").innerText = dinheiroRua.toFixed(2);
  document.getElementById("dinheiroRecebido").innerText = recebido.toFixed(2);
  document.getElementById("lucroTotal").innerText = lucro.toFixed(2);

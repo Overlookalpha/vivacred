@@ -505,9 +505,9 @@ window.salvarCapital = () => {
 
  const recebido = totalRecebido;
 
- const lucro = Math.max(0, recebido - totalEmprestado);
+ const lucro = recebido - (totalEmprestado - recebido);
 
- const saldo = capital + recebido - totalEmprestado;
+ const saldo = capital - dinheiroRua + lucro;
 
  document.getElementById("dinheiroRua").innerText = dinheiroRua.toFixed(2);
  document.getElementById("dinheiroRecebido").innerText = recebido.toFixed(2);

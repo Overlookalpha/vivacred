@@ -292,7 +292,7 @@ ativosSnapshot.forEach((docSnap) => {
 
   const dados = docSnap.data();
 
- if (dados.parcelasPagas >= dados.parcelas) return;
+ if (dados.status !== "ativo") return;
 
   totalEmprestado += dados.valor;
 

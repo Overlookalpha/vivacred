@@ -490,15 +490,20 @@ window.aprovarEmprestimo = async (id) => {
    vencimentoParcela.setMonth(vencimentoParcela.getMonth() + i);
 
    await addDoc(collection(db, "parcelas"), {
-     emprestimoId: id,
-     userId: dados.userId,
-     numero: i,
-     valor: valorParcela,
-     pago: 0,
-     restante: valorParcela,
-     status: "pendente",
-     vencimento: vencimentoParcela
-   });
+  emprestimoId: id,
+  userId: dados.userId,
+  numero: i,
+  valor: valorParcela,
+  pago: 0,
+  restante: valorParcela,
+
+  multa: 0,
+  juros: 0,
+  diasAtraso: 0,
+
+  status: "pendente",
+  vencimento: vencimentoParcela
+});
 
  }
 

@@ -254,7 +254,7 @@ snapshot.forEach((docSnap)=>{
 // ===== LISTAR EMPRÉSTIMOS AGUARDANDO =====
 
 const emprestimosSnapshot = await getDocs(collection(db, "emprestimos"));
-const containerEmprestimos = document.getElementById("listaEmprestimos");
+const containerEmprestimos = document.getElementById("listaEmprestimosAtivos");
 containerEmprestimos.innerHTML = "";
 
 emprestimosSnapshot.forEach((docSnap) => {

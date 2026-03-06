@@ -170,6 +170,7 @@ import {
 
 let totalEmprestado = 0;
 let capital = 1000;
+let totalRecebido = 0;
   
 const firebaseConfig = {
   apiKey: "AIzaSyDJHtQp7OUxgYqtcD_2eTqzh1BRpufvKrY",
@@ -272,10 +273,10 @@ emprestimosSnapshot.forEach((docSnap) => {
 
 // EMPRÉSTIMOS ATIVOS
 
- const ativosSnapshot = await getDocs(collection(db, "emprestimos"));
- const containerAtivos = document.getElementById("listaEmprestimosAtivos");
+const ativosSnapshot = await getDocs(collection(db, "emprestimos"));
+const containerAtivos = document.getElementById("listaEmprestimosAtivos");
 
- containerAtivos.innerHTML = "";
+containerAtivos.innerHTML = "";
 
 ativosSnapshot.forEach((docSnap) => {
 
@@ -297,8 +298,23 @@ ativosSnapshot.forEach((docSnap) => {
   containerAtivos.appendChild(div);
 
 });
-  atualizarFinanceiro();
 
+
+// SOMAR PAGAMENTOS DAS PARCELAS
+
+const parcelasSnapshot = await getDocs(collection(db,"parcelas"));
+
+parcelasSnapshot.forEach((docSnap)=>{
+
+  const dados = docSnap.data();
+
+  totalRecebido += Number(dados.pago || 0);
+
+});
+
+
+atualizarFinanceiro();
+  
 // ===== HISTÓRICO DE EMPRÉSTIMOS =====
 
 const historicoContainer = document.getElementById("historicoEmprestimos");
@@ -470,8 +486,7 @@ window.salvarCapital = () => {
 };
   function atualizarFinanceiro(){
 
- const valorEmprestado = totalEmprestado;
-
+ const valorEmprestado = totalEmprestado - totalRecebido;
  const saldo = capital - valorEmprestado;
 
  document.getElementById("valorEmprestado").innerText = valorEmprestado;

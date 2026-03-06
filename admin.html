@@ -503,9 +503,18 @@ window.abrirParcelas = async (emprestimoId)=>{
 
  painel.innerHTML = "";
 
- parcelasSnap.forEach((docParcela)=>{
+ const listaParcelas = [];
 
- const parcela = docParcela.data();
+parcelasSnap.forEach((docParcela)=>{
+ listaParcelas.push({
+  id: docParcela.id,
+  ...docParcela.data()
+ });
+});
+
+listaParcelas.sort((a,b)=> a.numero - b.numero);
+
+listaParcelas.forEach((parcela)=>{
 
  const div = document.createElement("div");
  div.className = "card";

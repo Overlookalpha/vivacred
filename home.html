@@ -812,16 +812,22 @@ if (querySnapshot.empty) {
     item.style.borderRadius = "10px";
 
     item.innerHTML =
-      "<strong>Valor Total:</strong> " +
-      dados.valorFinal.toLocaleString("pt-BR", {
-        style: "currency",
-        currency: "BRL"
-      }) +
-      "<br>" +
-      "<strong>Parcelas:</strong> " +
-      dados.parcelas +
-      "<br><br>" +
-      parcelasHTML;
+  "<strong>Valor Recebido:</strong> " +
+  dados.valor.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  }) +
+  "<br>" +
+  "<strong>Valor Total:</strong> " +
+  dados.valorFinal.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  }) +
+  "<br>" +
+  "<strong>Parcelas:</strong> " +
+  dados.parcelas +
+  "<br><br>" +
+  parcelasHTML;
 
     listaDiv.appendChild(item);
 

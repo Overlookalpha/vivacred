@@ -314,7 +314,7 @@ ativosSnapshot.forEach((docSnap) => {
 
 const parcelasSnapshot = await getDocs(collection(db,"parcelas"));
 
-let dinheiroRua = 0;
+let  = 0;
 let recebido = 0;
 
 parcelasSnapshot.forEach((docSnap)=>{
@@ -325,7 +325,7 @@ parcelasSnapshot.forEach((docSnap)=>{
  dinheiroRua += Number(dados.restante || 0);
 
 });
-
+totalRecebido = recebido;
 atualizarFinanceiro();
   
 // ===== HISTÓRICO DE EMPRÉSTIMOS =====

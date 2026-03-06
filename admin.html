@@ -177,10 +177,45 @@ import {
   query,
   where
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+async function calcularFinanceiro(){
 
-let totalEmprestado = 0;
+ let totalEmprestado = 0;
+ let totalRecebido = 0;
+
+ const emprestimosSnap = await getDocs(collection(db,"emprestimos"));
+ const parcelasSnap = await getDocs(collection(db,"parcelas"));
+
+ emprestimosSnap.forEach((docSnap)=>{
+
+   const dados = docSnap.data();
+
+   if(dados.status === "ativo"){
+     totalEmprestado += Number(dados.valorFinal || 0);
+   }
+
+ });
+
+ parcelasSnap.forEach((docSnap)=>{
+
+   const dados = docSnap.data();
+
+   totalRecebido += Number(dados.pago || 0);
+
+ });
+
+ const dinheiroRua = totalEmprestado - totalRecebido;
+ const lucro = totalRecebido - totalEmprestado;
+ const saldo = capital + lucro;
+
+ document.getElementById("dinheiroRua").innerText = dinheiroRua.toFixed(2);
+ document.getElementById("dinheiroRecebido").innerText = totalRecebido.toFixed(2);
+ document.getElementById("lucroTotal").innerText = lucro.toFixed(2);
+ document.getElementById("saldoDisponivel").innerText = saldo.toFixed(2);
+
+}
+
 let capital = 1000;
-let totalRecebido = 0;
+
   
 const firebaseConfig = {
   apiKey: "AIzaSyDJHtQp7OUxgYqtcD_2eTqzh1BRpufvKrY",
@@ -220,6 +255,7 @@ if (!adminSnap.exists()) {
 }
 
   console.log("Admin autenticado");
+  await calcularFinanceiro();
 
 const snapshot = await getDocs(collection(db,"emprestimos"));
 
@@ -333,24 +369,6 @@ if(hoje > vencimento && dados.parcelasPagas < dados.parcelas){
 
 });
 
-
-// SOMAR PAGAMENTOS DAS PARCELAS
-
-const parcelasSnapshot = await getDocs(collection(db,"parcelas"));
-
-let totalRecebido = 0;
-
-parcelasSnapshot.forEach((docSnap)=>{
-
- const dados = docSnap.data();
-
- totalRecebido += Number(dados.pago || 0);
-
-});
-
-totalRecebido = recebido;
-
-atualizarFinanceiro();
   
 // ===== HISTÓRICO DE EMPRÉSTIMOS =====
 
@@ -526,30 +544,14 @@ window.pagarParcela = async (emprestimoId)=>{
 
 };
   
-window.salvarCapital = () => {
+window.salvarCapital = async () => {
 
  const input = document.getElementById("capitalInput");
  capital = Number(input.value);
 
- atualizarFinanceiro();
+ await calcularFinanceiro();
 
 };
-function atualizarFinanceiro(){
-
- const dinheiroRua = totalEmprestado - totalRecebido;
-
- const recebido = totalRecebido;
-
- const lucro = recebido - totalEmprestado;
-
- const saldo = capital + lucro;
-
- document.getElementById("dinheiroRua").innerText = dinheiroRua.toFixed(2);
- document.getElementById("dinheiroRecebido").innerText = recebido.toFixed(2);
- document.getElementById("lucroTotal").innerText = lucro.toFixed(2);
- document.getElementById("saldoDisponivel").innerText = saldo.toFixed(2);
-
-}
   window.toggleHistorico = () => {
 
  const historico = document.getElementById("caixaHistorico");

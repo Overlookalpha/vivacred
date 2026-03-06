@@ -236,7 +236,9 @@ snapshot.forEach((docSnap)=>{
  const div = document.createElement("div");
 
  div.className = "card";
-
+if(dados.finalizado === true){
+ return;
+}
  div.innerHTML =
  "<strong>"+dados.email+"</strong><br>"+
  "Valor: "+dados.valor+"<br>"+

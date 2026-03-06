@@ -179,7 +179,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
 async function calcularFinanceiro(){
 
- let = 0;
+ let totalEmprestado = 0;
  let totalRecebido = 0;
 
  const emprestimosSnap = await getDocs(collection(db,"emprestimos"));
@@ -190,7 +190,7 @@ async function calcularFinanceiro(){
    const dados = docSnap.data();
 
    if(dados.status === "ativo"){
-     += Number(dados.valorFinal || 0);
+     totalEmprestado += Number(dados.valorFinal || 0);
    }
 
  });
@@ -203,7 +203,7 @@ async function calcularFinanceiro(){
 
  });
 
- const dinheiroRua = - totalRecebido;
+ const dinheiroRua = totalEmprestado - totalRecebido;
  const lucro = totalRecebido - totalEmprestado;
  const saldo = capital + lucro;
 
@@ -213,7 +213,6 @@ async function calcularFinanceiro(){
  document.getElementById("saldoDisponivel").innerText = saldo.toFixed(2);
 
 }
-
 let capital = 1000;
 
   

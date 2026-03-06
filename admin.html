@@ -300,12 +300,17 @@ ativosSnapshot.forEach((docSnap) => {
 
   const div = document.createElement("div");
   div.className = "card";
-
+  let statusTexto = "";
+  if(dados.parcelasPagas >= dados.parcelas){
+  statusTexto = "<div style='color:#4cff88;font-weight:bold;font-size:18px;'>QUITADO</div>";
+  }
   div.innerHTML =
     "<strong>" + dados.email + "</strong><br>" +
     "Valor Total: " + dados.valorFinal + "<br>" +
-    "Parcelas: " + dados.parcelas + "<br><br>" +
-    "<button onclick=\"abrirParcelas('" + docSnap.id + "')\">Gerenciar Parcelas</button>";
+    "Parcelas: " + dados.parcelas + "<br>" +
+     statusTexto +
+     "<br>" +
+     "<button onclick=\"abrirParcelas('" + docSnap.id + "')\">Gerenciar Parcelas</button>";
 
   containerAtivos.appendChild(div);
 

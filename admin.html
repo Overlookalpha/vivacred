@@ -321,13 +321,13 @@ if(hoje > vencimento && dados.parcelasPagas < dados.parcelas){
  statusTexto = "<div style='color:#ff4c4c;font-weight:bold;'>ATRASADO</div>";
 }
   div.innerHTML =
-    "<strong>" + dados.email + "</strong><br>" +
-    "Valor Total: " + dados.valorFinal + "<br>" +
-    "Parcelas: " + dados.parcelas + "<br>" +
-     statusTexto +
-     "<br>" +
-     "<button onclick=\"abrirParcelas('" + docSnap.id + "')\">Gerenciar Parcelas</button>";
-     "<button onclick=\"fecharEmprestimo('" + docSnap.id + "')\">❌</button>";
+ "<strong>" + dados.email + "</strong><br>" +
+ "Valor Total: " + dados.valorFinal + "<br>" +
+ "Parcelas: " + dados.parcelas + "<br>" +
+ statusTexto +
+ "<br>" +
+ "<button onclick=\"abrirParcelas('" + docSnap.id + "')\">Gerenciar Parcelas</button> " +
+ "<button onclick=\"fecharEmprestimo('" + docSnap.id + "')\">❌</button>";
   
   containerAtivos.appendChild(div);
 

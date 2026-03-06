@@ -406,6 +406,14 @@ window.aprovarEmprestimo = async (id) => {
  });
 
  const valorParcela = Number((dados.valorFinal / dados.parcelas).toFixed(2));
+ const parcelasExistentes = await getDocs(
+ query(collection(db,"parcelas"), where("emprestimoId","==",id))
+);
+
+if(!parcelasExistentes.empty){
+ alert("Parcelas já foram criadas para este empréstimo.");
+ return;
+}
 
  for (let i = 1; i <= dados.parcelas; i++) {
 

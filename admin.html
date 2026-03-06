@@ -291,7 +291,7 @@ if(dados.finalizado === true){
 // ===== LISTAR EMPRÉSTIMOS AGUARDANDO =====
 
 const emprestimosSnapshot = await getDocs(collection(db, "emprestimos"));
-const containerEmprestimos = document.getElementById("listaEmprestimos");
+const containerEmprestimos = document.getElementById("listaEmprestimosAtivos");
 containerEmprestimos.innerHTML = "";
 
 emprestimosSnapshot.forEach((docSnap) => {
@@ -561,7 +561,7 @@ window.salvarCapital = async () => {
  }
 
 };
-function abrirTela(tela){
+window.abrirTela = function(tela){
 document.getElementById("telaDashboard").style.display = "none";
 document.getElementById("telaSolicitacoes").style.display = "none";
 document.getElementById("telaEmprestimos").style.display = "none";

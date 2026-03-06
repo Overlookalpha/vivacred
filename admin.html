@@ -98,10 +98,25 @@ color:white;
 </div>
 
 <div class="card">
-<strong>Valor Emprestado</strong><br>
-<span id="valorEmprestado">0</span>
+<strong>Dinheiro na Rua</strong><br>
+<span id="dinheiroRua">0</span>
 </div>
 
+<div class="card">
+<strong>Recebido</strong><br>
+<span id="dinheiroRecebido">0</span>
+</div>
+
+<div class="card">
+<strong>Lucro</strong><br>
+<span id="lucroTotal">0</span>
+</div>
+
+<div class="card">
+<strong>Saldo Disponível</strong><br>
+<span id="saldoDisponivel">0</span>
+</div>
+  
 <div class="card">
 <strong>Saldo Disponível</strong><br>
 <span id="saldoDisponivel">0</span>
@@ -484,13 +499,20 @@ window.salvarCapital = () => {
  atualizarFinanceiro();
 
 };
-  function atualizarFinanceiro(){
+ function atualizarFinanceiro(){
 
- const valorEmprestado = totalEmprestado - totalRecebido;
- const saldo = capital - valorEmprestado;
+ const dinheiroRua = Math.max(0, totalEmprestado - totalRecebido);
 
- document.getElementById("valorEmprestado").innerText = valorEmprestado;
- document.getElementById("saldoDisponivel").innerText = saldo;
+ const recebido = totalRecebido;
+
+ const lucro = Math.max(0, recebido - totalEmprestado);
+
+ const saldo = capital + recebido - totalEmprestado;
+
+ document.getElementById("dinheiroRua").innerText = dinheiroRua.toFixed(2);
+ document.getElementById("dinheiroRecebido").innerText = recebido.toFixed(2);
+ document.getElementById("lucroTotal").innerText = lucro.toFixed(2);
+ document.getElementById("saldoDisponivel").innerText = saldo.toFixed(2);
 
 }
   window.toggleHistorico = () => {

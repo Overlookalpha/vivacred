@@ -294,7 +294,7 @@ ativosSnapshot.forEach((docSnap) => {
 
   if (dados.status !== "ativo") return;
 
-  totalEmprestado += dados.valorFinal;
+  totalEmprestado += dados.valor;
 
   const div = document.createElement("div");
   div.className = "card";

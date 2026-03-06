@@ -478,6 +478,11 @@ div.innerHTML =
 
  const data = userSnap.data();
 const dadosNivel = calcularNivel(data.score);
+ const scoreValor = document.getElementById("scoreValor");
+
+if (scoreValor) {
+  scoreValor.innerText = data.score;
+}
 
 nivelNomeGlobal = dadosNivel.nome;
 const regrasNivel = obterRegrasPorNivel(nivelNomeGlobal);

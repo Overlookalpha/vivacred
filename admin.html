@@ -181,20 +181,22 @@ async function calcularFinanceiro(){
 
  let totalEmprestado = 0;
  let totalRecebido = 0;
+ let capitalEmprestado = 0;
 
  const emprestimosSnap = await getDocs(collection(db,"emprestimos"));
  const parcelasSnap = await getDocs(collection(db,"parcelas"));
 
- emprestimosSnap.forEach((docSnap)=>{
+emprestimosSnap.forEach((docSnap)=>{
 
-   const dados = docSnap.data();
+ const dados = docSnap.data();
 
-   if(dados.status === "ativo"){
-     totalEmprestado += Number(dados.valorFinal || 0);
-   }
+ if(dados.status === "ativo"){
+   totalEmprestado += Number(dados.valorFinal || 0);
+   capitalEmprestado += Number(dados.valor || 0);
+ }
 
- });
-
+});
+  
  parcelasSnap.forEach((docSnap)=>{
 
    const dados = docSnap.data();
@@ -204,8 +206,8 @@ async function calcularFinanceiro(){
  });
 
  const dinheiroRua = totalEmprestado - totalRecebido;
- const lucro = totalRecebido - totalEmprestado;
- const saldo = capital + lucro;
+ const lucro = totalRecebido - capitalEmprestado;
+ const saldo = capital - capitalEmprestado + totalRecebido;
 
  document.getElementById("dinheiroRua").innerText = dinheiroRua.toFixed(2);
  document.getElementById("dinheiroRecebido").innerText = totalRecebido.toFixed(2);

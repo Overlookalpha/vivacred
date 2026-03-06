@@ -69,7 +69,7 @@ color:white;
 
 <div class="menuItem" onclick="abrirTela('dashboard')">🏠 Dashboard</div>
 
-<div class="menuItem" onclick="abrirTela('emprestimos')">💰 Empréstimos</div>
+<div class="menuItem" onclick="abrirTela('emprestimos')">💰 imos</div>
 
 <div class="menuItem" onclick="abrirTela('solicitacoes')">📥 Solicitações</div>
 
@@ -292,7 +292,7 @@ ativosSnapshot.forEach((docSnap) => {
 
   const dados = docSnap.data();
 
-  if (dados.status !== "ativo" || dados.finalizado === true) return;
+  if (dados.status !== "ativo") return;
 
   totalEmprestado += dados.valor;
 

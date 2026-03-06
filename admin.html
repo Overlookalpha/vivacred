@@ -254,7 +254,7 @@ snapshot.forEach((docSnap)=>{
 // ===== LISTAR EMPRÉSTIMOS AGUARDANDO =====
 
 const emprestimosSnapshot = await getDocs(collection(db, "emprestimos"));
-const containerEmprestimos = document.getElementById("listaEmprestimosAtivos");
+const containerEmprestimos = document.getElementById("listaEmprestimos");
 containerEmprestimos.innerHTML = "";
 
 emprestimosSnapshot.forEach((docSnap) => {
@@ -325,7 +325,7 @@ parcelasSnapshot.forEach((docSnap)=>{
  dinheiroRua += Number(dados.restante || 0);
 
 });
-totalRecebido = recebido;
+
 atualizarFinanceiro();
   
 // ===== HISTÓRICO DE EMPRÉSTIMOS =====
@@ -406,14 +406,6 @@ window.aprovarEmprestimo = async (id) => {
  });
 
  const valorParcela = Number((dados.valorFinal / dados.parcelas).toFixed(2));
- const parcelasExistentes = await getDocs(
- query(collection(db,"parcelas"), where("emprestimoId","==",id))
-);
-
-if(!parcelasExistentes.empty){
- alert("Parcelas já foram criadas para este empréstimo.");
- return;
-}
 
  for (let i = 1; i <= dados.parcelas; i++) {
 
@@ -506,7 +498,7 @@ window.salvarCapital = () => {
 
 };
  function atualizarFinanceiro(){
-capital = Number(document.getElementById("capitalInput").value);
+
  const dinheiroRua = Math.max(0, totalEmprestado - totalRecebido);
 
  const recebido = totalRecebido;

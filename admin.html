@@ -520,14 +520,14 @@ listaParcelas.forEach((parcela)=>{
  div.className = "card";
 
  div.innerHTML =
- "Parcela "+parcela.numero+"<br>"+
- "Valor: "+parcela.valor+"<br>"+
- "Pago: "+parcela.pago+"<br><br>"+
+"Parcela "+parcela.numero+"<br>"+
+"Valor: "+parcela.valor+"<br>"+
+"Pago: "+parcela.pago+"<br><br>"+
 
- "<button onclick=\"adicionarPagamento('"+docParcela.id+"')\">Adicionar Pagamento</button>"+
+"<button onclick=\"adicionarPagamento('"+parcela.id+"')\">Adicionar Pagamento</button>"+
 
- "<button onclick=\"confirmarParcela('"+docParcela.id+"')\">Confirmar</button>";
-
+"<button onclick=\"confirmarParcela('"+parcela.id+"')\">Confirmar</button>";
+  
  painel.appendChild(div);
 
  });

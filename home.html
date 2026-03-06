@@ -348,7 +348,7 @@ juros = dados.valor * 0.01 * diasAtraso;
 
 restante = dados.valor + multa + juros - dados.pago;
 
-await updateDoc(doc(db,"parcelas",docSnap.id),{
+updateDoc(doc(db,"parcelas",docSnap.id),{
 multa: multa,
 juros: juros,
 diasAtraso: diasAtraso,

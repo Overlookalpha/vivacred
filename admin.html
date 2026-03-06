@@ -314,14 +314,17 @@ ativosSnapshot.forEach((docSnap) => {
 
 const parcelasSnapshot = await getDocs(collection(db,"parcelas"));
 
+let dinheiroRua = 0;
+let recebido = 0;
+
 parcelasSnapshot.forEach((docSnap)=>{
 
-  const dados = docSnap.data();
+ const dados = docSnap.data();
 
-  totalRecebido += Number(dados.pago || 0);
+ recebido += Number(dados.pago || 0);
+ dinheiroRua += Number(dados.restante || 0);
 
 });
-
 
 atualizarFinanceiro();
   

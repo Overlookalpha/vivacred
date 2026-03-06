@@ -339,18 +339,25 @@ if(restante === 0){
 
 else if(hoje > vencimento && restante > 0){
 
-    const diasAtraso = Math.floor(
-        (hoje - vencimento) / (1000 * 60 * 60 * 24)
-    );
+const diasAtraso = Math.floor(
+(hoje - vencimento) / (1000 * 60 * 60 * 24)
+);
 
-    multa = dados.valor * 0.05;
-    juros = dados.valor * 0.01 * diasAtraso;
+multa = dados.valor * 0.05;
+juros = dados.valor * 0.01 * diasAtraso;
 
-    restante = dados.valor + multa + juros - dados.pago;
+restante = dados.valor + multa + juros - dados.pago;
 
-    status = "⚠ ATRASADO";
+await updateDoc(doc(db,"parcelas",docSnap.id),{
+multa: multa,
+juros: juros,
+diasAtraso: diasAtraso,
+restante: restante
+});
+
+status = "⚠ ATRASADO";
+
 }
-
 else if(dados.pago > 0){
     status = "🟡 Parcial";
 }

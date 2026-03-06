@@ -308,7 +308,8 @@ if (dados.status !== "ativo" || dados.arquivado === true) return;
  div.innerHTML = `
 <strong>${dados.email}</strong><br>
 Valor Total: ${dados.valorFinal}<br>
-Parcelas: ${dados.parcelas}<br><br>
+Parcelas: ${dados.parcelas}<br>
+${statusTexto}<br>
 
 <button onclick="abrirParcelas('${docSnap.id}')">
 Gerenciar Parcelas

@@ -288,7 +288,8 @@ import {
 
 import { 
   getAuth, 
-  onAuthStateChanged 
+  onAuthStateChanged,
+  signOut
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
 const firebaseConfig = {
   apiKey: "AIzaSyDJHtQp7OUxgYqtcD_2eTqzh1BRpufvKrY",
@@ -302,6 +303,14 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const logoutBtn = document.getElementById("logoutBtn");
+
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", async () => {
+    await signOut(auth);
+    window.location.replace("login.html");
+  });
+}
 let nivelNomeGlobal = null;
 onAuthStateChanged(auth, async (user) => {
 

@@ -314,7 +314,7 @@ ativosSnapshot.forEach((docSnap) => {
 
 const parcelasSnapshot = await getDocs(collection(db,"parcelas"));
 
-let dinheiroRua = 0;
+let  = 0;
 let recebido = 0;
 
 parcelasSnapshot.forEach((docSnap)=>{
@@ -325,7 +325,7 @@ parcelasSnapshot.forEach((docSnap)=>{
  dinheiroRua += Number(dados.restante || 0);
 
 });
-
+totalRecebido = recebido;
 atualizarFinanceiro();
   
 // ===== HISTÓRICO DE EMPRÉSTIMOS =====
@@ -406,6 +406,14 @@ window.aprovarEmprestimo = async (id) => {
  });
 
  const valorParcela = Number((dados.valorFinal / dados.parcelas).toFixed(2));
+ const parcelasExistentes = await getDocs(
+ query(collection(db,"parcelas"), where("emprestimoId","==",id))
+);
+
+if(!parcelasExistentes.empty){
+ alert("Parcelas já foram criadas para este empréstimo.");
+ return;
+}
 
  for (let i = 1; i <= dados.parcelas; i++) {
 
@@ -498,7 +506,7 @@ window.salvarCapital = () => {
 
 };
  function atualizarFinanceiro(){
-
+capital = Number(document.getElementById("capitalInput").value);
  const dinheiroRua = Math.max(0, totalEmprestado - totalRecebido);
 
  const recebido = totalRecebido;

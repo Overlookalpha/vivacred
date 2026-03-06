@@ -338,15 +338,13 @@ if(hoje > vencimento && dados.parcelasPagas < dados.parcelas){
 
 const parcelasSnapshot = await getDocs(collection(db,"parcelas"));
 
-let dinheiroRua = 0;
-let recebido = 0;
+let totalRecebido = 0;
 
 parcelasSnapshot.forEach((docSnap)=>{
 
  const dados = docSnap.data();
 
- recebido += Number(dados.pago || 0);
- dinheiroRua += Number(dados.restante || 0);
+ totalRecebido += Number(dados.pago || 0);
 
 });
 
@@ -536,13 +534,14 @@ window.salvarCapital = () => {
  atualizarFinanceiro();
 
 };
- function atualizarFinanceiro(){
+function atualizarFinanceiro(){
 
- const dinheiroRua = Math.max(0, totalEmprestado - totalRecebido);
+ const dinheiroRua = totalEmprestado - totalRecebido;
 
  const recebido = totalRecebido;
 
- const lucro = totalRecebido - totalEmprestado;
+ const lucro = recebido - totalEmprestado;
+
  const saldo = capital + lucro;
 
  document.getElementById("dinheiroRua").innerText = dinheiroRua.toFixed(2);

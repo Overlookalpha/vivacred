@@ -301,9 +301,25 @@ ativosSnapshot.forEach((docSnap) => {
   const div = document.createElement("div");
   div.className = "card";
   let statusTexto = "";
-  if(dados.parcelasPagas >= dados.parcelas){
-  statusTexto = "<div style='color:#4cff88;font-weight:bold;font-size:18px;'>QUITADO</div>";
-  }
+
+const hoje = new Date();
+const vencimento = new Date(dados.dataVencimento);
+
+if(dados.parcelasPagas == 0){
+ statusTexto = "<div style='color:#cccccc;font-weight:bold;'>SEM PAGAMENTO</div>";
+}
+
+if(dados.parcelasPagas > 0 && dados.parcelasPagas < dados.parcelas){
+ statusTexto = "<div style='color:#ffd93d;font-weight:bold;'>PAGAMENTO PARCIAL</div>";
+}
+
+if(dados.parcelasPagas >= dados.parcelas){
+ statusTexto = "<div style='color:#4cff88;font-weight:bold;font-size:18px;'>QUITADO</div>";
+}
+
+if(hoje > vencimento && dados.parcelasPagas < dados.parcelas){
+ statusTexto = "<div style='color:#ff4c4c;font-weight:bold;'>ATRASADO</div>";
+}
   div.innerHTML =
     "<strong>" + dados.email + "</strong><br>" +
     "Valor Total: " + dados.valorFinal + "<br>" +
@@ -311,7 +327,8 @@ ativosSnapshot.forEach((docSnap) => {
      statusTexto +
      "<br>" +
      "<button onclick=\"abrirParcelas('" + docSnap.id + "')\">Gerenciar Parcelas</button>";
-
+     "<button onclick=\"fecharEmprestimo('" + docSnap.id + "')\">❌</button>";
+  
   containerAtivos.appendChild(div);
 
 });
@@ -437,6 +454,19 @@ window.aprovarEmprestimo = async (id) => {
  alert("Empréstimo aprovado!");
  location.reload();
 };
+  window.fecharEmprestimo = async (id) => {
+
+ const ref = doc(db, "emprestimos", id);
+
+ await updateDoc(ref,{
+  finalizado: true
+ });
+
+ alert("Empréstimo movido para histórico");
+
+ location.reload();
+
+}
 window.abrirParcelas = async (emprestimoId)=>{
 
  const ref = doc(db,"emprestimos",emprestimoId);

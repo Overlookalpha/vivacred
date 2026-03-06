@@ -229,6 +229,39 @@
 
     <br><br>
 
+<label>Seu nome completo:</label>
+<input type="text" id="nomeCliente" placeholder="Digite seu nome">
+
+<br><br>
+
+<label>Telefone:</label>
+<input type="text" id="telefoneCliente" placeholder="Digite seu telefone">
+
+<br><br>
+
+<label>CPF:</label>
+<input type="text" id="cpfCliente" placeholder="Digite seu CPF">
+
+<br><br>
+
+<label>Chave Pix:</label>
+<input type="text" id="pixCliente" placeholder="Digite sua chave Pix">
+
+<hr style="margin:20px 0; opacity:0.2">
+
+<label>Nome do avalista:</label>
+<input type="text" id="nomeAvalista" placeholder="Nome do avalista">
+
+<br><br>
+
+<label>Telefone do avalista:</label>
+<input type="text" id="telefoneAvalista" placeholder="Telefone do avalista">
+
+<br><br>
+
+<label>CPF do avalista:</label>
+<input type="text" id="cpfAvalista" placeholder="CPF do avalista">
+
     <button id="confirmarCredito">Confirmar Solicitação</button>
     <button id="fecharModal">Cancelar</button>
   </div>
@@ -601,6 +634,14 @@ fecharBtn.addEventListener("click", async () => {
 
      const valorInput = document.getElementById("valorSimulado");
 const parcelasSelect = document.getElementById("parcelasSimuladas");
+      const nomeCliente = document.getElementById("nomeCliente").value;
+const telefoneCliente = document.getElementById("telefoneCliente").value;
+const cpfCliente = document.getElementById("cpfCliente").value;
+const pixCliente = document.getElementById("pixCliente").value;
+
+const nomeAvalista = document.getElementById("nomeAvalista").value;
+const telefoneAvalista = document.getElementById("telefoneAvalista").value;
+const cpfAvalista = document.getElementById("cpfAvalista").value;
 
 const valorFinal = parseInt(valorInput.value);
 const parcelasFinal = parseInt(parcelasSelect.value);
@@ -632,10 +673,21 @@ const valorFinalComJuros = valorFinal + juros;
 await addDoc(collection(db, "emprestimos"), {
   userId: user.uid,
   email: user.email,
+
+  nomeCliente: nomeCliente,
+  telefoneCliente: telefoneCliente,
+  cpfCliente: cpfCliente,
+  pixCliente: pixCliente,
+
+  nomeAvalista: nomeAvalista,
+  telefoneAvalista: telefoneAvalista,
+  cpfAvalista: cpfAvalista,
+
   valor: valorFinal,
   parcelas: Number(parcelasFinal),
   juros: juros,
   valorFinal: valorFinalComJuros,
+
   status: "aguardando",
   criadoEm: new Date(),
   dataAprovacao: null,

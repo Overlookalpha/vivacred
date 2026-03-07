@@ -474,12 +474,23 @@ div.innerHTML =
   if (!userSnap.exists()) {
 
     await setDoc(userRef, {
-      email: user.email,
-      score: 20,
-      limiteBase: 100,
-      status: "ativlo",
-      criadoEm: new Date()
-    });
+
+  email: user.email,
+
+  nome: "",
+  telefone: "",
+  cpf: "",
+  pix: "",
+
+  score: 20,
+  limiteBase: 100,
+  nivel: "Essencial",
+
+  status: "ativo",
+
+  criadoEm: new Date()
+
+});
 
     console.log("Usuário criado no Firestore");
 

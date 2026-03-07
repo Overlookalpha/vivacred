@@ -334,7 +334,11 @@ const containerParcelas = document.getElementById("minhasParcelas");
 
 containerParcelas.innerHTML = "";
 
-snapshotParcelas.forEach((docSnap) => {
+const listaOrdenada = snapshotParcelas.docs.sort((a,b)=>{
+  return a.data().numero - b.data().numero;
+});
+
+listaOrdenada.forEach((docSnap)=>{
 
   const dados = docSnap.data();
 

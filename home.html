@@ -471,7 +471,7 @@ div.innerHTML =
 
   return regras[nivelNome];
 }
-  if (!userSnap.exists()) {
+  if (!userSnap.exists() || !userSnap.data().score) {
 
     await setDoc(userRef, {
 

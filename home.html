@@ -205,16 +205,20 @@
      </button>
     </div>
      <div class="card">
-  <div><strong>Meus Empréstimos</strong></div>
-  <div id="listaEmprestimos" style="margin-top:15px; font-size:14px;">
+    <div><strong>Meus Empréstimos</strong></div>
+   <div id="listaEmprestimos" style="margin-top:15px; font-size:14px;">
     Carregando...
-  </div>
-<div class="card">
-<strong>Minhas Parcelas</strong>
+    </div>
+     </div>
+
+   <div class="card">
+   <strong>Minhas Parcelas</strong>
+   <div id="minhasParcelas"></div>
+   </div>
     <div id="minhasParcelas"></div>
-  </div>
- <div id="modalCredito" class="modal">
-  <div class="modal-content">
+    </div>
+   <div id="modalCredito" class="modal">
+    <div class="modal-content">
     <h3>Simulação de Crédito</h3>
 
     <p>Valor padrão disponível: <strong>R$100</strong></p>
@@ -623,9 +627,10 @@ if (limiteNivelTexto) {
 const limiteElemento = document.getElementById("limiteDisponivel");
 
 if (limiteElemento && data.limiteBase) {
-  limiteElemento.innerText = limiteMaximoNivel.toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL"
+  limiteElemento.innerText =
+  "Até " + limiteMaximoNivel.toLocaleString("pt-BR", {
+  style: "currency",
+  currency: "BRL"
 });
 }
 

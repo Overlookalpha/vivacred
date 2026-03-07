@@ -752,8 +752,8 @@ const cancelarTermos = document.getElementById("cancelarTermos");
 modal.style.display = "none";
 });
 
-confirmarTermos.addEventListener("click", async () => {
-
+document.getElementById("confirmarTermos").addEventListener("click", async () => {
+console.log("CLICOU NO CONFIRMAR TERMOS");
   if (!aceitarTermos.checked) {
     alert("Você precisa aceitar os termos para continuar.");
     return;

@@ -837,6 +837,16 @@ await addDoc(collection(db, "emprestimos"), {
 
         alert("Solicitação enviada para análise.");
         modal.style.display = "none";
+        valorInput.value = "";
+parcelasSelect.value = "1";
+document.getElementById("nomeCliente").value = "";
+document.getElementById("telefoneCliente").value = "";
+document.getElementById("cpfCliente").value = "";
+document.getElementById("pixCliente").value = "";
+document.getElementById("nomeAvalista").value = "";
+document.getElementById("telefoneAvalista").value = "";
+document.getElementById("cpfAvalista").value = "";
+aceitarTermos.checked = false;
 
       } catch (error) {
         console.error(error);

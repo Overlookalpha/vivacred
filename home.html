@@ -215,8 +215,6 @@
    <strong>Minhas Parcelas</strong>
    <div id="minhasParcelas"></div>
    </div>
-    <div id="minhasParcelas"></div>
-    </div>
    <div id="modalCredito" class="modal">
     <div class="modal-content">
     <h3>Simulação de Crédito</h3>
@@ -273,6 +271,41 @@
 
     <button id="confirmarCredito">Confirmar Solicitação</button>
     <button id="fecharModal">Cancelar</button>
+  </div>
+</div>
+  <div id="modalTermos" class="modal">
+  <div class="modal-content">
+
+    <h3>Termos do Contrato</h3>
+
+    <div style="max-height:200px; overflow-y:auto; font-size:14px; line-height:1.6; margin-bottom:15px;">
+
+      Ao confirmar esta solicitação de crédito, você declara que:
+
+      <br><br>
+
+      • Todas as informações fornecidas são verdadeiras.  
+      • Você se compromete a pagar as parcelas nas datas de vencimento.  
+      • Em caso de atraso poderão ser aplicadas multas e juros.  
+      • O não pagamento poderá gerar bloqueio de novos créditos.  
+      • O avalista informado poderá ser contatado em caso de inadimplência.
+
+      <br><br>
+
+      Ao continuar você declara que *leu e concorda com estes termos*.
+
+    </div>
+
+    <label>
+      <input type="checkbox" id="aceitoTermos">
+      Li e concordo com os termos do contrato
+    </label>
+
+    <br><br>
+
+    <button id="confirmarTermos">Continuar</button>
+    <button id="cancelarTermos">Cancelar</button>
+
   </div>
 </div>
 <script type="module">
@@ -707,9 +740,29 @@ fecharBtn.addEventListener("click", async () => {
       modal.style.display = "none";
     });
 
-    confirmar.addEventListener("click", async () => {
+    confirmar.addEventListener("click", () => {
+    document.getElementById("modalTermos").style.display = "flex";
+    });
+    const modalTermos = document.getElementById("modalTermos");
+const aceitarTermos = document.getElementById("aceitoTermos");
+const confirmarTermos = document.getElementById("confirmarTermos");
+const cancelarTermos = document.getElementById("cancelarTermos");
+    cancelarTermos.addEventListener("click", () => {
+  modalTermos.style.display = "none";
+modal.style.display = "none";
+});
 
-     const valorInput = document.getElementById("valorSimulado");
+confirmarTermos.addEventListener("click", async () => {
+
+  if (!aceitarTermos.checked) {
+    alert("Você precisa aceitar os termos para continuar.");
+    return;
+  }
+
+  modalTermos.style.display = "none";
+
+  // AQUI vai executar o envio da solicitação
+      const valorInput = document.getElementById("valorSimulado");
 const parcelasSelect = document.getElementById("parcelasSimuladas");
       const nomeCliente = document.getElementById("nomeCliente").value;
 const telefoneCliente = document.getElementById("telefoneCliente").value;
@@ -724,7 +777,7 @@ const nomeAvalista = document.getElementById("nomeAvalista").value;
 const telefoneAvalista = document.getElementById("telefoneAvalista").value;
 const cpfAvalista = document.getElementById("cpfAvalista").value;
 
-const valorFinal = parseInt(valorInput.value);
+const valorFinal = parseInt(valorInput.value || 0);
 const parcelasFinal = parseInt(parcelasSelect.value);
 const userRef = doc(db, "usuarios", user.uid);
 
@@ -790,8 +843,10 @@ await addDoc(collection(db, "emprestimos"), {
         alert("Erro ao enviar solicitação.");
       }
 
-    });
+});
+
   }
+                   
 // ===== LISTAR EMPRÉSTIMOS APROVADOS =====
 
 const listaDiv = document.getElementById("listaEmprestimos");

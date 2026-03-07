@@ -694,7 +694,14 @@ const cpfAvalista = document.getElementById("cpfAvalista").value;
 
 const valorFinal = parseInt(valorInput.value);
 const parcelasFinal = parseInt(parcelasSelect.value);
+const userRef = doc(db, "usuarios", user.uid);
 
+await updateDoc(userRef, {
+  nome: nomeCliente,
+  telefone: telefoneCliente,
+  cpf: cpfCliente,
+  pix: pixCliente
+});
 if (!valorFinal || valorFinal < 100) {
   alert("Valor mínimo é 100.");
   return;

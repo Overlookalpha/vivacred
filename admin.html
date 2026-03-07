@@ -69,7 +69,7 @@ color:white;
 
 <div class="menuItem" onclick="abrirTela('dashboard')">🏠 Dashboard</div>
 
-<div class="menuItem" onclick="abrirTela('emprestimos')">💰 imos</div>
+<div class="menuItem" onclick="abrirTela('emprestimos')">💰 Empréstimos</div>
 
 <div class="menuItem" onclick="abrirTela('solicitacoes')">📥 Solicitações</div>
 
@@ -335,8 +335,20 @@ if(dados.parcelasPagas >= dados.parcelas){
 if(hoje > vencimento && dados.parcelasPagas < dados.parcelas){
  statusTexto = "<div style='color:#ff4c4c;font-weight:bold;'>ATRASADO</div>";
 }
- div.innerHTML = `
-<strong>${dados.email}</strong><br>
+div.innerHTML = `
+<strong>${dados.email}</strong><br><br>
+
+<b>Cliente</b><br>
+Nome: ${dados.nomeCliente || "-"}<br>
+Telefone: ${dados.telefoneCliente || "-"}<br>
+CPF: ${dados.cpfCliente || "-"}<br>
+Pix: ${dados.pixCliente || "-"}<br><br>
+
+<b>Avalista</b><br>
+Nome: ${dados.nomeAvalista || "-"}<br>
+Telefone: ${dados.telefoneAvalista || "-"}<br>
+CPF: ${dados.cpfAvalista || "-"}<br><br>
+
 Valor Total: ${dados.valorFinal}<br>
 Parcelas: ${dados.parcelas}<br>
 ${statusTexto}<br>
@@ -349,7 +361,6 @@ Gerenciar Parcelas
 ❌
 </button>
 `;
-
   containerEmprestimos.appendChild(div);
 });
 });
@@ -421,10 +432,22 @@ historicoSnapshot.forEach((docSnap) => {
   div.className = "card";
 
   div.innerHTML =
-    "<strong>" + dados.email + "</strong><br>" +
-    "Valor Total: " + dados.valorFinal + "<br>" +
-    "Parcelas: " + dados.parcelas + "<br>" +
-    "Status: Finalizado";
+"<strong>" + dados.email + "</strong><br><br>" +
+
+"<b>Cliente</b><br>" +
+"Nome: " + (dados.nomeCliente || "-") + "<br>" +
+"Telefone: " + (dados.telefoneCliente || "-") + "<br>" +
+"CPF: " + (dados.cpfCliente || "-") + "<br>" +
+"Pix: " + (dados.pixCliente || "-") + "<br><br>" +
+
+"<b>Avalista</b><br>" +
+"Nome: " + (dados.nomeAvalista || "-") + "<br>" +
+"Telefone: " + (dados.telefoneAvalista || "-") + "<br>" +
+"CPF: " + (dados.cpfAvalista || "-") + "<br><br>" +
+
+"Valor Total: " + dados.valorFinal + "<br>" +
+"Parcelas: " + dados.parcelas + "<br>" +
+"Status: Finalizado";
 
   historicoContainer.appendChild(div);
 

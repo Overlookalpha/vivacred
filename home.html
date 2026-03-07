@@ -242,7 +242,7 @@
 <br><br>
 
 <label>Telefone:</label>
-<input type="text" id="telefoneCliente" placeholder="Digite seu telefone">
+<input type="text" id="telefoneCliente" placeholder="Ex: 5511998765432">
 
 <br><br>
 
@@ -262,7 +262,7 @@
 <br><br>
 
 <label>Telefone do avalista:</label>
-<input type="text" id="telefoneAvalista" placeholder="Telefone do avalista">
+<input type="text" id="telefoneAvalista" placeholder="Ex: 5511998765432">
 
 <br><br>
 
@@ -766,6 +766,10 @@ console.log("CLICOU NO CONFIRMAR TERMOS");
 const parcelasSelect = document.getElementById("parcelasSimuladas");
       const nomeCliente = document.getElementById("nomeCliente").value;
 const telefoneCliente = document.getElementById("telefoneCliente").value;
+if(telefoneCliente.length < 12){
+ alert("Digite o telefone no formato 5511998765432");
+ return;
+}
 const cpfCliente = document.getElementById("cpfCliente").value;
 const pixCliente = document.getElementById("pixCliente").value;
 if(!nomeCliente || !telefoneCliente || !cpfCliente || !pixCliente){
@@ -775,6 +779,10 @@ if(!nomeCliente || !telefoneCliente || !cpfCliente || !pixCliente){
 
 const nomeAvalista = document.getElementById("nomeAvalista").value;
 const telefoneAvalista = document.getElementById("telefoneAvalista").value;
+if(telefoneAvalista.length < 12){
+ alert("Telefone do avalista deve estar no formato 5511998765432");
+ return;
+}
 const cpfAvalista = document.getElementById("cpfAvalista").value;
 
 const valorFinal = parseInt(valorInput.value || 0);

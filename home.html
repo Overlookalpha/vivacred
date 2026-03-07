@@ -843,9 +843,18 @@ await addDoc(collection(db, "emprestimos"), {
   dataVencimento: null
 });
 
-        alert("Solicitação enviada para análise.");
-        modal.style.display = "none";
-        valorInput.value = "";
+  const box = document.getElementById("notificacaoCredito");
+
+box.innerHTML =
+"✅ Solicitação enviada para análise.<br>Em até 24h você receberá uma resposta.";
+
+box.style.display = "block";
+
+setTimeout(() => {
+box.style.display = "none";
+}, 15000);
+ modal.style.display = "none";
+ valorInput.value = "";
 parcelasSelect.value = "1";
 document.getElementById("nomeCliente").value = "";
 document.getElementById("telefoneCliente").value = "";
@@ -957,6 +966,20 @@ if (querySnapshot.empty) {
   }
  });
 </script>
-
+<div id="notificacaoCredito" style="
+position: fixed;
+top: 20px;
+right: 20px;
+background: #1e3d2f;
+color: white;
+padding: 15px 20px;
+border-radius: 10px;
+box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+display: none;
+z-index: 999;
+max-width: 280px;
+font-size: 14px;
+">
+</div>
 </body>
 </html>

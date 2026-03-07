@@ -843,7 +843,24 @@ await addDoc(collection(db, "emprestimos"), {
   dataVencimento: null
 });
 
-  const box = document.getElementById("notificacaoCredito");
+ let box = document.getElementById("notificacaoCredito");
+
+if(!box){
+  box = document.createElement("div");
+  box.id = "notificacaoCredito";
+  box.style.position = "fixed";
+  box.style.top = "20px";
+  box.style.right = "20px";
+  box.style.background = "#1e3d2f";
+  box.style.color = "white";
+  box.style.padding = "15px 20px";
+  box.style.borderRadius = "10px";
+  box.style.boxShadow = "0 10px 30px rgba(0,0,0,0.4)";
+  box.style.zIndex = "999";
+  box.style.maxWidth = "280px";
+  box.style.fontSize = "14px";
+  document.body.appendChild(box);
+}
 
 box.innerHTML =
 "✅ Solicitação enviada para análise.<br>Em até 24h você receberá uma resposta.";
@@ -851,7 +868,7 @@ box.innerHTML =
 box.style.display = "block";
 
 setTimeout(() => {
-box.style.display = "none";
+  box.style.display = "none";
 }, 15000);
  modal.style.display = "none";
  valorInput.value = "";

@@ -339,6 +339,11 @@ snapshotParcelas.forEach((docSnap) => {
   const dados = docSnap.data();
 
   const div = document.createElement("div");
+  div.style.marginBottom = "18px";
+div.style.padding = "16px";
+div.style.background = "rgba(255,255,255,0.06)";
+div.style.borderRadius = "12px";
+div.style.lineHeight = "1.6";
 let restante = dados.valor - dados.pago;
 let status = "🔴 Pendente";
 
@@ -378,12 +383,13 @@ else if(dados.pago > 0){
 }
   
 div.innerHTML =
-"Parcela " + dados.numero + " - " + status + "<br>" +
-"Valor: " + dados.valor + "<br>" +
-"Pago: " + dados.pago + "<br>" +
-"Multa: " + multa.toFixed(2) + "<br>" +
-"Juros atraso: " + juros.toFixed(2) + "<br>" +
-"Restante: " + restante.toFixed(2)
+"<strong>Parcela " + dados.numero + "</strong> - " + status + "<br><br>" +
+
+"<strong>Valor:</strong> " + dados.valor + "<br>" +
+"<strong>Pago:</strong> " + dados.pago + "<br>" +
+"<strong>Multa:</strong> " + multa.toFixed(2) + "<br>" +
+"<strong>Juros atraso:</strong> " + juros.toFixed(2) + "<br>" +
+"<strong>Restante:</strong> " + restante.toFixed(2);
 
   containerParcelas.appendChild(div);
 

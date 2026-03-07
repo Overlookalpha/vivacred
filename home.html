@@ -698,6 +698,10 @@ const parcelasSelect = document.getElementById("parcelasSimuladas");
 const telefoneCliente = document.getElementById("telefoneCliente").value;
 const cpfCliente = document.getElementById("cpfCliente").value;
 const pixCliente = document.getElementById("pixCliente").value;
+if(!nomeCliente || !telefoneCliente || !cpfCliente || !pixCliente){
+  alert("Preencha todos os dados pessoais.");
+  return;
+}
 
 const nomeAvalista = document.getElementById("nomeAvalista").value;
 const telefoneAvalista = document.getElementById("telefoneAvalista").value;

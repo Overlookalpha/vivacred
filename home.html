@@ -158,9 +158,27 @@
 <body>
 
   <div class="header">
-    <div class="logo">ISACRED</div>
+  <div class="logo">ISACRED</div>
+
+  <div style="display:flex; align-items:center; gap:15px;">
+
+    <div id="sinoNotificacao" style="cursor:pointer; font-size:20px;">
+      🔔
+      <span id="contadorNotificacao" style="
+        background:red;
+        color:white;
+        border-radius:50%;
+        padding:2px 6px;
+        font-size:12px;
+        margin-left:4px;
+        display:none;
+      ">0</span>
+    </div>
+
     <button id="logoutBtn" class="logout">Sair</button>
+
   </div>
+</div>
 
   <div class="container">
 
@@ -340,6 +358,17 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+async function criarNotificacao(userId, titulo, mensagem){
+
+  await addDoc(collection(db,"notificacoes"),{
+    userId: userId,
+    titulo: titulo,
+    mensagem: mensagem,
+    data: new Date(),
+    lida: false
+  });
+
+}
 const logoutBtn = document.getElementById("logoutBtn");
 
 if (logoutBtn) {
@@ -358,6 +387,62 @@ onAuthStateChanged(auth, async (user) => {
 
   document.getElementById("userEmail").innerText =
     "Logado como: " + user.email;
+  // 🔔 CARREGAR NOTIFICAÇÕES
+
+const qNotificacoes = query(
+  collection(db,"notificacoes"),
+  where("userId","==",user.uid),
+  where("lida","==",false)
+);
+// 🔔 LISTAR NOTIFICAÇÕES
+
+const qTodasNotificacoes = query(
+  collection(db,"notificacoes"),
+  where("userId","==",user.uid)
+);
+
+const snapshotTodas = await getDocs(qTodasNotificacoes);
+
+const lista = document.getElementById("listaNotificacoes");
+
+if(lista){
+
+  lista.innerHTML = "";
+
+  const ordenadas = snapshotTodas.docs.sort((a,b)=>{
+    return b.data().data?.seconds - a.data().data?.seconds;
+  });
+
+  ordenadas.forEach((docSnap)=>{
+
+    const dados = docSnap.data();
+
+    const div = document.createElement("div");
+
+    div.style.padding = "10px";
+    div.style.marginBottom = "10px";
+    div.style.background = "rgba(255,255,255,0.05)";
+    div.style.borderRadius = "8px";
+
+    div.innerHTML =
+      "<strong>" + dados.titulo + "</strong><br>" +
+      dados.mensagem;
+
+    lista.appendChild(div);
+
+  });
+
+}
+const snapshotNotificacoes = await getDocs(qNotificacoes);
+
+const contador = document.getElementById("contadorNotificacao");
+
+if(!snapshotNotificacoes.empty){
+
+  contador.style.display = "inline";
+  contador.innerText = snapshotNotificacoes.size;
+
+}
   const parcelasRef = collection(db, "parcelas");
 const q = query(parcelasRef, where("userId", "==", user.uid));
 
@@ -434,6 +519,18 @@ div.innerHTML =
   const userRef = doc(db, "usuarios", user.uid);
   const adminRef = doc(db, "admins", user.uid);
   const adminSnap = await getDoc(adminRef);
+  // VERIFICAR SOLICITAÇÃO REJEITADA
+
+const qRejeitado = query(
+  collection(db, "emprestimos"),
+  where("userId", "==", user.uid),
+  where("status", "==", "rejeitado")
+);
+
+const snapshotRejeitado = await getDocs(qRejeitado);
+  const listaRejeitados = snapshotRejeitado.docs.sort((a,b)=>{
+  return b.data().criadoEm?.seconds - a.data().criadoEm?.seconds;
+  });
 
   if (adminSnap.exists()) {
     console.log("Usuário é ADMIN");
@@ -441,6 +538,54 @@ div.innerHTML =
   }
 
   const userSnap = await getDoc(userRef);
+  // MOSTRAR AVISO DE SOLICITAÇÃO REJEITADA
+
+if (!snapshotRejeitado.empty) {
+
+  const dados = listaRejeitados[0].data();
+  let orientacao = "";
+
+if (dados.motivoRecusa === "Score insuficiente") {
+  orientacao = "💡 Manter pagamentos em dia ajuda a melhorar seu score e aumentar suas chances de aprovação.";
+}
+
+else if (dados.motivoRecusa === "Renda incompatível") {
+  orientacao = "💡 Tente solicitar um valor menor, mais compatível com sua renda atual.";
+}
+
+else if (dados.motivoRecusa === "Dados incompletos") {
+  orientacao = "💡 Revise seus dados cadastrados e envie uma nova solicitação.";
+}
+
+else if (dados.motivoRecusa === "Histórico de atraso") {
+  orientacao = "💡 Manter pagamentos em dia ajuda a melhorar seu histórico financeiro.";
+}
+
+else if (dados.motivoRecusa === "Já possui empréstimo ativo") {
+  orientacao = "💡 Após quitar seu empréstimo atual, você poderá solicitar um novo crédito.";
+}
+
+  const aviso = document.createElement("div");
+  aviso.style.marginTop = "20px";
+  aviso.style.padding = "15px";
+  aviso.style.background = "#3b1d1d";
+  aviso.style.borderRadius = "10px";
+  aviso.style.color = "white";
+
+  aviso.innerHTML = `
+<strong>📄 Solicitação analisada</strong><br><br>
+
+Infelizmente sua solicitação de crédito não foi aprovada neste momento.<br><br>
+
+❗ <strong>Motivo:</strong> ${dados.motivoRecusa}<br><br>
+
+${orientacao}
+`;
+
+  const area = document.getElementById("areaAvisoTopo");
+  area.appendChild(aviso);
+
+}
  function calcularNivel(score) {
 
   if (score <= 20) {
@@ -842,6 +987,11 @@ await addDoc(collection(db, "emprestimos"), {
   dataAprovacao: null,
   dataVencimento: null
 });
+await criarNotificacao(
+  user.uid,
+  "Solicitação enviada",
+  "Sua solicitação de crédito foi enviada para análise. Em até 24h você receberá uma resposta."
+);
 
  let box = document.getElementById("notificacaoCredito");
 
@@ -982,6 +1132,32 @@ if (querySnapshot.empty) {
 
   }
  });
+  function fecharNotificacoes(){
+  document.getElementById("modalNotificacoes").style.display = "none";
+}
+
+document.getElementById("sinoNotificacao").addEventListener("click", async () => {
+
+  document.getElementById("modalNotificacoes").style.display = "flex";
+
+  const qNotificacoes = query(
+    collection(db,"notificacoes"),
+    where("userId","==",user.uid),
+    where("lida","==",false)
+  );
+
+  const snapshot = await getDocs(qNotificacoes);
+
+  snapshot.forEach(async (docSnap)=>{
+    await updateDoc(doc(db,"notificacoes",docSnap.id),{
+      lida:true
+    });
+  });
+
+  const contador = document.getElementById("contadorNotificacao");
+  contador.style.display = "none";
+
+});
 </script>
 <div id="notificacaoCredito" style="
 position: fixed;
@@ -997,6 +1173,19 @@ z-index: 999;
 max-width: 280px;
 font-size: 14px;
 ">
+</div>
+    <div id="modalNotificacoes" class="modal">
+  <div class="modal-content">
+
+    <h3>🔔 Notificações</h3>
+
+    <div id="listaNotificacoes" style="margin-top:15px;"></div>
+
+    <br>
+
+    <button onclick="fecharNotificacoes()">Fechar</button>
+
+  </div>
 </div>
 </body>
 </html>

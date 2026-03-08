@@ -1171,11 +1171,11 @@ document.getElementById("sinoNotificacao").addEventListener("click", async () =>
 
   const snapshot = await getDocs(qNotificacoes);
 
-  snapshot.forEach(async (docSnap)=>{
-    await updateDoc(doc(db,"notificacoes",docSnap.id),{
-      lida:true
-    });
+  for (const docSnap of snapshot.docs) {
+  await updateDoc(doc(db,"notificacoes",docSnap.id),{
+    lida:true
   });
+}
 
   const contador = document.getElementById("contadorNotificacao");
 

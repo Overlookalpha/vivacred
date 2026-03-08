@@ -79,29 +79,22 @@
   display: none;
   position: fixed;
   inset: 0;
-
-  background: rgba(0,0,0,0.65);
-
-  display: flex;
+  background: rgba(0,0,0,0.6);
   justify-content: center;
   align-items: center;
-
   z-index: 999;
 }
 
 .modal-content {
   background: #1e1e1e;
   padding: 20px;
-  border-radius: 16px;
+  border-radius: 10px;
   width: 90%;
-  max-width: 420px;
-
+  max-width: 400px;
   color: white;
 
-  max-height: 85vh;
+  max-height: 80vh;
   overflow-y: auto;
-
-  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
 }
 .modal-content label {
   display: block;
@@ -911,9 +904,8 @@ fecharBtn.addEventListener("click", async () => {
       modal.style.display = "none";
     });
 
-    confirmar.addEventListener("click", () => {
-modal.style.display = "none";
-document.getElementById("modalTermos").style.display = "flex";
+   confirmar.addEventListener("click", () => {
+  document.getElementById("modalTermos").style.display = "flex";
 });
     const modalTermos = document.getElementById("modalTermos");
 const aceitarTermos = document.getElementById("aceitoTermos");

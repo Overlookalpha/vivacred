@@ -587,7 +587,9 @@ ${orientacao}
 
   const area = document.getElementById("areaAvisoTopo");
   area.appendChild(aviso);
-
+  setTimeout(()=>{
+  aviso.remove();
+},8000);
 }
  function calcularNivel(score) {
 

@@ -227,6 +227,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+let emprestimoRecusaId = null;
 
 onAuthStateChanged(auth, async (user) => {
 
@@ -297,7 +298,7 @@ if(dados.finalizado === true){
 
 "<button onclick=\"aprovarEmprestimo('"+docSnap.id+"')\">Aprovar</button>"+
 "<button onclick=\"editarEmprestimo('"+docSnap.id+"')\">Editar</button>"+
-"<button onclick=\"rejeitarEmprestimo('"+docSnap.id+"')\">Rejeitar</button>";
+"<button onclick=\"abrirModalRecusa('"+docSnap.id+"')\">Rejeitar</button>";
 
  container.appendChild(div);
 
@@ -667,6 +668,19 @@ menu[3].classList.add("menuAtivo");
 window.scrollTo(0,0);
 
 }
+  window.abrirModalRecusa = function(id){
+
+ emprestimoRecusaId = id;
+
+ document.getElementById("modalRecusa").style.display = "flex";
+
+}
+  window.fecharModalRecusa = function(){
+
+ document.getElementById("modalRecusa").style.display = "none";
+ emprestimoRecusaId = null;
+
+}
   window.rejeitarEmprestimo = async(id)=>{
 
  const ref = doc(db,"emprestimos",id);
@@ -799,6 +813,35 @@ if(userSnap.exists()){
  location.reload();
 
 }
+  window.confirmarRecusa = async function(){
+
+ const radios = document.getElementsByName("motivoRecusa");
+
+ let motivo = "";
+
+ radios.forEach((r)=>{
+  if(r.checked){
+   motivo = r.value;
+  }
+ });
+
+ if(!motivo){
+  alert("Selecione um motivo");
+  return;
+ }
+
+ const ref = doc(db,"emprestimos",emprestimoRecusaId);
+
+ await updateDoc(ref,{
+  status:"rejeitado",
+  motivoRecusa: motivo
+ });
+
+ alert("Solicitação rejeitada");
+
+ location.reload();
+
+}
 </script>
 <div id="modalParcelas" style="
 display:none;
@@ -829,6 +872,43 @@ overflow:auto;
 
 </div>
 
+</div>
+
+<div id="modalRecusa" style="
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.7);
+justify-content:center;
+align-items:center;
+">
+
+<div style="
+background:#1c1c1c;
+padding:20px;
+border-radius:10px;
+width:400px;
+">
+
+<h3>Motivo da Recusa</h3>
+
+<label><input type="radio" name="motivoRecusa" value="Score insuficiente"> Score insuficiente</label><br><br>
+
+<label><input type="radio" name="motivoRecusa" value="Renda incompatível"> Renda incompatível</label><br><br>
+
+<label><input type="radio" name="motivoRecusa" value="Dados incompletos"> Dados incompletos</label><br><br>
+
+<label><input type="radio" name="motivoRecusa" value="Histórico de atraso"> Histórico de atraso</label><br><br>
+
+<label><input type="radio" name="motivoRecusa" value="Já possui empréstimo ativo"> Já possui empréstimo ativo</label><br><br>
+
+<button onclick="confirmarRecusa()">Confirmar Recusa</button>
+<button onclick="fecharModalRecusa()">Cancelar</button>
+
+</div>
 </div>
 </body>
 </html>

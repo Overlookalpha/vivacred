@@ -533,9 +533,10 @@ div.innerHTML =
   // VERIFICAR SOLICITAÇÃO REJEITADA
 
 const qRejeitado = query(
-  collection(db, "emprestimos"),
-  where("userId", "==", user.uid),
-  where("status", "==", "rejeitado")
+collection(db, "emprestimos"),
+where("userId", "==", user.uid),
+where("status", "==", "rejeitado"),
+where("statusAviso", "!=", "visto")
 );
 
 const snapshotRejeitado = await getDocs(qRejeitado);
@@ -595,6 +596,9 @@ ${orientacao}
 
   const area = document.getElementById("areaAvisoTopo");
 area.appendChild(aviso);
+await updateDoc(doc(db,"emprestimos",listaRejeitados[0].id),{
+statusAviso:"visto"
+});
 
 setTimeout(function(){
   if(aviso){

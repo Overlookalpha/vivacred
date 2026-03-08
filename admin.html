@@ -842,6 +842,37 @@ if(userSnap.exists()){
  location.reload();
 
 }
+  function gerarMensagemRecusa(dados){
+
+let mensagem = "";
+
+if(dados.motivoRecusa === "Score insuficiente"){
+
+mensagem = `
+👩‍💼 Evellyn • Assistente Virtual IsaCred
+
+Olá ${dados.nomeCliente},
+
+Agradecemos por enviar sua solicitação de empréstimo.
+
+❗ Motivo da decisão
+Score insuficiente.
+
+💡 Orientação
+Manter contas pagas em dia ajuda a melhorar seu score.
+
+Após melhorar seu histórico financeiro você poderá realizar uma nova solicitação.
+
+━━━━━━━━━━━━━━━
+https://overlookalpha.github.io/vivacred/
+━━━━━━━━━━━━━━━
+`;
+
+}
+
+return mensagem;
+
+}
 </script>
 <div id="modalParcelas" style="
 display:none;

@@ -1139,6 +1139,9 @@ if (querySnapshot.empty) {
 document.getElementById("sinoNotificacao").addEventListener("click", async () => {
 
   document.getElementById("modalNotificacoes").style.display = "flex";
+  setTimeout(()=>{
+  document.getElementById("modalNotificacoes").style.display = "none";
+},8000);
 
   const qNotificacoes = query(
     collection(db,"notificacoes"),
@@ -1183,7 +1186,7 @@ font-size: 14px;
 
     <br>
 
-    <button onclick="fecharNotificacoes()">Fechar</button>
+    <button id="btnFecharNotificacoes">Fechar</button>
 
   </div>
 </div>

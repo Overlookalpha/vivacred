@@ -75,26 +75,33 @@
       opacity: 0.7;
       font-size: 14px;
     }
-   .modal {
+  .modal {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+
+  background: rgba(0,0,0,0.65);
+
+  display: flex;
   justify-content: center;
   align-items: center;
+
   z-index: 999;
 }
 
 .modal-content {
   background: #1e1e1e;
   padding: 20px;
-  border-radius: 10px;
+  border-radius: 16px;
   width: 90%;
-  max-width: 400px;
+  max-width: 420px;
+
   color: white;
 
-  max-height: 80vh;
+  max-height: 85vh;
   overflow-y: auto;
+
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
 }
 .modal-content label {
   display: block;

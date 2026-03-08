@@ -176,6 +176,7 @@
     </div>
 
     <button id="logoutBtn" class="logout">Sair</button>
+    <button id="btnAtualizar" class="logout">Atualizar</button>
 
   </div>
 </div>
@@ -376,6 +377,13 @@ if (logoutBtn) {
     await signOut(auth);
     window.location.replace("login.html");
   });
+}
+  const btnAtualizar = document.getElementById("btnAtualizar");
+
+if(btnAtualizar){
+btnAtualizar.addEventListener("click", ()=>{
+location.reload();
+});
 }
 let nivelNomeGlobal = null;
 let usuarioLogado = null;

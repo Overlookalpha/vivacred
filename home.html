@@ -1143,14 +1143,14 @@ if (querySnapshot.empty) {
   function fecharNotificacoes(){
   document.getElementById("modalNotificacoes").style.display = "none";
 }
-
+ document
+.getElementById("btnFecharNotificacoes")
+.addEventListener("click", fecharNotificacoes);
+  
 document.getElementById("sinoNotificacao").addEventListener("click", async () => {
 
   document.getElementById("modalNotificacoes").style.display = "flex";
-  setTimeout(()=>{
-  document.getElementById("modalNotificacoes").style.display = "none";
-},8000);
-
+  
   const qNotificacoes = query(
     collection(db,"notificacoes"),
     where("userId","==",user.uid),

@@ -75,7 +75,7 @@
       opacity: 0.7;
       font-size: 14px;
     }
- .modal {
+    .modal {
   display: none;
   position: fixed;
   inset: 0;
@@ -96,6 +96,7 @@
   max-height: 80vh;
   overflow-y: auto;
 }
+
 .modal-content label {
   display: block;
   margin-bottom: 10px;
@@ -234,7 +235,7 @@
    <div id="minhasParcelas"></div>
    </div>
    <div id="modalCredito" class="modal">
-    <div class="">
+    <div class="modal-content">
     <h3>Simulação de Crédito</h3>
 
     <p>Valor padrão disponível: <strong>R$100</strong></p>
@@ -292,7 +293,7 @@
   </div>
 </div>
   <div id="modalTermos" class="modal">
-  <div class="">
+  <div class="modal-content">
 
     <h3>Termos do Contrato</h3>
 
@@ -904,9 +905,9 @@ fecharBtn.addEventListener("click", async () => {
       modal.style.display = "none";
     });
 
-   confirmar.addEventListener("click", () => {
-  document.getElementById("modalTermos").style.display = "flex";
-});
+    confirmar.addEventListener("click", () => {
+    document.getElementById("modalTermos").style.display = "flex";
+    });
     const modalTermos = document.getElementById("modalTermos");
 const aceitarTermos = document.getElementById("aceitoTermos");
 const confirmarTermos = document.getElementById("confirmarTermos");
@@ -1200,7 +1201,7 @@ font-size: 14px;
 ">
 </div>
     <div id="modalNotificacoes" class="modal">
-  <div class="">
+  <div class="modal-content">
 
     <h3>🔔 Notificações</h3>
 

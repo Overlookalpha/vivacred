@@ -586,9 +586,12 @@ ${orientacao}
 `;
 
   const area = document.getElementById("areaAvisoTopo");
-  area.appendChild(aviso);
-  setTimeout(()=>{
-  aviso.remove();
+area.appendChild(aviso);
+
+setTimeout(function(){
+  if(aviso){
+    aviso.style.display = "none";
+  }
 },8000);
 }
  function calcularNivel(score) {

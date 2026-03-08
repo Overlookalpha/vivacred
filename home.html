@@ -1165,7 +1165,7 @@ document.getElementById("sinoNotificacao").addEventListener("click", async () =>
   
   const qNotificacoes = query(
     collection(db,"notificacoes"),
-    where("userId","==",user.uid),
+    where("userId","==",usuarioLogado.uid),
     where("lida","==",false)
   );
 
@@ -1177,11 +1177,12 @@ document.getElementById("sinoNotificacao").addEventListener("click", async () =>
   });
 }
 
-  const contador = document.getElementById("contadorNotificacao");
+ const contador = document.getElementById("contadorNotificacao");
 
-contador.innerText = "0";
+contador.innerText = "";
 contador.style.display = "none";
-
+contador.removeAttribute("style");
+contador.style.display = "none";
 });
 </script>
 <div id="notificacaoCredito" style="

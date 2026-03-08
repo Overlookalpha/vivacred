@@ -905,8 +905,9 @@ fecharBtn.addEventListener("click", async () => {
     });
 
     confirmar.addEventListener("click", () => {
-    document.getElementById("modalTermos").style.display = "flex";
-    });
+modal.style.display = "none";
+document.getElementById("modalTermos").style.display = "flex";
+});
     const modalTermos = document.getElementById("modalTermos");
 const aceitarTermos = document.getElementById("aceitoTermos");
 const confirmarTermos = document.getElementById("confirmarTermos");

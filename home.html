@@ -1184,22 +1184,34 @@ contador.style.display = "none";
 contador.removeAttribute("style");
 contador.style.display = "none";
 });
-  function falarEvellyn(texto){
+ function falarEvellyn(texto){
 
 const msg = new SpeechSynthesisUtterance();
 
 msg.text = texto;
 msg.lang = "pt-BR";
 msg.rate = 1;
-msg.pitch = 1.1;
+msg.pitch = 1.2;
 
 const vozes = speechSynthesis.getVoices();
 
 for(let voz of vozes){
-if(voz.lang === "pt-BR" && voz.name.toLowerCase().includes("female")){
+
+if(voz.lang === "pt-BR"){
+
+msg.voice = voz;
+
+if(
+voz.name.includes("Luciana") ||
+voz.name.includes("Francisca") ||
+voz.name.includes("Google")
+){
 msg.voice = voz;
 break;
 }
+
+}
+
 }
 
 speechSynthesis.speak(msg);

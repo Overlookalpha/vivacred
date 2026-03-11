@@ -77,12 +77,31 @@ h1{
   <br><br>
 
   <a href="login.html" class="btn">Entrar</a>
+  <br><br>
+<button id="btnInstalar" class="btn" style="display:none;">📲 Instalar App</button>
 </div>
 
 <script>
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("service-worker.js");
 }
+
+let deferredPrompt;
+const btnInstalar = document.getElementById("btnInstalar");
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+
+  btnInstalar.style.display = "inline-block";
+});
+
+btnInstalar.addEventListener("click", async () => {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt = null;
+  }
+});
 </script>
 
 </body>

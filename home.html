@@ -1184,6 +1184,28 @@ contador.style.display = "none";
 contador.removeAttribute("style");
 contador.style.display = "none";
 });
+  function falarEvellyn(texto){
+
+const msg = new SpeechSynthesisUtterance();
+
+msg.text = texto;
+msg.lang = "pt-BR";
+msg.rate = 1;
+msg.pitch = 1.1;
+
+const vozes = speechSynthesis.getVoices();
+
+for(let voz of vozes){
+if(voz.lang === "pt-BR" && voz.name.toLowerCase().includes("female")){
+msg.voice = voz;
+break;
+}
+}
+
+speechSynthesis.speak(msg);
+
+}
+  falarEvellyn("Olá, eu sou a Evellyn. Vou te ajudar a entender seu crédito no IsaCred.");
 </script>
 <div id="notificacaoCredito" style="
 position: fixed;

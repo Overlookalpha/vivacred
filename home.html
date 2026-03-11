@@ -1233,12 +1233,21 @@ falarEvellyn(texto);
 document.getElementById("btnProximoEvellyn").addEventListener("click", ()=>{
 document.getElementById("evellynBox").style.display = "none";
 });
-  document.addEventListener("click", function iniciarEvellyn(){
+  let evellynIniciada = false;
 
-mostrarEvellyn("Olá! Eu sou a Évellyn. Vou te ajudar a entender seu crédito no IsaCred.");
+function iniciarEvellyn(){
 
-document.removeEventListener("click", iniciarEvellyn);
+if(evellynIniciada) return;
 
+evellynIniciada = true;
+
+mostrarEvellyn("Olá! Eu sou a Évellyn... Vou te ajudar a entender seu crédito no IsaCred.");
+
+}
+
+window.addEventListener("load", iniciarEvellyn);
+
+document.addEventListener("click", iniciarEvellyn);
 });
 </script>
 <div id="notificacaoCredito" style="

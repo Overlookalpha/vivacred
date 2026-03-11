@@ -1217,6 +1217,22 @@ break;
 speechSynthesis.speak(msg);
 
 }
+  function mostrarEvellyn(texto){
+
+const box = document.getElementById("evellynBox");
+const textoDiv = document.getElementById("evellynTexto");
+
+textoDiv.innerText = texto;
+
+box.style.display = "block";
+
+falarEvellyn(texto);
+
+}
+
+document.getElementById("btnProximoEvellyn").addEventListener("click", ()=>{
+document.getElementById("evellynBox").style.display = "none";
+});
   falarEvellyn("Olá, eu sou a Évellyn... Vou te ajudar a entender seu crédito no IsaCred.");
 </script>
 <div id="notificacaoCredito" style="
@@ -1246,6 +1262,40 @@ font-size: 14px;
     <button id="btnFecharNotificacoes">Fechar</button>
 
   </div>
+</div>
+    <div id="evellynBox" style="
+position:fixed;
+bottom:20px;
+left:20px;
+background:#111827;
+color:white;
+padding:15px;
+border-radius:12px;
+max-width:260px;
+box-shadow:0 10px 40px rgba(0,0,0,0.5);
+z-index:9999;
+font-size:14px;
+display:none;
+">
+
+<div style="font-weight:bold;color:#7dd3fc;margin-bottom:5px;">
+👩 Évellyn
+</div>
+
+<div id="evellynTexto"></div>
+
+<button id="btnProximoEvellyn" style="
+margin-top:10px;
+padding:6px 12px;
+background:#22c55e;
+border:none;
+border-radius:6px;
+color:white;
+cursor:pointer;
+">
+Entendi
+</button>
+
 </div>
 </body>
 </html>

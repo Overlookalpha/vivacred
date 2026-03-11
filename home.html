@@ -152,10 +152,16 @@
   opacity: 0.6;
   margin-top: 15px;
 }
-    .guiaScore{
+   .guiaScore{
 outline:3px solid #22c55e;
 border-radius:15px;
-box-shadow:0 0 20px rgba(34,197,94,0.7);
+animation:pulsarScore 1.2s infinite;
+}
+
+@keyframes pulsarScore{
+0%{box-shadow:0 0 0 0 rgba(34,197,94,0.8);}
+70%{box-shadow:0 0 0 18px rgba(34,197,94,0);}
+100%{box-shadow:0 0 0 0 rgba(34,197,94,0);}
 }
   </style>
 </head>
@@ -1222,7 +1228,7 @@ break;
 speechSynthesis.speak(msg);
 
 }
-  function mostrarEvellyn(texto){
+function mostrarEvellyn(texto){
 
 const box = document.getElementById("evellynBox");
 const textoDiv = document.getElementById("evellynTexto");
@@ -1235,10 +1241,17 @@ falarEvellyn(texto);
 
 }
 
+// BOTÃO PRÓXIMO
 document.getElementById("btnProximoEvellyn").addEventListener("click", ()=>{
-document.getElementById("evellynBox").style.display = "none";
+
+passoTutorial++;
+
+executarTutorial();
+
 });
-  let evellynIniciada = false;
+
+let evellynIniciada = false;
+let passoTutorial = 0;
 
 function iniciarEvellyn(){
 
@@ -1246,20 +1259,66 @@ if(evellynIniciada) return;
 
 evellynIniciada = true;
 
-mostrarEvellyn("Olá! Eu sou a Évellyn. Este é seu Score IsaCred. Quanto maior ele for, maior será seu limite de crédito.");
+executarTutorial();
+
+}
+
+function executarTutorial(){
+
+const score = document.getElementById("scoreValor").innerText;
+
+if(passoTutorial === 0){
+
+mostrarEvellyn(
+"Seu IsaCred Score atual é " + score +
+". Quanto maior seu score, maior será seu limite de crédito."
+);
 
 document.querySelector(".hero-score").classList.add("guiaScore");
 
 }
 
-window.addEventListener("load", () => {
+if(passoTutorial === 1){
 
-mostrarEvellyn("Olá! Eu sou a Évellyn. Toque na tela para eu te explicar como funciona seu crédito.");
+document.querySelector(".hero-score").classList.remove("guiaScore");
 
-});
+document.getElementById("limiteDisponivel").classList.add("guiaScore");
 
+mostrarEvellyn(
+"Aqui você vê seu limite disponível. Você começa com até trezentos reais e pode aumentar conforme seu score evolui."
+);
+
+}
+
+if(passoTutorial === 2){
+
+document.getElementById("limiteDisponivel").classList.remove("guiaScore");
+
+document.getElementById("btnSolicitar").classList.add("guiaScore");
+
+mostrarEvellyn(
+"Quando quiser solicitar crédito, toque neste botão verde."
+);
+
+}
+
+if(passoTutorial === 3){
+
+document.getElementById("btnSolicitar").classList.remove("guiaScore");
+
+mostrarEvellyn(
+"Pronto! Agora você já sabe como usar o IsaCred."
+);
+
+}
+
+}
+
+// INICIAR TUTORIAL (PC / ANDROID)
+window.addEventListener("load", iniciarEvellyn);
+
+// NECESSÁRIO PARA IPHONE (voz só após toque)
 document.addEventListener("click", iniciarEvellyn);
-
 </script>
 <div id="notificacaoCredito" style="
 position: fixed;

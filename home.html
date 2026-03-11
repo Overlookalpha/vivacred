@@ -1245,7 +1245,11 @@ mostrarEvellyn("Olá! Eu sou a Évellyn... Vou te ajudar a entender seu crédito
 
 }
 
-window.addEventListener("load", iniciarEvellyn);
+window.addEventListener("load", () => {
+
+mostrarEvellyn("Olá! Eu sou a Évellyn. Toque na tela para eu te explicar como funciona seu crédito.");
+
+});
 
 document.addEventListener("click", iniciarEvellyn);
 

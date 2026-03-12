@@ -1279,6 +1279,14 @@ const score = document.getElementById("scoreValor").innerText;
 if(passoTutorial === 0){
 
 mostrarEvellyn(
+"Olá! Eu sou a Évellyn... Vou te explicar rapidamente como funciona o IsaCred."
+);
+
+}
+
+if(passoTutorial === 1){
+
+mostrarEvellyn(
 "Seu IsaCred Score atual é " + score +
 ". Quanto maior seu score, maior será seu limite de crédito."
 );
@@ -1287,7 +1295,7 @@ document.querySelector(".hero-score").classList.add("guiaScore");
 
 }
 
-if(passoTutorial === 1){
+if(passoTutorial === 2){
 
 document.querySelector(".hero-score").classList.remove("guiaScore");
 
@@ -1299,7 +1307,7 @@ mostrarEvellyn(
 
 }
 
-if(passoTutorial === 2){
+if(passoTutorial === 3){
 
 document.getElementById("limiteDisponivel").classList.remove("guiaScore");
 
@@ -1311,7 +1319,7 @@ mostrarEvellyn(
 
 }
 
-if(passoTutorial === 3){
+if(passoTutorial === 4){
 
 document.getElementById("btnSolicitar").classList.remove("guiaScore");
 

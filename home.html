@@ -1244,12 +1244,21 @@ falarEvellyn(texto);
 // BOTÃO PRÓXIMO
 document.getElementById("btnProximoEvellyn").addEventListener("click", ()=>{
 
+if(passoTutorial >= 3){
+
+document.getElementById("evellynBox").style.display = "none";
+
+localStorage.setItem("tutorialIsaCred", "ok");
+
+return;
+
+}
+
 passoTutorial++;
 
 executarTutorial();
 
 });
-
 let evellynIniciada = false;
 let passoTutorial = 0;
 

@@ -185,37 +185,11 @@ async function calcularFinanceiro(){
 
  const emprestimosSnap = await getDocs(collection(db,"emprestimos"));
  const parcelasSnap = await getDocs(collection(db,"parcelas"));
- 
 
-  
 emprestimosSnap.forEach((docSnap)=>{
-  let statusGeral = "🟢 EM DIA";
- let menorVencimento = null;
 
-const dados = docSnap.data();
+ const dados = docSnap.data();
 
-parcelasSnap.forEach((docParcela) => {
-
-  const dadosParcela = docParcela.data();
-
-  // só pega parcelas desse empréstimo
-  if (dadosParcela.emprestimoId !== docSnap.id) return;
-
-  const venc = dadosParcela.vencimento.toDate();
-  const hoje = new Date();
-
-  // menor vencimento
-  if (!menorVencimento || venc < menorVencimento) {
-    menorVencimento = venc;
-  }
-
-  // atraso (não sobrescreve se já for atrasado)
-  if (statusGeral !== "🔴 ATRASADO" && hoje > venc && dadosParcela.pago < dadosParcela.valor) {
-    statusGeral = "🔴 ATRASADO";
-  }
-
-});
-  
  if(dados.status === "ativo"){
    totalEmprestado += Number(dados.valorFinal || 0);
    capitalEmprestado += Number(dados.valor || 0);
@@ -223,22 +197,15 @@ parcelasSnap.forEach((docParcela) => {
 
 });
   
- let dinheiroRua = 0;
+ parcelasSnap.forEach((docSnap)=>{
 
-parcelasSnap.forEach((docSnap)=>{
+   const dados = docSnap.data();
 
-  const dados = docSnap.data();
+   totalRecebido += Number(dados.pago || 0);
 
-  const pago = Number(dados.pago || 0);
-  const valor = Number(dados.valor || 0);
+ });
 
-  totalRecebido += pago;
-
-  const restante = valor - pago;
-
-  dinheiroRua += restante;
-
-});
+ const dinheiroRua = totalEmprestado - totalRecebido;
  const lucro = totalRecebido - capitalEmprestado;
  const saldo = capital - capitalEmprestado + totalRecebido;
 
@@ -264,15 +231,13 @@ let emprestimoRecusaId = null;
 
 onAuthStateChanged(auth, async (user) => {
 
-onAuthStateChanged(auth, async (user) => {
-
   if (!user) {
-    console.log("Usuário NÃO está logado");
+    console.log("Email logado:", user.email);
+    console.log("UID logado:", user.uid);
     window.location.replace("login.html");
     return;
   }
 
-  console.log("Usuário logado:", user.uid);
   // 🔐 Verifica se é admin na coleção admins
  let adminSnap;
 
@@ -399,6 +364,56 @@ Gerenciar Parcelas
 `;
   containerEmprestimos.appendChild(div);
 });
+});
+
+
+// EMPRÉSTIMOS ATIVOS
+
+const ativosSnapshot = await getDocs(collection(db, "emprestimos"));
+const containerAtivos = document.getElementById("listaEmprestimosAtivos");
+
+containerAtivos.innerHTML = "";
+
+ativosSnapshot.forEach((docSnap) => {
+
+  const dados = docSnap.data();
+
+ if (dados.status !== "ativo") return;
+
+
+  const div = document.createElement("div");
+  div.className = "card";
+  let statusTexto = "";
+
+const hoje = new Date();
+const vencimento = new Date(dados.dataVencimento);
+
+if(dados.parcelasPagas == 0){
+ statusTexto = "<div style='color:#cccccc;font-weight:bold;'>SEM PAGAMENTO</div>";
+}
+
+if(dados.parcelasPagas > 0 && dados.parcelasPagas < dados.parcelas){
+ statusTexto = "<div style='color:#ffd93d;font-weight:bold;'>PAGAMENTO PARCIAL</div>";
+}
+
+if(dados.parcelasPagas >= dados.parcelas){
+ statusTexto = "<div style='color:#4cff88;font-weight:bold;font-size:18px;'>QUITADO</div>";
+}
+
+if(hoje > vencimento && dados.parcelasPagas < dados.parcelas){
+ statusTexto = "<div style='color:#ff4c4c;font-weight:bold;'>ATRASADO</div>";
+}
+  div.innerHTML =
+ "<strong>" + dados.email + "</strong><br>" +
+ "Valor Total: " + dados.valorFinal + "<br>" +
+ "Parcelas: " + dados.parcelas + "<br>" +
+ statusTexto +
+ "<br>" +
+ "<button onclick=\"abrirParcelas('" + docSnap.id + "')\">Gerenciar Parcelas</button> " +
+ "<button onclick=\"fecharEmprestimo('" + docSnap.id + "')\">❌</button>";
+  
+  containerAtivos.appendChild(div);
+
 });
 
   

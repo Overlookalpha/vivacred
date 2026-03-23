@@ -491,11 +491,9 @@ div.style.lineHeight = "1.6";
 let restante = dados.valor - dados.pago;
 let status = "🔴 Pendente";
 
-const hoje = dados.dataAprovacao 
-  ? dados.dataAprovacao.toDate() 
-  : dados.criadoEm.toDate();
+const hoje = new Date();
 const vencimento = dados.vencimento.toDate();
-
+    
 let multa = 0;
 let juros = 0;
 
@@ -1102,30 +1100,26 @@ if (querySnapshot.empty) {
       (dados.valorFinal / dados.parcelas).toFixed(2)
     );
 
-    const hoje = new Date();
+   let parcelasHTML = "";
 
-    let parcelasHTML = "";
+snapshotParcelas.docs.forEach((p) => {
 
-   for (let i = 1; i <= dados.parcelas; i++) {
+  const dadosParcela = p.data();
 
-  const dataVencimento = new Date(hoje);
-  dataVencimento.setMonth(hoje.getMonth() + i);
+  if(dadosParcela.emprestimoId !== docSnap.id) return;
+
+  const dataVencimento = dadosParcela.vencimento.toDate();
 
   let status = "🔴 PENDENTE";
 
-  const parcelaPaga = snapshotParcelas.docs.find(p => {
-    const d = p.data();
-    return d.numero === i && d.pago >= d.valor;
-  });
-
-  if (parcelaPaga) {
+  if(dadosParcela.pago >= dadosParcela.valor){
     status = "🟢 PAGO";
   }
 
   parcelasHTML +=
-    "Parcela " + i +
+    "Parcela " + dadosParcela.numero +
     " - " +
-    valorParcela.toLocaleString("pt-BR", {
+    dadosParcela.valor.toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL"
     }) +
@@ -1133,7 +1127,8 @@ if (querySnapshot.empty) {
     " - Vencimento: " +
     dataVencimento.toLocaleDateString("pt-BR") +
     "<br>";
-}
+
+});
 
     const item = document.createElement("div");
     item.style.marginBottom = "15px";

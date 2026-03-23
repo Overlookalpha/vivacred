@@ -191,7 +191,7 @@ emprestimosSnap.forEach((docSnap)=>{
  const dados = docSnap.data();
 
  if(dados.status === "ativo"){
-   totalEmprestado += Number(dados.valorFinal || 0);
+   totalEmprestado += Number(dados.valor || 0);
    capitalEmprestado += Number(dados.valor || 0);
  }
 

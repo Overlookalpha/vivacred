@@ -264,13 +264,15 @@ let emprestimoRecusaId = null;
 
 onAuthStateChanged(auth, async (user) => {
 
+onAuthStateChanged(auth, async (user) => {
+
   if (!user) {
-    console.log("Email logado:", user.email);
-    console.log("UID logado:", user.uid);
+    console.log("Usuário NÃO está logado");
     window.location.replace("login.html");
     return;
   }
 
+  console.log("Usuário logado:", user.uid);
   // 🔐 Verifica se é admin na coleção admins
  let adminSnap;
 

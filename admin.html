@@ -223,15 +223,22 @@ parcelasSnap.forEach((docParcela) => {
 
 });
   
- parcelasSnap.forEach((docSnap)=>{
+ let dinheiroRua = 0;
 
-   const dados = docSnap.data();
+parcelasSnap.forEach((docSnap)=>{
 
-   totalRecebido += Number(dados.pago || 0);
+  const dados = docSnap.data();
 
- });
+  const pago = Number(dados.pago || 0);
+  const valor = Number(dados.valor || 0);
 
- const dinheiroRua = totalEmprestado - totalRecebido;
+  totalRecebido += pago;
+
+  const restante = valor - pago;
+
+  dinheiroRua += restante;
+
+});
  const lucro = totalRecebido - capitalEmprestado;
  const saldo = capital - capitalEmprestado + totalRecebido;
 

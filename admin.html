@@ -232,11 +232,10 @@ let emprestimoRecusaId = null;
 onAuthStateChanged(auth, async (user) => {
 
   if (!user) {
-    console.log("Email logado:", user.email);
-    console.log("UID logado:", user.uid);
-    window.location.replace("login.html");
-    return;
-  }
+  console.log("Usuário não logado");
+  window.location.replace("login.html");
+  return;
+}
 
   // 🔐 Verifica se é admin na coleção admins
  let adminSnap;

@@ -310,6 +310,36 @@ const containerEmprestimos = document.getElementById("listaEmprestimosAtivos");
 containerEmprestimos.innerHTML = "";
 
 emprestimosSnapshot.forEach((docSnap) => {
+const parcelasRef = collection(db, "parcelas");
+
+const qParcelas = query(
+  parcelasRef,
+  where("emprestimoId", "==", docSnap.id)
+);
+
+const parcelasSnap = await getDocs(qParcelas);
+
+let parcelasHTML = "";
+
+parcelasSnap.docs.forEach((p) => {
+
+  const dadosParcela = p.data();
+
+  const venc = dadosParcela.vencimento.toDate();
+
+  let statusParcela = "🔴 Pendente";
+
+  if(dadosParcela.pago >= dadosParcela.valor){
+    statusParcela = "🟢 Pago";
+  }
+
+  parcelasHTML +=
+    "Parcela " + dadosParcela.numero +
+    " - " + statusParcela +
+    " - Venc: " +
+    venc.toLocaleDateString("pt-BR") +
+    "<br>";
+});
 
   const dados = docSnap.data();
 
@@ -353,6 +383,11 @@ CPF: ${dados.cpfAvalista || "-"}<br><br>
 Valor Total: ${dados.valorFinal}<br>
 Parcelas: ${dados.parcelas}<br>
 ${statusTexto}<br>
+
+<br><b>Parcelas:</b><br>
+${parcelasHTML}
+
+<br>
 
 <button onclick="abrirParcelas('${docSnap.id}')">
 Gerenciar Parcelas
@@ -579,11 +614,14 @@ listaParcelas.forEach((parcela)=>{
  const div = document.createElement("div");
  div.className = "card";
 
- div.innerHTML =
+ const venc = parcela.vencimento.toDate();
+
+div.innerHTML =
 "Parcela "+parcela.numero+"<br>"+
 "Valor: "+parcela.valor+"<br>"+
-"Pago: "+parcela.pago+"<br><br>"+
-
+"Pago: "+parcela.pago+"<br>"+
+"Vencimento: "+venc.toLocaleDateString("pt-BR")+"<br><br>"+
+  
 "<button onclick=\"adicionarPagamento('"+parcela.id+"')\">Adicionar Pagamento</button>"+
 
 "<button onclick=\"confirmarParcela('"+parcela.id+"')\">Confirmar</button>";

@@ -309,7 +309,7 @@ const emprestimosSnapshot = await getDocs(collection(db, "emprestimos"));
 const containerEmprestimos = document.getElementById("listaEmprestimosAtivos");
 containerEmprestimos.innerHTML = "";
 
-emprestimosSnapshot.forEach((docSnap) => {
+for (const docSnap of emprestimosSnapshot.docs) {
 const parcelasRef = collection(db, "parcelas");
 
 const qParcelas = query(
@@ -398,8 +398,7 @@ Gerenciar Parcelas
 </button>
 `;
   containerEmprestimos.appendChild(div);
-});
-});
+}
 
 
 // EMPRÉSTIMOS ATIVOS

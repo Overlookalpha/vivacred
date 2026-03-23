@@ -185,11 +185,36 @@ async function calcularFinanceiro(){
 
  const emprestimosSnap = await getDocs(collection(db,"emprestimos"));
  const parcelasSnap = await getDocs(collection(db,"parcelas"));
+ 
 
+  
 emprestimosSnap.forEach((docSnap)=>{
+  let statusGeral = "🟢 EM DIA";
+ let menorVencimento = null;
 
  const dados = docSnap.data();
+ parcelasSnap.forEach((docParcela)=>{
 
+  const dadosParcela = docParcela.data();
+
+  if(dadosParcela.emprestimoId !== docSnap.id) return;
+
+  const venc = dadosParcela.vencimento.toDate();
+  const hoje = new Date();
+
+  // menor vencimento
+  if(!menorVencimento || venc < menorVencimento){
+    menorVencimento = venc;
+  }
+
+  // atraso
+ if(statusGeral !== "🔴 ATRASADO"){
+  if(hoje > venc && dadosParcela.pago < dadosParcela.valor){
+    statusGeral = "🔴 ATRASADO";
+  }
+}
+});
+  
  if(dados.status === "ativo"){
    totalEmprestado += Number(dados.valorFinal || 0);
    capitalEmprestado += Number(dados.valor || 0);

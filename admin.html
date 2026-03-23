@@ -192,27 +192,31 @@ emprestimosSnap.forEach((docSnap)=>{
   let statusGeral = "🟢 EM DIA";
  let menorVencimento = null;
 
- const dados = docSnap.data();
- parcelasSnap.forEach((docParcela)=>{
+const dados = docSnap.data();
+
+let statusGeral = "🟢 EM DIA";
+let menorVencimento = null;
+
+parcelasSnap.forEach((docParcela) => {
 
   const dadosParcela = docParcela.data();
 
-  if(dadosParcela.emprestimoId !== docSnap.id) return;
+  // só pega parcelas desse empréstimo
+  if (dadosParcela.emprestimoId !== docSnap.id) return;
 
   const venc = dadosParcela.vencimento.toDate();
   const hoje = new Date();
 
   // menor vencimento
-  if(!menorVencimento || venc < menorVencimento){
+  if (!menorVencimento || venc < menorVencimento) {
     menorVencimento = venc;
   }
 
-  // atraso
- if(statusGeral !== "🔴 ATRASADO"){
-  if(hoje > venc && dadosParcela.pago < dadosParcela.valor){
+  // atraso (não sobrescreve se já for atrasado)
+  if (statusGeral !== "🔴 ATRASADO" && hoje > venc && dadosParcela.pago < dadosParcela.valor) {
     statusGeral = "🔴 ATRASADO";
   }
-}
+
 });
   
  if(dados.status === "ativo"){
@@ -432,8 +436,9 @@ if(hoje > vencimento && dados.parcelasPagas < dados.parcelas){
  "<strong>" + dados.email + "</strong><br>" +
  "Valor Total: " + dados.valorFinal + "<br>" +
  "Parcelas: " + dados.parcelas + "<br>" +
- statusTexto +
- "<br>" +
+statusTexto +
+"<br>" +
+statusGeral + "<br>" +
  "<button onclick=\"abrirParcelas('" + docSnap.id + "')\">Gerenciar Parcelas</button> " +
  "<button onclick=\"fecharEmprestimo('" + docSnap.id + "')\">❌</button>";
   

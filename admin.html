@@ -579,11 +579,22 @@ listaParcelas.forEach((parcela)=>{
  const div = document.createElement("div");
  div.className = "card";
 
- div.innerHTML =
+const venc = parcela.vencimento.toDate();
+
+let status = "";
+
+if(new Date() > venc && parcela.pago < parcela.valor){
+  status = "🔴 ATRASADO<br>";
+}
+  
+div.innerHTML =
 "Parcela "+parcela.numero+"<br>"+
 "Valor: "+parcela.valor+"<br>"+
-"Pago: "+parcela.pago+"<br><br>"+
-
+"Pago: "+parcela.pago+"<br>"+
+"Falta: "+(parcela.valor - parcela.pago)+"<br>"+
+"Vencimento: "+venc.toLocaleDateString("pt-BR")+"<br>"+
+"<br>"+
+  
 "<button onclick=\"adicionarPagamento('"+parcela.id+"')\">Adicionar Pagamento</button>"+
 
 "<button onclick=\"confirmarParcela('"+parcela.id+"')\">Confirmar</button>";

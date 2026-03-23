@@ -206,18 +206,18 @@ emprestimosSnap.forEach((docSnap)=>{
  });
 
  const dinheiroRua = totalEmprestado - totalRecebido;
- const lucro = totalRecebido;
- const capitalAtual = dinheiroRua + totalRecebido;
+const lucro = totalRecebido;
+
 const saldo = Math.max(0, capitalBase - capitalEmprestado + totalRecebido);
 
- document.getElementById("dinheiroRua").innerText = dinheiroRua.toFixed(2);
- document.getElementById("dinheiroRecebido").innerText = totalRecebido.toFixed(2);
- document.getElementById("lucroTotal").innerText = lucro.toFixed(2);
- document.getElementById("saldoDisponivel").innerText = saldo.toFixed(2);
- const capitalAtual = dinheiroRua + saldo;
+const capitalAtual = dinheiroRua + saldo;
+
+document.getElementById("dinheiroRua").innerText = dinheiroRua.toFixed(2);
+document.getElementById("dinheiroRecebido").innerText = totalRecebido.toFixed(2);
+document.getElementById("lucroTotal").innerText = lucro.toFixed(2);
+document.getElementById("saldoDisponivel").innerText = saldo.toFixed(2);
 
 document.getElementById("capitalInput").value = capitalAtual.toFixed(2);
-
 }
 let capitalBase = 1000;
 

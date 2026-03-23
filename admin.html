@@ -206,7 +206,7 @@ emprestimosSnap.forEach((docSnap)=>{
  });
 
  const dinheiroRua = totalEmprestado - totalRecebido;
- const lucro = totalRecebido - capitalEmprestado;
+ const lucro = totalRecebido;
  const saldo = capital - capitalEmprestado + totalRecebido;
 
  document.getElementById("dinheiroRua").innerText = dinheiroRua.toFixed(2);

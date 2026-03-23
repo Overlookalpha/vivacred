@@ -208,7 +208,7 @@ emprestimosSnap.forEach((docSnap)=>{
  const dinheiroRua = totalEmprestado - totalRecebido;
  const lucro = totalRecebido;
  const capitalAtual = dinheiroRua + totalRecebido;
- const saldo = capitalAtual - capitalEmprestado + totalRecebido;
+ const saldo = capitalBase - capitalEmprestado + totalRecebido;
 
  document.getElementById("dinheiroRua").innerText = dinheiroRua.toFixed(2);
  document.getElementById("dinheiroRecebido").innerText = totalRecebido.toFixed(2);
@@ -216,7 +216,7 @@ emprestimosSnap.forEach((docSnap)=>{
  document.getElementById("saldoDisponivel").innerText = saldo.toFixed(2);
 
 }
-let capital = 1000;
+let capitalBase = 1000;
 
   
 const firebaseConfig = {

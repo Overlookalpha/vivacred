@@ -491,7 +491,9 @@ div.style.lineHeight = "1.6";
 let restante = dados.valor - dados.pago;
 let status = "🔴 Pendente";
 
-const hoje = new Date();
+const hoje = dados.dataAprovacao 
+  ? dados.dataAprovacao.toDate() 
+  : dados.criadoEm.toDate();
 const vencimento = dados.vencimento.toDate();
 
 let multa = 0;

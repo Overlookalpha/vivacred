@@ -906,16 +906,28 @@ if(userSnap.exists()){
 
  const emprestimo = emprestimoSnap.data();
 
- const mensagem =
-"Evellyn • Assistente Virtual IsaCred\n\n"+
+const mensagem =
+"👩‍💼 Evellyn - Assistente Virtual IsaCred\n\n"+
+
 "Olá "+(emprestimo.nomeCliente || "Cliente")+".\n\n"+
-"Identificamos uma parcela em atraso.\n\n"+
-"Parcela: "+parcela.numero+"\n"+
-"Valor: R$ "+Number(parcela.valor).toFixed(2)+"\n"+
-"Multa: R$ "+Number(parcela.multa || 0).toFixed(2)+"\n"+
-"Juros: R$ "+Number(parcela.juros || 0).toFixed(2)+"\n\n"+
-"Total atualizado: R$ "+Number(parcela.restante || parcela.valor).toFixed(2)+"\n\n"+
-"Pedimos que regularize seu pagamento o quanto antes.\n\n"+
+
+"⚠️ Identificamos uma parcela em atraso.\n\n"+
+
+"📄 Parcela: "+parcela.numero+"\n"+
+"💰 Valor: R$ "+Number(parcela.valor).toFixed(2)+"\n"+
+"➕ Multa: R$ "+Number(parcela.multa || 0).toFixed(2)+"\n"+
+"➕ Juros: R$ "+Number(parcela.juros || 0).toFixed(2)+"\n\n"+
+
+"📌 Total atualizado: R$ "+Number(parcela.restante || parcela.valor).toFixed(2)+"\n\n"+
+
+"💳 Chave Pix para pagamento:\n"+
+"51998920455\n\n"+
+
+"📄 Após o pagamento envie o comprovante para confirmação.\n\n"+
+
+"📱 Acompanhe seu empréstimo:\n"+
+"https://overlookalpha.github.io/vivacred/\n\n"+
+
 "Obrigado por utilizar a IsaCred.";
 
  const telefone = emprestimo.telefoneCliente || "";

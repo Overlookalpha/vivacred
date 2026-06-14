@@ -612,11 +612,13 @@ div.innerHTML =
 "Valor: "+parcela.valor+"<br>"+
 "Pago: "+parcela.pago+"<br>"+
 
-"Multa: "+(parcela.multa || 0)+"<br>"+
+"Multa: R$ "+Number(parcela.multa || 0).toFixed(2)+"<br>"+
 
-"Juros: "+(parcela.juros || 0)+"<br>"+
+"Juros: R$ "+Number(parcela.juros || 0).toFixed(2)+"<br>"+
 
-"Falta: "+(parcela.restante ?? (parcela.valor - parcela.pago))+"<br>"+
+"Falta: R$ "+Number(
+parcela.restante ?? (parcela.valor - parcela.pago)
+).toFixed(2)+"<br>"+
 
 "Vencimento: "+venc.toLocaleDateString("pt-BR")+"<br>"+
 "<br>"+

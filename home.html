@@ -1102,11 +1102,13 @@ if (querySnapshot.empty) {
 
    let parcelasHTML = "";
 
-snapshotParcelas.docs.forEach((p) => {
+const parcelasOrdenadas = snapshotParcelas.docs
+  .filter(p => p.data().emprestimoId === docSnap.id)
+  .sort((a,b) => a.data().numero - b.data().numero);
+
+parcelasOrdenadas.forEach((p) => {
 
   const dadosParcela = p.data();
-
-  if(dadosParcela.emprestimoId !== docSnap.id) return;
 
   const dataVencimento = dadosParcela.vencimento.toDate();
 

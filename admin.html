@@ -917,7 +917,15 @@ if(userSnap.exists()){
  "➕ Juros: R$ "+Number(parcela.juros || 0).toFixed(2)+"\n\n"+
  "📌 Total atualizado: R$ "+Number(parcela.restante || parcela.valor).toFixed(2);
 
- alert(mensagem);
+ const telefone = emprestimo.telefoneCliente || "";
+
+const link =
+"https://wa.me/" +
+telefone.replace(/\D/g,"") +
+"?text=" +
+encodeURIComponent(mensagem);
+
+window.open(link,"_blank");
 
 }
   function gerarMensagemRecusa(dados){

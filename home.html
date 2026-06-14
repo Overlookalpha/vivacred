@@ -474,11 +474,34 @@ const containerParcelas = document.getElementById("minhasParcelas");
 
 containerParcelas.innerHTML = "";
 
-const listaOrdenada = snapshotParcelas.docs.sort((a,b)=>{
-  return a.data().numero - b.data().numero;
+const emprestimosMap = {};
+
+snapshotParcelas.docs.forEach((docSnap)=>{
+
+  const dados = docSnap.data();
+
+  const idEmprestimo = dados.emprestimoId || "semGrupo";
+
+  if(!emprestimosMap[idEmprestimo]){
+    emprestimosMap[idEmprestimo] = [];
+  }
+
+  emprestimosMap[idEmprestimo].push(docSnap);
+
 });
 
-listaOrdenada.forEach((docSnap)=>{
+for(const emprestimoId in emprestimosMap){
+
+  const titulo = document.createElement("h3");
+  titulo.innerHTML = "📄 Empréstimo";
+  titulo.style.marginTop = "25px";
+  containerParcelas.appendChild(titulo);
+
+  const listaOrdenada = emprestimosMap[emprestimoId].sort((a,b)=>{
+    return a.data().numero - b.data().numero;
+  });
+
+  listaOrdenada.forEach((docSnap)=>{
 
   const dados = docSnap.data();
 
@@ -535,10 +558,12 @@ div.innerHTML =
 "<strong>Juros atraso:</strong> " + juros.toFixed(2) + "<br>" +
 "<strong>Restante:</strong> " + restante.toFixed(2);
 
-  containerParcelas.appendChild(div);
+containerParcelas.appendChild(div);
 
 });
-  const userRef = doc(db, "usuarios", user.uid);
+
+}
+const userRef = doc(db, "usuarios", user.uid);
   const adminRef = doc(db, "admins", user.uid);
   const adminSnap = await getDoc(adminRef);
   // VERIFICAR SOLICITAÇÃO REJEITADA

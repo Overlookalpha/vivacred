@@ -649,11 +649,11 @@ div.innerHTML =
 "Valor: "+moeda+" "+Number(parcela.valor).toFixed(2)+"<br>"+
 "Pago: "+parcela.pago+"<br>"+
 
-"Multa: R$ "+Number(parcela.multa || 0).toFixed(2)+"<br>"+
+"Multa: "+moeda+" "+Number(parcela.multa || 0).toFixed(2)+"<br>"+
 
-"Juros: R$ "+Number(parcela.juros || 0).toFixed(2)+"<br>"+
+"Juros: "+moeda+" "+Number(parcela.juros || 0).toFixed(2)+"<br>"+
 
-"Falta: R$ "+Number(
+"Falta: "+moeda+" "+Number(
 parcela.restante ?? (parcela.valor - parcela.pago)
 ).toFixed(2)+"<br>"+
 

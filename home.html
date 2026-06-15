@@ -1075,6 +1075,9 @@ await addDoc(collection(db, "emprestimos"), {
   userId: user.uid,
   email: user.email,
 
+  pais: paisUsuarioGlobal,
+  moeda: paisUsuarioGlobal === "PT" ? "€" : "R$",
+
   nomeCliente: nomeCliente,
   telefoneCliente: telefoneCliente,
   cpfCliente: cpfCliente,
@@ -1094,6 +1097,7 @@ await addDoc(collection(db, "emprestimos"), {
   dataAprovacao: null,
   dataVencimento: null
 });
+        
 await criarNotificacao(
   user.uid,
   "Solicitação enviada",

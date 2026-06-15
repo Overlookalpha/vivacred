@@ -308,6 +308,19 @@ snapshot.forEach((docSnap)=>{
 if(dados.finalizado === true){
  return;
 }
+let statusTexto = "";
+
+if(dados.parcelasPagas == 0){
+ statusTexto = "<div style='color:#cccccc;font-weight:bold;'>SEM PAGAMENTO</div>";
+}
+
+if(dados.parcelasPagas > 0 && dados.parcelasPagas < dados.parcelas){
+ statusTexto = "<div style='color:#ffd93d;font-weight:bold;'>PAGAMENTO PARCIAL</div>";
+}
+
+if(dados.parcelasPagas >= dados.parcelas){
+ statusTexto = "<div style='color:#4cff88;font-weight:bold;font-size:18px;'>QUITADO</div>";
+}
 div.innerHTML =
 "<strong>" + dados.email + "</strong><br><br>" +
 

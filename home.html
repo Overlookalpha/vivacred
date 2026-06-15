@@ -399,6 +399,7 @@ location.reload();
 });
 }
 let nivelNomeGlobal = null;
+let paisUsuarioGlobal = "BR";
 let usuarioLogado = null;
 onAuthStateChanged(auth, async (user) => {
   
@@ -768,6 +769,8 @@ setTimeout(function(){
 
  const data = userSnap.data();
  const paisUsuario = data.pais || "BR";
+ paisUsuarioGlobal = paisUsuario;
+ 
  if(paisUsuario === "PT"){
 
 document.getElementById("labelCpf").innerText = "NIF:";
@@ -1036,7 +1039,7 @@ await updateDoc(userRef, {
   cpf: cpfCliente,
   pix: pixCliente
 });
-const valorMinimo = paisUsuario === "PT" ? 30 : 100;
+const valorMinimo = paisUsuarioGlobal === "PT" ? 30 : 100;
 
 if (!valorFinal || valorFinal < valorMinimo) {
 

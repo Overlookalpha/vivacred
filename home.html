@@ -766,6 +766,18 @@ setTimeout(function(){
 
  const data = userSnap.data();
  const paisUsuario = data.pais || "BR";
+ if (paisUsuario === "PT") {
+
+  document.querySelector("#cpfCliente").placeholder =
+  "Digite seu NIF";
+
+  document.querySelector("#pixCliente").placeholder =
+  "Digite seu MB Way";
+
+  document.querySelector("#cpfAvalista").placeholder =
+  "NIF do avalista";
+
+}
  const dadosNivel = calcularNivel(data.score, paisUsuario);
  const scoreValor = document.getElementById("scoreValor");
 
@@ -1013,8 +1025,16 @@ await updateDoc(userRef, {
   cpf: cpfCliente,
   pix: pixCliente
 });
-if (!valorFinal || valorFinal < 100) {
-  alert("Valor mínimo é 100.");
+const valorMinimo = paisUsuario === "PT" ? 30 : 100;
+
+if (!valorFinal || valorFinal < valorMinimo) {
+
+  alert(
+    paisUsuario === "PT"
+      ? "Valor mínimo é €30."
+      : "Valor mínimo é R$100."
+  );
+
   return;
 }
 

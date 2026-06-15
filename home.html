@@ -749,7 +749,8 @@ setTimeout(function(){
     console.log("Usuário já existe");
 
  const data = userSnap.data();
-const dadosNivel = calcularNivel(data.score);
+ const paisUsuario = data.pais || "BR";
+ const dadosNivel = calcularNivel(data.score);
  const scoreValor = document.getElementById("scoreValor");
 
 if (scoreValor) {
@@ -863,7 +864,7 @@ if (limiteNivelTexto) {
     "Seu perfil permite até " +
     limiteMaximoNivel.toLocaleString("pt-BR", {
       style: "currency",
-      currency: "BRL"
+      currency: paisUsuario === "PT" ? "EUR" : "BRL"
     });
 }
   
@@ -874,7 +875,7 @@ if (limiteElemento && data.limiteBase) {
   limiteElemento.innerText =
   "Até " + limiteMaximoNivel.toLocaleString("pt-BR", {
   style: "currency",
-  currency: "BRL"
+  currency: paisUsuario === "PT" ? "EUR" : "BRL"
 });
 }
 

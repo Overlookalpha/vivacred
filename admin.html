@@ -213,13 +213,13 @@ emprestimosSnap.forEach((docSnap)=>{
 
 });
   
- parcelasSnap.forEach((docSnap)=>{
+parcelasSnap.forEach((docSnap)=>{
 
    const dados = docSnap.data();
 
-   totalRecebido += Number(dados.pago || 0);
+   totalRecebidoBR += Number(dados.pago || 0);
 
- });
+});
 
  const dinheiroRua =
 (totalEmprestadoBR - totalRecebidoBR) +

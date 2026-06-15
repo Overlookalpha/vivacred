@@ -1218,13 +1218,13 @@ parcelasOrdenadas.forEach((p) => {
   "<strong>Valor Recebido:</strong> " +
   dados.valor.toLocaleString("pt-BR", {
     style: "currency",
-    currency: "EUR"
+    currency: paisUsuarioGlobal === "PT" ? "EUR" : "BRL"
   }) +
   "<br>" +
   "<strong>Valor Total:</strong> " +
   dados.valorFinal.toLocaleString("pt-BR", {
     style: "currency",
-    currency: "EUR"
+    currency: paisUsuarioGlobal === "PT" ? "EUR" : "BRL"
   }) +
   "<br>" +
   "<strong>Parcelas:</strong> " +

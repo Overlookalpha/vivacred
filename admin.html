@@ -184,6 +184,7 @@ import {
   getDoc,
   updateDoc,
   addDoc,
+  setDoc, 
   query,
   where
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
@@ -748,14 +749,24 @@ window.pagarParcela = async (emprestimoId)=>{
 window.salvarCapital = async () => {
 
  capitalBR = Number(
-   document.getElementById("capitalBRInput").value
+  document.getElementById("capitalBRInput").value
  );
 
  capitalPT = Number(
-   document.getElementById("capitalPTInput").value
+  document.getElementById("capitalPTInput").value
+ );
+
+ await setDoc(
+  doc(db,"configuracoes","financeiro"),
+  {
+   capitalBR: capitalBR,
+   capitalPT: capitalPT
+  }
  );
 
  await calcularFinanceiro();
+
+ alert("Capital salvo com sucesso");
 
 };
   window.toggleHistorico = () => {

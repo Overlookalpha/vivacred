@@ -308,34 +308,38 @@ snapshot.forEach((docSnap)=>{
 if(dados.finalizado === true){
  return;
 }
- div.innerHTML =
-"<strong>"+dados.email+"</strong><br><br>"+
+div.innerHTML =
+"<strong>" + dados.email + "</strong><br><br>" +
 
-"<b>Cliente</b><br>"+
-"Nome: "+(dados.nomeCliente || "-")+"<br>"+
-"Telefone: "+(dados.telefoneCliente || "-")+"<br>"+
+"<b>Cliente</b><br>" +
+"Nome: " + (dados.nomeCliente || "-") + "<br>" +
+"Telefone: " + (dados.telefoneCliente || "-") + "<br>" +
 (dados.pais === "PT" ? "NIF: " : "CPF: ") +
 (dados.cpfCliente || "-") + "<br>" +
-
 (dados.pais === "PT" ? "MB Way: " : "Pix: ") +
-(dados.pixCliente || "-") + "<br><br>"+
+(dados.pixCliente || "-") + "<br><br>" +
 
-"<b>Avalista</b><br>"+
-"Nome: "+(dados.nomeAvalista || "-")+"<br>"+
-"Telefone: "+(dados.telefoneAvalista || "-")+"<br>"+
+"<b>Avalista</b><br>" +
+"Nome: " + (dados.nomeAvalista || "-") + "<br>" +
+"Telefone: " + (dados.telefoneAvalista || "-") + "<br>" +
 (dados.pais === "PT" ? "NIF: " : "CPF: ") +
-(dados.cpfAvalista || "-") + "<br><br>"+
-   
-"Valor: "+dados.valor+"<br>"+
-"Parcelas: "+dados.parcelas+"<br>"+
-"Juros: "+dados.juros+"<br>"+
-"Total: "+dados.valorFinal+"<br><br>"+
+(dados.cpfAvalista || "-") + "<br><br>" +
 
-"<button onclick=\"aprovarEmprestimo('"+docSnap.id+"')\">Aprovar</button>"+
-"<button onclick=\"editarEmprestimo('"+docSnap.id+"')\">Editar</button>"+
-"<button onclick=\"abrirModalRecusa('"+docSnap.id+"')\">Rejeitar</button>";
+"Valor Total: " +
+Number(dados.valorFinal).toLocaleString("pt-PT",{
+style:"currency",
+currency:(dados.pais === "PT" ? "EUR" : "BRL")
+}) +
+"<br>" +
 
- container.appendChild(div);
+"Parcelas: " + dados.parcelas + "<br>" +
+statusTexto +
+"<br>" +
+
+"<button onclick=\"abrirParcelas('" + docSnap.id + "')\">Gerenciar Parcelas</button> " +
+"<button onclick=\"fecharEmprestimo('" + docSnap.id + "')\">❌</button>";
+
+containerAtivos.appendChild(div);
 
 });
 // ===== LISTAR EMPRÉSTIMOS AGUARDANDO =====

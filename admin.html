@@ -585,6 +585,7 @@ window.abrirParcelas = async (emprestimoId)=>{
  const ref = doc(db,"emprestimos",emprestimoId);
  const snap = await getDoc(ref);
  const dados = snap.data();
+const moeda = dados.pais === "PT" ? "€" : "R$";
 
  document.getElementById("modalParcelas").style.display = "flex";
 
@@ -645,7 +646,7 @@ if(parcela.pago >= parcela.valor){
 
 div.innerHTML =
 "Parcela "+parcela.numero+"<br>"+
-"Valor: "+parcela.valor+"<br>"+
+"Valor: "+moeda+" "+Number(parcela.valor).toFixed(2)+"<br>"+
 "Pago: "+parcela.pago+"<br>"+
 
 "Multa: R$ "+Number(parcela.multa || 0).toFixed(2)+"<br>"+

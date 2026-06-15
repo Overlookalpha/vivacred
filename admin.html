@@ -91,9 +91,15 @@ color:white;
 <div id="painelFinanceiro" style="display:flex; flex-direction:column; gap:15px; margin-bottom:20px;">
 
 <div class="card">
-<strong>Capital Geral</strong><br>
-<input id="capitalInput" type="number" value="1000" style="width:100px;">
+
+<strong>Capital Brasil</strong><br>
+<input id="capitalBRInput" type="number" value="1000" style="width:100px;"><br><br>
+
+<strong>Capital Portugal</strong><br>
+<input id="capitalPTInput" type="number" value="1000" style="width:100px;"><br><br>
+
 <button onclick="salvarCapital()">Salvar</button>
+
 </div>
 
 <div class="card">
@@ -241,13 +247,13 @@ const dinheiroRuaPT =
 totalEmprestadoPT - totalRecebidoPT;
 
 const saldoBR = Math.max(
-0,
-capitalBase - capitalEmprestadoBR + totalRecebidoBR
+  0,
+  capitalBR - capitalEmprestadoBR + totalRecebidoBR
 );
 
 const saldoPT = Math.max(
-0,
-capitalBase - capitalEmprestadoPT + totalRecebidoPT
+  0,
+  capitalPT - capitalEmprestadoPT + totalRecebidoPT
 );
 
 document.getElementById("dinheiroRuaBR").innerText =
@@ -268,7 +274,8 @@ document.getElementById("recebidoPT").innerText =
 document.getElementById("saldoPT").innerText =
 "€ " + saldoPT.toFixed(2);
 }
-let capitalBase = 1000;
+let capitalBR = 1000;
+let capitalPT = 1000;
 
   
 const firebaseConfig = {

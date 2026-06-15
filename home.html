@@ -1199,7 +1199,7 @@ parcelasOrdenadas.forEach((p) => {
     " - " +
     dadosParcela.valor.toLocaleString("pt-BR", {
       style: "currency",
-      currency: "EUR"
+      currency: paisUsuarioGlobal === "PT" ? "EUR" : "BRL"
     }) +
     " - " + status +
     " - Vencimento: " +

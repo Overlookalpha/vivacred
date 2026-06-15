@@ -224,7 +224,7 @@ emprestimosSnap.forEach((docSnap)=>{
  const dinheiroRua =
 (totalEmprestadoBR - totalRecebidoBR) +
 (totalEmprestadoPT - totalRecebidoPT);
-const lucro = totalRecebido;
+const lucro = totalRecebidoBR + totalRecebidoPT;
 
 const saldo = Math.max(0, capitalBase - capitalEmprestado + totalRecebido);
 

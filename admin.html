@@ -91,31 +91,36 @@ color:white;
 <div id="painelFinanceiro" style="display:flex; flex-direction:column; gap:15px; margin-bottom:20px;">
 
 <div class="card">
-<strong>Capital</strong><br>
+<strong>Capital Geral</strong><br>
 <input id="capitalInput" type="number" value="1000" style="width:100px;">
 <button onclick="salvarCapital()">Salvar</button>
 </div>
 
 <div class="card">
-<strong>Dinheiro na Rua</strong><br>
-<span id="dinheiroRua">0</span>
+<h3>🇧🇷 Brasil</h3>
+
+Dinheiro na Rua:<br>
+<span id="dinheiroRuaBR">0</span><br><br>
+
+Recebido:<br>
+<span id="recebidoBR">0</span><br><br>
+
+Saldo:<br>
+<span id="saldoBR">0</span>
 </div>
 
 <div class="card">
-<strong>Recebido</strong><br>
-<span id="dinheiroRecebido">0</span>
-</div>
+<h3>🇵🇹 Portugal</h3>
 
-<div class="card">
-<strong>Lucro</strong><br>
-<span id="lucroTotal">0</span>
-</div>
+Dinheiro na Rua:<br>
+<span id="dinheiroRuaPT">0</span><br><br>
 
-<div class="card">
-<strong>Saldo Disponível</strong><br>
-<span id="saldoDisponivel">0</span>
-</div>
+Recebido:<br>
+<span id="recebidoPT">0</span><br><br>
 
+Saldo:<br>
+<span id="saldoPT">0</span>
+</div>
 </div>
 
 </div>
@@ -215,36 +220,53 @@ emprestimosSnap.forEach((docSnap)=>{
   
 parcelasSnap.forEach((docSnap)=>{
 
-   const dados = docSnap.data();
+ const dados = docSnap.data();
+
+ if((dados.pais || "BR") === "PT"){
+
+   totalRecebidoPT += Number(dados.pago || 0);
+
+ }else{
 
    totalRecebidoBR += Number(dados.pago || 0);
 
+ }
+
 });
 
- const dinheiroRua =
-(totalEmprestadoBR - totalRecebidoBR) +
-(totalEmprestadoPT - totalRecebidoPT);
-const lucro = totalRecebidoBR + totalRecebidoPT;
+const dinheiroRuaBR =
+totalEmprestadoBR - totalRecebidoBR;
 
-const capitalEmprestado =
-capitalEmprestadoBR + capitalEmprestadoPT;
+const dinheiroRuaPT =
+totalEmprestadoPT - totalRecebidoPT;
 
-const totalRecebido =
-totalRecebidoBR + totalRecebidoPT;
-
-const saldo = Math.max(
-  0,
-  capitalBase - capitalEmprestado + totalRecebido
+const saldoBR = Math.max(
+0,
+capitalBase - capitalEmprestadoBR + totalRecebidoBR
 );
-  
-const capitalAtual = dinheiroRua + saldo;
 
-document.getElementById("dinheiroRua").innerText = dinheiroRua.toFixed(2);
-document.getElementById("dinheiroRecebido").innerText = totalRecebido.toFixed(2);
-document.getElementById("lucroTotal").innerText = lucro.toFixed(2);
-document.getElementById("saldoDisponivel").innerText = saldo.toFixed(2);
+const saldoPT = Math.max(
+0,
+capitalBase - capitalEmprestadoPT + totalRecebidoPT
+);
 
-document.getElementById("capitalInput").value = capitalAtual.toFixed(2);
+document.getElementById("dinheiroRuaBR").innerText =
+"R$ " + dinheiroRuaBR.toFixed(2);
+
+document.getElementById("recebidoBR").innerText =
+"R$ " + totalRecebidoBR.toFixed(2);
+
+document.getElementById("saldoBR").innerText =
+"R$ " + saldoBR.toFixed(2);
+
+document.getElementById("dinheiroRuaPT").innerText =
+"€ " + dinheiroRuaPT.toFixed(2);
+
+document.getElementById("recebidoPT").innerText =
+"€ " + totalRecebidoPT.toFixed(2);
+
+document.getElementById("saldoPT").innerText =
+"€ " + saldoPT.toFixed(2);
 }
 let capitalBase = 1000;
 

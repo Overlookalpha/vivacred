@@ -249,7 +249,9 @@ animation:pulsarScore 1.2s infinite;
     <div class="modal-content">
     <h3>Simulação de Crédito</h3>
 
-    <p>Valor padrão disponível: <strong>R$100</strong></p>
+    <p id="valorPadraoTexto">
+Valor padrão disponível: <strong>R$100</strong>
+</p>
 
     <label>Valor desejado:</label>
 <input type="number" id="valorSimulado" placeholder="Digite o valor" min="100" />
@@ -776,6 +778,9 @@ document.getElementById("pixCliente").placeholder = "Digite seu MB Way";
 
 document.getElementById("labelCpfAvalista").innerText = "NIF do avalista:";
 document.getElementById("cpfAvalista").placeholder = "NIF do avalista";
+
+document.getElementById("valorPadraoTexto").innerHTML =
+'Valor padrão disponível: <strong>€30</strong>';
 
 }
  const dadosNivel = calcularNivel(data.score, paisUsuario);

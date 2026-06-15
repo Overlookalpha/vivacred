@@ -766,23 +766,16 @@ setTimeout(function(){
 
  const data = userSnap.data();
  const paisUsuario = data.pais || "BR";
- if (paisUsuario === "PT") {
+ if(paisUsuario === "PT"){
 
-  document.getElementById("labelCpf").innerText = "NIF:";
-  document.getElementById("labelPix").innerText = "MB Way:";
-  document.getElementById("labelCpfAvalista").innerText = "NIF do avalista:";
+document.getElementById("labelCpf").innerText = "NIF:";
+document.getElementById("cpfCliente").placeholder = "Digite seu NIF";
 
-}
- if (paisUsuario === "PT") {
+document.getElementById("labelPix").innerText = "MB Way:";
+document.getElementById("pixCliente").placeholder = "Digite seu MB Way";
 
-  document.querySelector("#cpfCliente").placeholder =
-  "Digite seu NIF";
-
-  document.querySelector("#pixCliente").placeholder =
-  "Digite seu MB Way";
-
-  document.querySelector("#cpfAvalista").placeholder =
-  "NIF do avalista";
+document.getElementById("labelCpfAvalista").innerText = "NIF do avalista:";
+document.getElementById("cpfAvalista").placeholder = "NIF do avalista";
 
 }
  const dadosNivel = calcularNivel(data.score, paisUsuario);

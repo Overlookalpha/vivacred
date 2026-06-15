@@ -544,9 +544,11 @@ window.aprovarEmprestimo = async (id) => {
    const vencimentoParcela = new Date();
    vencimentoParcela.setMonth(vencimentoParcela.getMonth() + i);
 
-   await addDoc(collection(db, "parcelas"), {
+  await addDoc(collection(db, "parcelas"), {
   emprestimoId: id,
   userId: dados.userId,
+  pais: dados.pais || "BR",
+
   numero: i,
   valor: valorParcela,
   pago: 0,

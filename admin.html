@@ -747,8 +747,13 @@ window.pagarParcela = async (emprestimoId)=>{
   
 window.salvarCapital = async () => {
 
- const input = document.getElementById("capitalInput");
- capital = Number(input.value);
+ capitalBR = Number(
+   document.getElementById("capitalBRInput").value
+ );
+
+ capitalPT = Number(
+   document.getElementById("capitalPTInput").value
+ );
 
  await calcularFinanceiro();
 

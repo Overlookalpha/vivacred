@@ -436,7 +436,12 @@ if(hoje > vencimento && dados.parcelasPagas < dados.parcelas){
 }
   div.innerHTML =
  "<strong>" + dados.email + "</strong><br>" +
- "Valor Total: " + dados.valorFinal + "<br>" +
+ "Valor Total: " +
+Number(dados.valorFinal).toLocaleString("pt-PT",{
+style:"currency",
+currency:(dados.pais === "PT" ? "EUR" : "BRL")
+}) +
+"<br>"+
  "Parcelas: " + dados.parcelas + "<br>" +
  statusTexto +
  "<br>" +

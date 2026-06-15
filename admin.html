@@ -394,13 +394,13 @@ div.innerHTML = `
 <b>Cliente</b><br>
 Nome: ${dados.nomeCliente || "-"}<br>
 Telefone: ${dados.telefoneCliente || "-"}<br>
-CPF: ${dados.cpfCliente || "-"}<br>
-Pix: ${dados.pixCliente || "-"}<br><br>
+${dados.pais === "PT" ? "NIF" : "CPF"}: ${dados.cpfCliente || "-"}<br>
+${dados.pais === "PT" ? "MB Way" : "Pix"}: ${dados.pixCliente || "-"}<br><br>
 
 <b>Avalista</b><br>
 Nome: ${dados.nomeAvalista || "-"}<br>
 Telefone: ${dados.telefoneAvalista || "-"}<br>
-CPF: ${dados.cpfAvalista || "-"}<br><br>
+${dados.pais === "PT" ? "NIF" : "CPF"}: ${dados.cpfAvalista || "-"}<br><br>
 
 Valor Total: ${dados.valorFinal}<br>
 Parcelas: ${dados.parcelas}<br>

@@ -642,13 +642,29 @@ setTimeout(function(){
   }
 },8000);
 }
- function calcularNivel(score) {
+ function calcularNivel(score, pais = "BR") {
+
+  const limites = pais === "PT"
+  ? {
+      Essencial: 100,
+      Bronze: 300,
+      Prata: 500,
+      Ouro: 800,
+      Black: 2000
+    }
+  : {
+      Essencial: 300,
+      Bronze: 800,
+      Prata: 1500,
+      Ouro: 3000,
+      Black: 5000
+    };
 
   if (score <= 20) {
     return {
       nome: "Essencial",
       emoji: "🍀",
-      max: 300,
+      max: limites.Essencial,
       cor: "#7ED957"
     };
   }
@@ -656,7 +672,7 @@ setTimeout(function(){
     return {
       nome: "Bronze",
       emoji: "🥉",
-      max: 800,
+      max: limites.Bronze,
       cor: "#CD7F32"
     };
   }
@@ -664,7 +680,7 @@ setTimeout(function(){
     return {
       nome: "Prata",
       emoji: "🥈",
-      max: 1500,
+      max: limites.Prata,
       cor: "#C0C0C0"
     };
   }
@@ -672,7 +688,7 @@ setTimeout(function(){
     return {
       nome: "Ouro",
       emoji: "🥇",
-      max: 3000,
+      max: limites.Ouro,
       cor: "#FFD700"
     };
   }
@@ -680,7 +696,7 @@ setTimeout(function(){
     return {
       nome: "Black",
       emoji: "💎",
-      max: 5000,
+      max: limites.Black,
       cor: "#6A0DAD"
     };
   }
@@ -750,7 +766,7 @@ setTimeout(function(){
 
  const data = userSnap.data();
  const paisUsuario = data.pais || "BR";
- const dadosNivel = calcularNivel(data.score);
+ const dadosNivel = calcularNivel(data.score, paisUsuario);
  const scoreValor = document.getElementById("scoreValor");
 
 if (scoreValor) {

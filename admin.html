@@ -226,8 +226,17 @@ parcelasSnap.forEach((docSnap)=>{
 (totalEmprestadoPT - totalRecebidoPT);
 const lucro = totalRecebidoBR + totalRecebidoPT;
 
-const saldo = Math.max(0, capitalBase - capitalEmprestado + totalRecebido);
+const capitalEmprestado =
+capitalEmprestadoBR + capitalEmprestadoPT;
 
+const totalRecebido =
+totalRecebidoBR + totalRecebidoPT;
+
+const saldo = Math.max(
+  0,
+  capitalBase - capitalEmprestado + totalRecebido
+);
+  
 const capitalAtual = dinheiroRua + saldo;
 
 document.getElementById("dinheiroRua").innerText = dinheiroRua.toFixed(2);

@@ -178,9 +178,14 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
 async function calcularFinanceiro(){
 
- let totalEmprestado = 0;
- let totalRecebido = 0;
- let capitalEmprestado = 0;
+ let totalEmprestadoBR = 0;
+let totalEmprestadoPT = 0;
+
+let totalRecebidoBR = 0;
+let totalRecebidoPT = 0;
+
+let capitalEmprestadoBR = 0;
+let capitalEmprestadoPT = 0;
 
  const emprestimosSnap = await getDocs(collection(db,"emprestimos"));
  const parcelasSnap = await getDocs(collection(db,"parcelas"));
@@ -188,10 +193,22 @@ async function calcularFinanceiro(){
 emprestimosSnap.forEach((docSnap)=>{
 
  const dados = docSnap.data();
+ const pais = dados.pais || "BR";
 
  if(dados.status === "ativo"){
-   totalEmprestado += Number(dados.valor || 0);
-   capitalEmprestado += Number(dados.valor || 0);
+
+   if(pais === "PT"){
+
+     totalEmprestadoPT += Number(dados.valor || 0);
+     capitalEmprestadoPT += Number(dados.valor || 0);
+
+   }else{
+
+     totalEmprestadoBR += Number(dados.valor || 0);
+     capitalEmprestadoBR += Number(dados.valor || 0);
+
+   }
+
  }
 
 });

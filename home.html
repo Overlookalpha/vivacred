@@ -97,7 +97,7 @@
   overflow-y: auto;
 }
 
-.modal-content label {
+.modal-content  {
   display: block;
   margin-bottom: 10px;
 }
@@ -276,17 +276,17 @@ animation:pulsarScore 1.2s infinite;
 
 <br><br>
 
-<label>CPF:</label>
+<label id="labelCpf">CPF:</label>
 <input type="text" id="cpfCliente" placeholder="Digite seu CPF">
 
 <br><br>
 
-<label>Chave Pix:</label>
+<label id="labelPix">Chave Pix:</label>
 <input type="text" id="pixCliente" placeholder="Digite sua chave Pix">
 
 <hr style="margin:20px 0; opacity:0.2">
 
-<label>Nome do avalista:</label>
+<label id="labelCpfAvalista">CPF do avalista:</label>
 <input type="text" id="nomeAvalista" placeholder="Nome do avalista">
 
 <br><br>
@@ -766,6 +766,13 @@ setTimeout(function(){
 
  const data = userSnap.data();
  const paisUsuario = data.pais || "BR";
+ if (paisUsuario === "PT") {
+
+  document.getElementById("labelCpf").innerText = "NIF:";
+  document.getElementById("labelPix").innerText = "MB Way:";
+  document.getElementById("labelCpfAvalista").innerText = "NIF do avalista:";
+
+}
  if (paisUsuario === "PT") {
 
   document.querySelector("#cpfCliente").placeholder =

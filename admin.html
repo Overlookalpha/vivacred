@@ -1265,6 +1265,30 @@ window.renderizarUsuarios = async function(){
 
 }
   renderizarUsuarios();
+
+window.verUsuarioFirestore = async function(id){
+
+ const snap = await getDoc(
+  doc(db,"usuarios",id)
+ );
+
+ if(!snap.exists()){
+  alert("Usuário não encontrado");
+  return;
+ }
+
+ const user = snap.data();
+
+ alert(
+  "Nome: " + (user.nome || "-") + "\n" +
+  "Email: " + (user.email || "-") + "\n" +
+  "Telefone: " + (user.telefone || "-") + "\n" +
+  "CPF/NIF: " + (user.cpf || "-") + "\n" +
+  "Score: " + (user.score || 0) + "\n" +
+  "Limite: " + (user.limiteBase || 0)
+ );
+
+}
   
 window.verUsuario = function(index){
 

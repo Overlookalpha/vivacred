@@ -183,9 +183,28 @@ Histórico de Empréstimos ▼
 Gerenciar usuários, permissões e países.
 </p>
 
-<button>
+<button onclick="abrirTela('usuarios')">
 Abrir
 </button>
+
+</div>
+<!-- USUÁRIOS -->
+
+<div id="telaUsuarios" style="display:none;">
+
+<h3>👥 Usuários</h3>
+
+<button>
++ Novo Usuário
+</button>
+
+<br><br>
+
+<div class="card">
+
+Nenhum usuário cadastrado.
+
+</div>
 
 </div>
 
@@ -809,6 +828,7 @@ document.getElementById("telaSolicitacoes").style.display = "none";
 document.getElementById("telaEmprestimos").style.display = "none";
 document.getElementById("telaHistorico").style.display = "none";
 document.getElementById("telaConfig").style.display = "none";
+document.getElementById("telaUsuarios").style.display = "none";
 
 const menu = document.querySelectorAll(".menuItem");
 menu.forEach(btn => btn.classList.remove("menuAtivo"));
@@ -837,7 +857,9 @@ if(tela === "config"){
 document.getElementById("telaConfig").style.display = "block";
 menu[4].classList.add("menuAtivo");
 }
-
+if(tela === "usuarios"){
+document.getElementById("telaUsuarios").style.display = "block";
+}
 window.scrollTo(0,0);
 
 }

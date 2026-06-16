@@ -1097,7 +1097,11 @@ window.open(link,"_blank");
 }
   window.abrirNovoUsuario = function(){
 
- alert("Cadastro de usuário será implementado no próximo passo");
+ const nome = prompt("Nome do usuário:");
+
+ if(!nome) return;
+
+ alert("Usuário: " + nome);
 
 }
   function gerarMensagemRecusa(dados){

@@ -1240,13 +1240,25 @@ window.renderizarUsuarios = async function(){
  : "🟢 ativo"
 }<br>
 
-    ⭐ Score: ${
-      user.score || 0
-    }<br>
+   ⭐ Score: ${
+  user.score || 0
+}<br>
 
-    💰 Limite: ${
-      user.limiteBase || 0
-    }<br><br>
+🏅 Nível: ${
+  (user.score || 0) <= 20 ? "Essencial" :
+  (user.score || 0) <= 40 ? "Bronze" :
+  (user.score || 0) <= 60 ? "Prata" :
+  (user.score || 0) <= 80 ? "Ouro" :
+  "Black"
+}<br>
+
+💰 Limite Calculado: ${
+  user.score <= 20 ? 300 :
+  user.score <= 40 ? 800 :
+  user.score <= 60 ? 1500 :
+  user.score <= 80 ? 3000 :
+  5000
+}<br><br>
 
     <button onclick="verUsuarioFirestore('${id}')">
       Ver

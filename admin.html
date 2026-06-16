@@ -194,6 +194,7 @@ Abrir
 <!-- USUÁRIOS -->
 
 <div id="telaUsuarios" style="display:none;">
+
 <h3>👥 Usuários</h3>
 
 <button onclick="abrirNovoUsuario()">
@@ -202,7 +203,22 @@ Abrir
 
 <br><br>
 
-<div class="card">
+<div id="formNovoUsuario" class="card" style="display:none;">
+
+<h4>Novo Usuário</h4>
+
+<input id="novoNome" placeholder="Nome"
+style="width:100%;padding:8px;margin-bottom:10px;">
+
+<input id="novoEmail" placeholder="Email"
+style="width:100%;padding:8px;margin-bottom:10px;">
+
+<input id="novaSenha" type="password" placeholder="Senha"
+style="width:100%;padding:8px;margin-bottom:10px;">
+
+</div>
+
+<div id="listaUsuariosAdmin" class="card">
 
 Nenhum usuário cadastrado.
 
@@ -1095,13 +1111,9 @@ encodeURIComponent(mensagem);
 window.open(link,"_blank");
 
 }
-  window.abrirNovoUsuario = function(){
+ window.abrirNovoUsuario = function(){
 
- const nome = prompt("Nome do usuário:");
-
- if(!nome) return;
-
- alert("Usuário: " + nome);
+ document.getElementById("formNovoUsuario").style.display = "block";
 
 }
   function gerarMensagemRecusa(dados){

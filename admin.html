@@ -1170,8 +1170,9 @@ let usuariosTeste = [];
 window.salvarNovoUsuario = function(){
 
  const nome = document.getElementById("novoNome").value;
- const email = document.getElementById("novoEmail").value;
- const telefone = document.getElementById("novoTelefone").value;
+const email = document.getElementById("novoEmail").value;
+const senha = document.getElementById("novaSenha").value;
+const telefone = document.getElementById("novoTelefone").value;
  const pais = document.getElementById("novoPais").value;
  const documento = document.getElementById("novoDocumento").value;
  const limite = document.getElementById("novoLimite").value;
@@ -1180,12 +1181,13 @@ window.salvarNovoUsuario = function(){
  usuariosTeste.push({
   nome,
   email,
+  senha,
   telefone,
   pais,
   documento,
   limite,
   score
- });
+});
 
  renderizarUsuarios();
 
@@ -1245,6 +1247,7 @@ window.verUsuario = function(index){
  alert(
  "Nome: " + user.nome + "\n" +
  "Email: " + user.email + "\n" +
+ "Senha: " + user.senha + "\n" +
  "Telefone: " + user.telefone + "\n" +
  "País: " + user.pais + "\n" +
  "Documento: " + user.documento + "\n" +
@@ -1263,10 +1266,36 @@ window.editarUsuario = function(index){
 
  if(novoNome === null) return;
 
- const novoTelefone =
- prompt("Telefone:", user.telefone);
+const novoEmail =
+prompt("Email:", user.email);
+
+if(novoEmail === null) return;
+
+const novaSenha =
+prompt("Senha:", user.senha);
+
+if(novaSenha === null) return;
+
+const novoTelefone =
+prompt("Telefone:", user.telefone);
 
  if(novoTelefone === null) return;
+
+  const novoPais =
+prompt(
+"País (BR ou PT):",
+user.pais
+);
+
+if(novoPais === null) return;
+
+const novoDocumento =
+prompt(
+"CPF/NIF:",
+user.documento
+);
+
+if(novoDocumento === null) return;
 
  const novoLimite =
  prompt("Limite:", user.limite);
@@ -1279,9 +1308,13 @@ window.editarUsuario = function(index){
  if(novoScore === null) return;
 
  usuariosTeste[index].nome = novoNome;
- usuariosTeste[index].telefone = novoTelefone;
- usuariosTeste[index].limite = novoLimite;
- usuariosTeste[index].score = novoScore;
+usuariosTeste[index].email = novoEmail;
+usuariosTeste[index].senha = novaSenha;
+usuariosTeste[index].telefone = novoTelefone;
+usuariosTeste[index].pais = novoPais;
+usuariosTeste[index].documento = novoDocumento;
+usuariosTeste[index].limite = novoLimite;
+usuariosTeste[index].score = novoScore;
 
  renderizarUsuarios();
 

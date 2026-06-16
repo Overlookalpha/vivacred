@@ -1189,6 +1189,15 @@ window.salvarNovoUsuario = function(){
 
  renderizarUsuarios();
 
+document.getElementById("formNovoUsuario").style.display = "none";
+document.getElementById("novoNome").value = "";
+document.getElementById("novoEmail").value = "";
+document.getElementById("novaSenha").value = "";
+document.getElementById("novoTelefone").value = "";
+document.getElementById("novoDocumento").value = "";
+document.getElementById("novoLimite").value = "";
+document.getElementById("novoScore").value = "";
+
  alert("Usuário adicionado!");
 
 }
@@ -1207,12 +1216,16 @@ window.renderizarUsuarios = function(){
     ${user.email}<br><br>
 
     <button onclick="verUsuario(${index})">
-     Ver
-    </button>
+ Ver
+</button>
 
-    <button onclick="excluirUsuario(${index})">
-     Excluir
-    </button>
+<button onclick="editarUsuario(${index})">
+ Editar
+</button>
+
+<button onclick="excluirUsuario(${index})">
+ Excluir
+</button>
    </div>
   `;
 

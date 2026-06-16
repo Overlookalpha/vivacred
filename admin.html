@@ -74,7 +74,7 @@ color:white;
 
 <div class="menuItem" onclick="abrirTela('historico')">📊 Histórico</div>
 
-<div class="menuItem">⚙️ Config</div>
+<div class="menuItem" onclick="abrirTela('config')">⚙️ Config</div>
 
 </div>
 
@@ -170,6 +170,15 @@ Histórico de Empréstimos ▼
 </div>
 
 </div>
+
+</div>
+  <!-- CONFIG -->
+
+<div id="telaConfig" style="display:none;">
+
+<h3>Configurações</h3>
+
+<p>Painel de configurações do VivaCred</p>
 
 </div>
 <script type="module">
@@ -786,6 +795,7 @@ document.getElementById("telaDashboard").style.display = "none";
 document.getElementById("telaSolicitacoes").style.display = "none";
 document.getElementById("telaEmprestimos").style.display = "none";
 document.getElementById("telaHistorico").style.display = "none";
+document.getElementById("telaConfig").style.display = "none";
 
 const menu = document.querySelectorAll(".menuItem");
 menu.forEach(btn => btn.classList.remove("menuAtivo"));
@@ -808,6 +818,11 @@ menu[2].classList.add("menuAtivo");
 if(tela === "historico"){
 document.getElementById("telaHistorico").style.display = "block";
 menu[3].classList.add("menuAtivo");
+}
+
+if(tela === "config"){
+document.getElementById("telaConfig").style.display = "block";
+menu[4].classList.add("menuAtivo");
 }
 
 window.scrollTo(0,0);

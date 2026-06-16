@@ -1186,7 +1186,8 @@ const telefone = document.getElementById("novoTelefone").value;
   pais,
   documento,
   limite,
-  score
+  score,
+  status: "ativo"
 });
 
  renderizarUsuarios();
@@ -1219,6 +1220,7 @@ window.renderizarUsuarios = function(){
 📧 ${user.email}<br>
 📞 ${user.telefone}<br>
 🌍 ${user.pais === "PT" ? "Portugal" : "Brasil"}<br>
+${user.status === "ativo" ? "🟢 Ativo" : "🔴 Bloqueado"}<br>
 ⭐ Score: ${user.score}<br>
 💰 Limite: ${user.limite}<br><br>
 
@@ -1228,6 +1230,10 @@ window.renderizarUsuarios = function(){
 
 <button onclick="editarUsuario(${index})">
  Editar
+</button>
+
+<button onclick="alternarStatusUsuario(${index})">
+ ${user.status === "ativo" ? "Bloquear" : "Desbloquear"}
 </button>
 
 <button onclick="excluirUsuario(${index})">
@@ -1319,6 +1325,21 @@ usuariosTeste[index].score = novoScore;
  renderizarUsuarios();
 
  alert("Usuário atualizado!");
+
+}
+  window.alternarStatusUsuario = function(index){
+
+ if(usuariosTeste[index].status === "ativo"){
+
+  usuariosTeste[index].status = "bloqueado";
+
+ }else{
+
+  usuariosTeste[index].status = "ativo";
+
+ }
+
+ renderizarUsuarios();
 
 }
 window.excluirUsuario = function(index){

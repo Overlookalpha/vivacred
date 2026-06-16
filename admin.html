@@ -1205,47 +1205,67 @@ document.getElementById("novoScore").value = "";
 
 }
 
-window.renderizarUsuarios = function(){
+window.renderizarUsuarios = async function(){
 
  const lista = document.getElementById("listaUsuariosAdmin");
 
  lista.innerHTML = "";
 
- usuariosTeste.forEach((user,index)=>{
+ const snapshot = await getDocs(
+  collection(db,"usuarios")
+ );
+
+ snapshot.forEach((docSnap)=>{
+
+  const user = docSnap.data();
+  const id = docSnap.id;
 
   lista.innerHTML += `
    <div class="card">
-    <strong>${user.nome}</strong><br>
 
-📧 ${user.email}<br>
-📞 ${user.telefone}<br>
-🌍 ${user.pais === "PT" ? "Portugal" : "Brasil"}<br>
-${user.status === "ativo" ? "🟢 Ativo" : "🔴 Bloqueado"}<br>
-⭐ Score: ${user.score}<br>
-💰 Limite: ${user.limite}<br><br>
+    <strong>${user.nome || "-"}</strong><br>
 
-    <button onclick="verUsuario(${index})">
- Ver
-</button>
+    📧 ${user.email || "-"}<br>
+    📞 ${user.telefone || "-"}<br>
 
-<button onclick="editarUsuario(${index})">
- Editar
-</button>
+    🌍 ${
+      user.moeda === "€"
+      ? "Portugal"
+      : "Brasil"
+    }<br>
 
-<button onclick="alternarStatusUsuario(${index})">
- ${user.status === "ativo" ? "Bloquear" : "Desbloquear"}
-</button>
+    🟢 ${
+      user.status || "ativo"
+    }<br>
 
-<button onclick="excluirUsuario(${index})">
- Excluir
-</button>
+    ⭐ Score: ${
+      user.score || 0
+    }<br>
+
+    💰 Limite: ${
+      user.limiteBase || 0
+    }<br><br>
+
+    <button onclick="verUsuarioFirestore('${id}')">
+      Ver
+    </button>
+
+    <button onclick="editarUsuarioFirestore('${id}')">
+      Editar
+    </button>
+
+    <button onclick="excluirUsuarioFirestore('${id}')">
+      Excluir
+    </button>
+
    </div>
   `;
 
  });
 
 }
-
+  renderizarUsuarios();
+  
 window.verUsuario = function(index){
 
  const user = usuariosTeste[index];

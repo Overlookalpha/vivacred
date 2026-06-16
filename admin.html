@@ -379,8 +379,9 @@ currency:(dados.pais === "PT" ? "EUR" : "BRL")
 statusTexto +
 "<br>" +
 
-"<button onclick=\"abrirParcelas('" + docSnap.id + "')\">Gerenciar Parcelas</button> " +
-"<button onclick=\"fecharEmprestimo('" + docSnap.id + "')\">❌</button>";
+"<button class='aprovar' onclick=\"aprovarEmprestimo('" + docSnap.id + "')\">✅ Aprovar</button> " +
+"<button onclick=\"editarEmprestimo('" + docSnap.id + "')\">✏️ Editar</button> " +
+"<button onclick=\"abrirModalRecusa('" + docSnap.id + "')\">❌ Recusar</button>";
 
 container.appendChild(div);
 

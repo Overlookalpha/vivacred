@@ -1213,7 +1213,12 @@ window.renderizarUsuarios = function(){
   lista.innerHTML += `
    <div class="card">
     <strong>${user.nome}</strong><br>
-    ${user.email}<br><br>
+
+📧 ${user.email}<br>
+📞 ${user.telefone}<br>
+🌍 ${user.pais === "PT" ? "Portugal" : "Brasil"}<br>
+⭐ Score: ${user.score}<br>
+💰 Limite: ${user.limite}<br><br>
 
     <button onclick="verUsuario(${index})">
  Ver
@@ -1249,6 +1254,40 @@ window.verUsuario = function(index){
 
 }
 
+window.editarUsuario = function(index){
+
+ const user = usuariosTeste[index];
+
+ const novoNome =
+ prompt("Nome:", user.nome);
+
+ if(novoNome === null) return;
+
+ const novoTelefone =
+ prompt("Telefone:", user.telefone);
+
+ if(novoTelefone === null) return;
+
+ const novoLimite =
+ prompt("Limite:", user.limite);
+
+ if(novoLimite === null) return;
+
+ const novoScore =
+ prompt("Score:", user.score);
+
+ if(novoScore === null) return;
+
+ usuariosTeste[index].nome = novoNome;
+ usuariosTeste[index].telefone = novoTelefone;
+ usuariosTeste[index].limite = novoLimite;
+ usuariosTeste[index].score = novoScore;
+
+ renderizarUsuarios();
+
+ alert("Usuário atualizado!");
+
+}
 window.excluirUsuario = function(index){
 
  if(!confirm("Excluir usuário?")) return;

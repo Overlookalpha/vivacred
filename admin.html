@@ -207,23 +207,28 @@ Abrir
 
 <h4>👤 Novo Usuário</h4>
 
+<label>Nome Completo</label><br>
 <input id="novoNome"
 placeholder="Nome Completo"
 style="width:100%;padding:8px;margin-bottom:10px;box-sizing:border-box;">
 
+<label>Email</label><br>
 <input id="novoEmail"
 placeholder="Email"
 style="width:100%;padding:8px;margin-bottom:10px;box-sizing:border-box;">
 
+<label>Senha</label><br>
 <input id="novaSenha"
 type="password"
 placeholder="Senha"
 style="width:100%;padding:8px;margin-bottom:10px;box-sizing:border-box;">
 
+<label>Telefone</label><br>
 <input id="novoTelefone"
 placeholder="Telefone"
 style="width:100%;padding:8px;margin-bottom:10px;box-sizing:border-box;">
 
+<label>País</label><br>
 <select id="novoPais"
 style="width:100%;padding:8px;margin-bottom:10px;box-sizing:border-box;">
 
@@ -232,16 +237,19 @@ style="width:100%;padding:8px;margin-bottom:10px;box-sizing:border-box;">
 
 </select>
 
+<label>CPF / NIF</label><br>
 <input id="novoDocumento"
 placeholder="CPF (Brasil) ou NIF (Portugal)"
 style="width:100%;padding:8px;margin-bottom:10px;box-sizing:border-box;">
 
+<label>Limite Inicial</label><br>
 <input id="novoLimite"
 type="number"
 placeholder="Limite Inicial"
 value="500"
 style="width:100%;padding:8px;margin-bottom:10px;box-sizing:border-box;">
 
+<label>Score Inicial</label><br>
 <input id="novoScore"
 type="number"
 placeholder="Score Inicial"
@@ -1157,21 +1165,21 @@ window.open(link,"_blank");
 
 }
 
+let usuariosTeste = [];
+
 window.salvarNovoUsuario = function(){
 
  const nome = document.getElementById("novoNome").value;
  const email = document.getElementById("novoEmail").value;
- const senha = document.getElementById("novaSenha").value;
  const telefone = document.getElementById("novoTelefone").value;
  const pais = document.getElementById("novoPais").value;
  const documento = document.getElementById("novoDocumento").value;
  const limite = document.getElementById("novoLimite").value;
  const score = document.getElementById("novoScore").value;
 
- console.log({
+ usuariosTeste.push({
   nome,
   email,
-  senha,
   telefone,
   pais,
   documento,
@@ -1179,7 +1187,62 @@ window.salvarNovoUsuario = function(){
   score
  });
 
- alert("Dados capturados com sucesso!");
+ renderizarUsuarios();
+
+ alert("Usuário adicionado!");
+
+}
+
+window.renderizarUsuarios = function(){
+
+ const lista = document.getElementById("listaUsuariosAdmin");
+
+ lista.innerHTML = "";
+
+ usuariosTeste.forEach((user,index)=>{
+
+  lista.innerHTML += `
+   <div class="card">
+    <strong>${user.nome}</strong><br>
+    ${user.email}<br><br>
+
+    <button onclick="verUsuario(${index})">
+     Ver
+    </button>
+
+    <button onclick="excluirUsuario(${index})">
+     Excluir
+    </button>
+   </div>
+  `;
+
+ });
+
+}
+
+window.verUsuario = function(index){
+
+ const user = usuariosTeste[index];
+
+ alert(
+ "Nome: " + user.nome + "\n" +
+ "Email: " + user.email + "\n" +
+ "Telefone: " + user.telefone + "\n" +
+ "País: " + user.pais + "\n" +
+ "Documento: " + user.documento + "\n" +
+ "Limite: " + user.limite + "\n" +
+ "Score: " + user.score
+ );
+
+}
+
+window.excluirUsuario = function(index){
+
+ if(!confirm("Excluir usuário?")) return;
+
+ usuariosTeste.splice(index,1);
+
+ renderizarUsuarios();
 
 }
   function gerarMensagemRecusa(dados){

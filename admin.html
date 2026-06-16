@@ -1235,9 +1235,10 @@ window.renderizarUsuarios = async function(){
       : "Brasil"
     }<br>
 
-    🟢 ${
-      user.status || "ativo"
-    }<br>
+    ${user.status === "bloqueado"
+ ? "🔴 bloqueado"
+ : "🟢 ativo"
+}<br>
 
     ⭐ Score: ${
       user.score || 0

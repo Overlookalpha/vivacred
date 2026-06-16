@@ -203,21 +203,45 @@ Abrir
 
 <br><br>
 
-<div id="formNovoUsuario" class="card" style="display:none;">
+<div id="formNovoUsuario" class="card" style="display:none;max-width:500px;">
 
-<h4>Novo Usuário</h4>
+<h4>👤 Novo Usuário</h4>
 
-<input id="novoNome" placeholder="Nome"
-style="width:100%;padding:8px;margin-bottom:10px;">
+<input id="novoNome"
+placeholder="Nome Completo"
+style="width:100%;padding:8px;margin-bottom:10px;box-sizing:border-box;">
 
-<input id="novoEmail" placeholder="Email"
-style="width:100%;padding:8px;margin-bottom:10px;">
+<input id="novoEmail"
+placeholder="Email"
+style="width:100%;padding:8px;margin-bottom:10px;box-sizing:border-box;">
 
-<input id="novaSenha" type="password" placeholder="Senha"
-style="width:100%;padding:8px;margin-bottom:10px;">
+<input id="novaSenha"
+type="password"
+placeholder="Senha"
+style="width:100%;padding:8px;margin-bottom:10px;box-sizing:border-box;">
+
+<input id="novoTelefone"
+placeholder="Telefone"
+style="width:100%;padding:8px;margin-bottom:10px;box-sizing:border-box;">
+
+<select id="novoPais"
+style="width:100%;padding:8px;margin-bottom:10px;box-sizing:border-box;">
+
+<option value="BR">🇧🇷 Brasil</option>
+<option value="PT">🇵🇹 Portugal</option>
+
+</select>
+
+<button onclick="salvarNovoUsuario()"
+style="background:#00c853;color:white;">
+Salvar
+</button>
+
+<button onclick="document.getElementById('formNovoUsuario').style.display='none'">
+Cancelar
+</button>
 
 </div>
-
 <div id="listaUsuariosAdmin" class="card">
 
 Nenhum usuário cadastrado.

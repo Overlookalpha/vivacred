@@ -196,7 +196,7 @@ Abrir
 <div id="telaUsuarios" style="display:none;">
 <h3>👥 Usuários</h3>
 
-<button>
+<button onclick="abrirNovoUsuario()">
 + Novo Usuário
 </button>
 
@@ -1093,6 +1093,11 @@ telefone.replace(/\D/g,"") +
 encodeURIComponent(mensagem);
 
 window.open(link,"_blank");
+
+}
+  window.abrirNovoUsuario = function(){
+
+ alert("Cadastro de usuário será implementado no próximo passo");
 
 }
   function gerarMensagemRecusa(dados){

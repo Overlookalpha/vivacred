@@ -289,6 +289,7 @@ import {
   doc, 
   getDoc,
   updateDoc,
+  deleteDoc,
   addDoc,
   setDoc, 
   query,
@@ -1254,6 +1255,10 @@ window.renderizarUsuarios = async function(){
       Editar
     </button>
 
+    <button onclick="alternarStatusUsuarioFirestore('${id}')">
+${user.status === "ativo" ? "Bloquear" : "Desbloquear"}
+</button>
+
     <button onclick="excluirUsuarioFirestore('${id}')">
       Excluir
     </button>
@@ -1346,6 +1351,54 @@ window.verUsuarioFirestore = async function(id){
 
 }
   
+window.excluirUsuarioFirestore = async function(id){
+
+ const confirmar = confirm(
+  "Tem certeza que deseja excluir este usuário?"
+ );
+
+ if(!confirmar) return;
+
+ await deleteDoc(
+  doc(db,"usuarios",id)
+ );
+
+ alert("Usuário excluído!");
+
+ renderizarUsuarios();
+
+}
+
+window.alternarStatusUsuarioFirestore = async function(id){
+
+ const ref = doc(db,"usuarios",id);
+
+ const snap = await getDoc(ref);
+
+ if(!snap.exists()){
+  alert("Usuário não encontrado");
+  return;
+ }
+
+ const user = snap.data();
+
+ const novoStatus =
+ user.status === "ativo"
+ ? "bloqueado"
+ : "ativo";
+
+ await updateDoc(ref,{
+  status: novoStatus
+ });
+
+ alert(
+  "Status alterado para: " +
+  novoStatus
+ );
+
+ renderizarUsuarios();
+
+}
 window.verUsuario = function(index){
 
  const user = usuariosTeste[index];

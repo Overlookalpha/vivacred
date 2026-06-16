@@ -1289,6 +1289,62 @@ window.verUsuarioFirestore = async function(id){
  );
 
 }
+  window.editarUsuarioFirestore = async function(id){
+
+ const ref = doc(db,"usuarios",id);
+ const snap = await getDoc(ref);
+
+ if(!snap.exists()){
+  alert("Usuário não encontrado");
+  return;
+ }
+
+ const user = snap.data();
+
+ const nome =
+ prompt("Nome:", user.nome || "");
+
+ if(nome === null) return;
+
+ const email =
+ prompt("Email:", user.email || "");
+
+ if(email === null) return;
+
+ const telefone =
+ prompt("Telefone:", user.telefone || "");
+
+ if(telefone === null) return;
+
+ const cpf =
+ prompt("CPF/NIF:", user.cpf || "");
+
+ if(cpf === null) return;
+
+ const score =
+ prompt("Score:", user.score || 0);
+
+ if(score === null) return;
+
+ const limite =
+ prompt("Limite:", user.limiteBase || 0);
+
+ if(limite === null) return;
+
+ await updateDoc(ref,{
+  nome: nome,
+  email: email,
+  telefone: telefone,
+  cpf: cpf,
+  score: Number(score),
+  limiteBase: Number(limite)
+ });
+
+ alert("Usuário atualizado!");
+
+ renderizarUsuarios();
+
+}
   
 window.verUsuario = function(index){
 

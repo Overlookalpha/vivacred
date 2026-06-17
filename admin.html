@@ -456,6 +456,39 @@ snapshot.forEach((docSnap)=>{
 const usuarioSistema =
 usuariosMap[dados.email] || {};
 
+const historicoCliente = snapshot.docs.filter((d)=>{
+
+ const e = d.data();
+
+ return e.email === dados.email;
+
+});
+
+const totalSolicitacoes = historicoCliente.length;
+
+const totalAprovados =
+historicoCliente.filter(e =>
+e.data().status === "ativo" ||
+e.data().finalizado === true
+).length;
+
+const totalQuitados =
+historicoCliente.filter(e =>
+e.data().finalizado === true
+).length;
+
+const totalAtivos =
+historicoCliente.filter(e =>
+e.data().status === "ativo"
+).length;
+
+const totalRejeitados =
+historicoCliente.filter(e =>
+e.data().status === "rejeitado"
+).length;
+
+const clienteNovo = totalSolicitacoes <= 1;
+
  if(dados.status !== "aguardando") return;
 
  const div = document.createElement("div");
@@ -539,6 +572,51 @@ currency:(dados.pais === "PT" ? "EUR" : "BRL")
 
 +
 "<br>" +
+
+"<br>" +
+
+"<b>📊 Histórico do Cliente</b><br>" +
+
+"Cliente Novo: " +
+(clienteNovo ? "SIM" : "NÃO") +
+"<br>" +
+
+"Solicitações Totais: " +
+totalSolicitacoes +
+"<br>" +
+
+"Aprovados: " +
+totalAprovados +
+"<br>" +
+
+"Quitados: " +
+totalQuitados +
+"<br>" +
+
+"Ativos: " +
+totalAtivos +
+"<br>" +
+
+"Rejeitados: " +
+totalRejeitados +
+"<br>" +
+
+"Valor Já Liberado: " +
+
+historicoCliente
+.filter(e =>
+e.data().status === "ativo" ||
+e.data().finalizado === true
+)
+.reduce(
+(total,e) =>
+total + Number(e.data().valor || 0),
+0
+)
+
++
+
+"<br><br>" +
 
 statusTexto +
 "<br>" +

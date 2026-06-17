@@ -769,6 +769,9 @@ setTimeout(function(){
 
   return regras[nivelNome];
 }
+  window.obterRegrasPorNivel = obterRegrasPorNivel;
+window.calcularNivel = calcularNivel;
+  
   if (!userSnap.exists() || !userSnap.data().score) {
 
     await setDoc(userRef, {

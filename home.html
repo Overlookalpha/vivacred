@@ -239,7 +239,7 @@ animation:pulsarScore 1.2s infinite;
 
   <div id="isaCoinsValor"
        style="opacity:0.8;margin-top:5px;">
-    ≈ R$ 0,00
+   1 ISC ≈ R$ 0,01
   </div>
 
   <div style="
@@ -812,6 +812,10 @@ window.calcularNivel = calcularNivel;
   limiteBase: 100,
   nivel: "Essencial",
 
+  isaCoins: 0,
+  isaCoinsRecebidas: 0,
+  isaCoinsSacadas: 0,
+
   status: "ativo",
 
   criadoEm: new Date()
@@ -827,6 +831,39 @@ window.calcularNivel = calcularNivel;
     console.log("Usuário já existe");
 
  const data = userSnap.data();
+ const isaCoins = data.isaCoins || 0;
+
+const saldoIsaCoin =
+document.getElementById("isaCoinsSaldo");
+
+const saldoModalIsaCoin =
+document.getElementById("saldoModalIsaCoin");
+
+const valorModalIsaCoin =
+document.getElementById("valorModalIsaCoin");
+
+if(saldoIsaCoin){
+saldoIsaCoin.innerText =
+isaCoins.toLocaleString("pt-BR") + " ISC";
+}
+
+if(saldoModalIsaCoin){
+saldoModalIsaCoin.innerText =
+isaCoins.toLocaleString("pt-BR") + " ISC";
+}
+
+if(valorModalIsaCoin){
+
+const valorReais =
+isaCoins * 0.01;
+
+valorModalIsaCoin.innerText =
+valorReais.toLocaleString("pt-BR",{
+style:"currency",
+currency:"BRL"
+});
+
+}
  const paisUsuario = data.pais || "BR";
  paisUsuarioGlobal = paisUsuario;
  
@@ -1641,6 +1678,34 @@ ${parcelasMaximas}x.
 
 }
 
+const cardIsaCoin =
+document.getElementById("cardIsaCoin");
+
+const modalIsaCoin =
+document.getElementById("modalIsaCoin");
+
+const fecharIsaCoin =
+document.getElementById("fecharIsaCoin");
+
+if(cardIsaCoin){
+
+cardIsaCoin.addEventListener("click", ()=>{
+
+modalIsaCoin.style.display = "flex";
+
+});
+
+}
+
+if(fecharIsaCoin){
+
+fecharIsaCoin.addEventListener("click", ()=>{
+
+modalIsaCoin.style.display = "none";
+
+});
+
+}
 </script>
 <div id="notificacaoCredito" style="
 position: fixed;
@@ -1716,19 +1781,37 @@ Entendi
 
       <br><br>
 
-      <strong>Equivalente</strong><br>
-      <span id="valorModalIsaCoin">R$ 0,00</span>
+     <strong>Equivalente</strong><br>
+<span id="valorModalIsaCoin">R$ 0,00</span>
 
-      <br><br>
+<br><br>
 
-      <strong>Próximo saque</strong><br>
-      R$ 100,00
+<strong>Cotação Atual</strong><br>
+1 ISC = R$ 0,01
 
-      <br><br>
+<br><br>
 
-      <strong>Faltam</strong><br>
-      <span id="faltamIsaCoins">10.000 ISC</span>
+<strong>Próximo saque</strong><br>
+R$ 100,00
+<br><br>
 
+<strong>Faltam</strong><br>
+<span id="faltamIsaCoins">10.000 ISC</span>
+
+<br><br>
+
+<button id="btnSacarIsaCoin" style="
+margin-top:15px;
+width:100%;
+padding:12px;
+background:#facc15;
+border:none;
+border-radius:8px;
+font-weight:bold;
+cursor:pointer;
+">
+💸 Solicitar Saque ISAcoin
+</button>
     </div>
 
     <hr style="margin:20px 0;">

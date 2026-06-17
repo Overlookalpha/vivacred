@@ -487,6 +487,14 @@ historicoCliente.filter(e =>
 e.data().status === "rejeitado"
 ).length;
 
+const totalAbertos =
+historicoCliente.filter(e =>
+e.data().status === "aguardando"
+).length;
+
+const possuiEmprestimoAtivo =
+totalAtivos > 0;
+  
 const clienteNovo = totalSolicitacoes <= 1;
 
  if(dados.status !== "aguardando") return;
@@ -585,6 +593,10 @@ currency:(dados.pais === "PT" ? "EUR" : "BRL")
 totalSolicitacoes +
 "<br>" +
 
+"Solicitações em Aberto: " +
+totalAbertos +
+"<br>" +
+
 "Aprovados: " +
 totalAprovados +
 "<br>" +
@@ -599,6 +611,10 @@ totalAtivos +
 
 "Rejeitados: " +
 totalRejeitados +
+"<br>" +
+
+"Possui Empréstimo Ativo: " +
+(possuiEmprestimoAtivo ? "SIM" : "NÃO") +
 "<br>" +
 
 "Valor Já Liberado: " +

@@ -481,8 +481,13 @@ const qTodasNotificacoes = query(
   where("userId","==",usuarioLogado.uid)
 );
 
-const snapshotTodas = await getDocs(qTodasNotificacoes);
+let snapshotTodas;
 
+try{
+  snapshotTodas = await getDocs(qTodasNotificacoes);
+}catch(e){
+  console.error("ERRO LISTA NOTIFICACOES", e);
+}
 const lista = document.getElementById("listaNotificacoes");
 
 if(lista){
@@ -513,7 +518,13 @@ if(lista){
   });
 
 }
-const snapshotNotificacoes = await getDocs(qNotificacoes);
+let snapshotNotificacoes;
+
+try{
+  snapshotNotificacoes = await getDocs(qNotificacoes);
+}catch(e){
+  console.error("ERRO NOTIFICACOES", e);
+}
 
 const contador = document.getElementById("contadorNotificacao");
 

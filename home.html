@@ -425,18 +425,45 @@ usuariosSnap.forEach((docSnap)=>{
  }
 
 });
-
-if(usuarioSistema && usuarioSistema.status === "bloqueado"){
-
- alert("Sua conta está bloqueada. Entre em contato com a IsaCred.");
-
- window.location.replace("login.html");
- return;
-
-}
   
   document.getElementById("userEmail").innerText =
     "Logado como: " + user.email;
+
+ let usuarioBloqueado = false;
+
+if(usuarioSistema && usuarioSistema.status === "bloqueado"){
+
+ usuarioBloqueado = true;
+
+ const area = document.getElementById("areaAvisoTopo");
+
+ area.innerHTML = `
+ <div style="
+ background:#7f1d1d;
+ border:2px solid #ef4444;
+ color:white;
+ padding:20px;
+ border-radius:12px;
+ margin-bottom:20px;
+ text-align:center;
+ ">
+ <h2>🚫 CONTA BLOQUEADA</h2>
+
+ <p>
+ Sua conta possui restrições administrativas.
+ </p>
+
+ <p>
+ Enquanto houver pendências você não poderá solicitar novos empréstimos.
+ </p>
+
+ <p>
+ Entre em contato com a IsaCred para regularização.
+ </p>
+
+ </div>
+ `;
+}
   // 🔔 CARREGAR NOTIFICAÇÕES
 
 const qNotificacoes = query(
@@ -1002,9 +1029,19 @@ fecharBtn.addEventListener("click", async () => {
 
 
     btn.addEventListener("click", () => {
-      modal.style.display = "flex";
-    });
 
+ if(usuarioBloqueado){
+
+  alert(
+   "Sua conta está bloqueada. Regularize sua situação junto à IsaCred antes de solicitar um novo empréstimo."
+  );
+
+  return;
+ }
+
+ modal.style.display = "flex";
+
+});
     fechar.addEventListener("click", () => {
       modal.style.display = "none";
     });

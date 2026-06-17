@@ -433,9 +433,28 @@ const container = document.getElementById("listaUsuarios");
 
 container.innerHTML = "";
 
+const usuariosSnapshot = await getDocs(
+  collection(db,"usuarios")
+);
+
+const usuariosMap = {};
+
+usuariosSnapshot.forEach((userDoc)=>{
+
+ const userData = userDoc.data();
+
+ if(userData.email){
+   usuariosMap[userData.email] = userData;
+ }
+
+});
+
 snapshot.forEach((docSnap)=>{
 
  const dados = docSnap.data();
+
+const usuarioSistema =
+usuariosMap[dados.email] || {};
 
  if(dados.status !== "aguardando") return;
 
@@ -482,7 +501,24 @@ currency:(dados.pais === "PT" ? "EUR" : "BRL")
 }) +
 "<br>" +
 
-"Parcelas: " + dados.parcelas + "<br>" +
+"Parcelas: " + dados.parcelas + "<br><br>" +
+
+"Status Usuário: " +
+(
+ usuarioSistema.status === "bloqueado"
+ ? "🔴 BLOQUEADO"
+ : "🟢 ATIVO"
+) +
+"<br>" +
+
+"Score: " +
+(usuarioSistema.score || 0) +
+"<br>" +
+
+"Limite: " +
+(usuarioSistema.limiteBase || 0) +
+"<br>" +
+
 statusTexto +
 "<br>" +
 

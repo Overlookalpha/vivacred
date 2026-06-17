@@ -1463,14 +1463,6 @@ campoSimulacao.addEventListener("input", ()=>{
 const valor =
 Number(campoSimulacao.value || 0);
 
-const limiteTexto =
-document.getElementById("limiteDisponivel").innerText;
-
-const limite =
-Number(
-limiteTexto.replace(/[^\d]/g,"")
-);
-
 if(valor <= 0){
 
 resultadoSimulacao.innerHTML =
@@ -1480,17 +1472,103 @@ return;
 
 }
 
-if(valor > limite){
+const regras =
+obterRegrasPorNivel(nivelNomeGlobal);
+
+const limiteMaximo =
+calcularNivel(
+Number(document.getElementById("scoreValor").innerText),
+paisUsuarioGlobal
+).max;
+
+if(valor > limiteMaximo){
 
 resultadoSimulacao.innerHTML =
-"<span style='color:#ff4c4c;font-weight:bold;'>⚠️ Valor acima do seu limite disponível</span>";
+`
+<div style="color:#ff6b6b;font-weight:bold;">
+⚠️ Valor acima do seu limite disponível
+</div>
+
+<div style="margin-top:10px;">
+Seu perfil ${nivelNomeGlobal}
+permite até
+<strong>
+${limiteMaximo.toLocaleString("pt-BR",{
+style:"currency",
+currency:paisUsuarioGlobal==="PT" ? "EUR" : "BRL"
+})}
+</strong>
+</div>
+`;
 
 return;
 
 }
 
+const parcelasMaximas =
+regras.maxParcelas;
+
+const taxa =
+regras.juros[parcelasMaximas];
+
+const totalPagar =
+valor + (valor * taxa);
+
+const valorParcela =
+totalPagar / parcelasMaximas;
+
 resultadoSimulacao.innerHTML =
-"<span style='color:#4cff88;font-weight:bold;'>✅ Valor dentro do seu limite</span>";
+`
+<div style="color:#4cff88;font-weight:bold;">
+✅ Simulação aprovada
+</div>
+
+<div style="margin-top:10px;">
+Perfil:
+<strong>${nivelNomeGlobal}</strong>
+</div>
+
+<div>
+Parcelamento máximo:
+<strong>${parcelasMaximas}x</strong>
+</div>
+
+<div>
+Valor solicitado:
+<strong>
+${valor.toLocaleString("pt-BR",{
+style:"currency",
+currency:paisUsuarioGlobal==="PT" ? "EUR" : "BRL"
+})}
+</strong>
+</div>
+
+<div>
+Total a pagar:
+<strong>
+${totalPagar.toLocaleString("pt-BR",{
+style:"currency",
+currency:paisUsuarioGlobal==="PT" ? "EUR" : "BRL"
+})}
+</strong>
+</div>
+
+<div>
+${parcelasMaximas}x de
+<strong>
+${valorParcela.toLocaleString("pt-BR",{
+style:"currency",
+currency:paisUsuarioGlobal==="PT" ? "EUR" : "BRL"
+})}
+</strong>
+</div>
+
+<div style="margin-top:10px;color:#9BE8C7;">
+Seu perfil ${nivelNomeGlobal}
+permite parcelamento de até
+${parcelasMaximas}x.
+</div>
+`;
 
 });
 

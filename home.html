@@ -234,7 +234,7 @@ animation:pulsarScore 1.2s infinite;
 
   <div id="isaCoinsSaldo"
        style="font-size:32px;font-weight:bold;margin-top:10px;">
-    0
+    0 ISC
   </div>
 
   <div id="isaCoinsValor"
@@ -1475,6 +1475,35 @@ window.addEventListener("load", iniciarEvellyn);
 // NECESSÁRIO PARA IPHONE (voz só após toque)
 document.addEventListener("click", iniciarEvellyn);
 
+const cardIsaCoin =
+document.getElementById("cardIsaCoin");
+
+const modalIsaCoin =
+document.getElementById("modalIsaCoin");
+
+const fecharIsaCoin =
+document.getElementById("fecharIsaCoin");
+
+if(cardIsaCoin){
+
+cardIsaCoin.addEventListener("click", ()=>{
+
+modalIsaCoin.style.display = "flex";
+
+});
+
+}
+
+if(fecharIsaCoin){
+
+fecharIsaCoin.addEventListener("click", ()=>{
+
+modalIsaCoin.style.display = "none";
+
+});
+
+}
+
 
 /* COLAR AQUI */
 
@@ -1674,6 +1703,47 @@ cursor:pointer;
 Entendi
 </button>
 
+</div>
+<div id="modalIsaCoin" class="modal">
+  <div class="modal-content">
+
+    <h3>🪙 Clube ISAcoin</h3>
+
+    <div style="margin-top:15px;">
+
+      <strong>Saldo Atual</strong><br>
+      <span id="saldoModalIsaCoin">0 ISC</span>
+
+      <br><br>
+
+      <strong>Equivalente</strong><br>
+      <span id="valorModalIsaCoin">R$ 0,00</span>
+
+      <br><br>
+
+      <strong>Próximo saque</strong><br>
+      R$ 100,00
+
+      <br><br>
+
+      <strong>Faltam</strong><br>
+      <span id="faltamIsaCoins">10.000 ISC</span>
+
+    </div>
+
+    <hr style="margin:20px 0;">
+
+    <div id="historicoIsaCoin">
+      Nenhuma movimentação ainda.
+    </div>
+
+    <br>
+
+    <button id="fecharIsaCoin">
+      Fechar
+    </button>
+
+  </div>
 </div>
 </body>
 </html>

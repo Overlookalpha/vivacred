@@ -409,64 +409,9 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 usuarioLogado = user;
-
-  const usuariosSnap = await getDocs(
- collection(db,"usuarios")
-);
-
-let usuarioSistema = null;
-
-usuariosSnap.forEach((docSnap)=>{
-
- const dados = docSnap.data();
-
- if(dados.email === user.email){
-   usuarioSistema = dados;
- }
-
-});
   
   document.getElementById("userEmail").innerText =
     "Logado como: " + user.email;
-
- let usuarioBloqueado = false;
-  
-console.log("usuarioSistema =", usuarioSistema);
-console.log("status =", usuarioSistema?.status);
-  
-if(usuarioSistema && usuarioSistema.status === "bloqueado"){
-
- usuarioBloqueado = true;
-
- const area = document.getElementById("areaAvisoTopo");
-
- area.innerHTML = `
- <div style="
- background:#7f1d1d;
- border:2px solid #ef4444;
- color:white;
- padding:20px;
- border-radius:12px;
- margin-bottom:20px;
- text-align:center;
- ">
- <h2>🚫 CONTA BLOQUEADA</h2>
-
- <p>
- Sua conta possui restrições administrativas.
- </p>
-
- <p>
- Enquanto houver pendências você não poderá solicitar novos empréstimos.
- </p>
-
- <p>
- Entre em contato com a IsaCred para regularização.
- </p>
-
- </div>
- `;
-}
   // 🔔 CARREGAR NOTIFICAÇÕES
 
 const qNotificacoes = query(
@@ -481,13 +426,8 @@ const qTodasNotificacoes = query(
   where("userId","==",usuarioLogado.uid)
 );
 
-let snapshotTodas;
+const snapshotTodas = await getDocs(qTodasNotificacoes);
 
-try{
-  snapshotTodas = await getDocs(qTodasNotificacoes);
-}catch(e){
-  console.error("ERRO LISTA NOTIFICACOES", e);
-}
 const lista = document.getElementById("listaNotificacoes");
 
 if(lista){
@@ -518,13 +458,7 @@ if(lista){
   });
 
 }
-let snapshotNotificacoes;
-
-try{
-  snapshotNotificacoes = await getDocs(qNotificacoes);
-}catch(e){
-  console.error("ERRO NOTIFICACOES", e);
-}
+const snapshotNotificacoes = await getDocs(qNotificacoes);
 
 const contador = document.getElementById("contadorNotificacao");
 
@@ -1010,10 +944,8 @@ if (limiteElemento && data.limiteBase) {
   Data da aprovação: ${data.dataAprovacao?.toDate().toLocaleString("pt-BR")}
 `;
      const area = document.getElementById("areaAvisoTopo");
-  
   area.innerHTML = "";
   area.appendChild(info);
-      
   const fecharBtn = document.createElement("span");
 fecharBtn.innerText = "✕";
 fecharBtn.style.position = "absolute";
@@ -1045,19 +977,9 @@ fecharBtn.addEventListener("click", async () => {
 
 
     btn.addEventListener("click", () => {
+      modal.style.display = "flex";
+    });
 
- if(usuarioBloqueado){
-
-  alert(
-   "Sua conta está bloqueada. Regularize sua situação junto à IsaCred antes de solicitar um novo empréstimo."
-  );
-
-  return;
- }
-
- modal.style.display = "flex";
-
-});
     fechar.addEventListener("click", () => {
       modal.style.display = "none";
     });
@@ -1319,7 +1241,7 @@ parcelasOrdenadas.forEach((p) => {
   });
 
   }
- 
+ });
   function fecharNotificacoes(){
   document.getElementById("modalNotificacoes").style.display = "none";
 }

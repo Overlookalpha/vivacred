@@ -1471,6 +1471,38 @@ window.verUsuarioFirestore = async function(id){
 
  const user = snap.data();
 
+  const emprestimosSnap = await getDocs(
+ collection(db,"emprestimos")
+);
+
+const historicoCliente =
+emprestimosSnap.docs.filter(e =>
+ e.data().email === user.email
+);
+
+const totalSolicitacoes =
+historicoCliente.length;
+
+const totalQuitados =
+historicoCliente.filter(e =>
+ e.data().finalizado === true
+).length;
+
+const totalAtivos =
+historicoCliente.filter(e =>
+ e.data().status === "ativo"
+).length;
+
+const totalRejeitados =
+historicoCliente.filter(e =>
+ e.data().status === "rejeitado"
+).length;
+
+const totalAbertos =
+historicoCliente.filter(e =>
+ e.data().status === "aguardando"
+).length;
+
  alert(
   "Nome: " + (user.nome || "-") + "\n" +
   "Email: " + (user.email || "-") + "\n" +
@@ -1489,13 +1521,53 @@ window.verUsuarioFirestore = async function(id){
 
 "Limite Calculado: " +
 (
-user.score <= 20 ? 300 :
-user.score <= 40 ? 800 :
-user.score <= 60 ? 1500 :
-user.score <= 80 ? 3000 :
-5000
+ user.score <= 20 ? 300 :
+ user.score <= 40 ? 800 :
+ user.score <= 60 ? 1500 :
+ user.score <= 80 ? 3000 :
+ 5000
 )
- );
+
++ "\n\n" +
+
+"📊 HISTÓRICO FINANCEIRO\n\n" +
+
+"Cliente Novo: " +
+(totalSolicitacoes <= 1 ? "SIM" : "NÃO") +
+"\n" +
+
+"Solicitações Totais: " +
+totalSolicitacoes +
+"\n" +
+
+"Solicitações em Aberto: " +
+totalAbertos +
+"\n" +
+
+"Aprovados: " +
+historicoCliente.filter(e =>
+ e.data().status === "ativo" ||
+ e.data().finalizado === true
+).length +
+"\n" +
+
+"Quitados: " +
+totalQuitados +
+"\n" +
+
+"Ativos: " +
+totalAtivos +
+"\n" +
+
+"Rejeitados: " +
+totalRejeitados
+
++ "\n" +
+
+"Possui Empréstimo Ativo: " +
+(totalAtivos > 0 ? "SIM" : "NÃO")
+
+);
 
 }
   window.editarUsuarioFirestore = async function(id){

@@ -1266,12 +1266,22 @@ window.renderizarUsuarios = async function(){
   "Black"
 }<br>
 
-💰 Limite Calculado: ${
-  user.score <= 20 ? 300 :
-  user.score <= 40 ? 800 :
-  user.score <= 60 ? 1500 :
-  user.score <= 80 ? 3000 :
-  5000
+🔥 Limite Calculado: ${
+ user.pais === "PT"
+ ? (
+    user.score <= 20 ? 100 :
+    user.score <= 40 ? 300 :
+    user.score <= 60 ? 500 :
+    user.score <= 80 ? 800 :
+    2000
+   )
+ : (
+    user.score <= 20 ? 300 :
+    user.score <= 40 ? 800 :
+    user.score <= 60 ? 1500 :
+    user.score <= 80 ? 3000 :
+    5000
+   )
 }<br><br>
 
     <button onclick="verUsuarioFirestore('${id}')">

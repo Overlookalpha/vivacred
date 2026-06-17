@@ -1435,6 +1435,10 @@ window.renderizarUsuarios = async function(){
   user.score || 0
 }<br>
 
+🪙 ISAcoin: ${
+  (user.isaCoins || 0).toLocaleString("pt-BR")
+} ISC<br>
+
 🏅 Nível: ${
   (user.score || 0) <= 20 ? "Essencial" :
   (user.score || 0) <= 40 ? "Bronze" :

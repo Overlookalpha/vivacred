@@ -238,9 +238,9 @@ animation:pulsarScore 1.2s infinite;
   </div>
 
   <div id="isaCoinsValor"
-       style="opacity:0.8;margin-top:5px;">
-   1 ISC ≈ R$ 0,01
-  </div>
+style="opacity:0.8;margin-top:5px;">
+R$ 0,00
+</div>
 
   <div style="
   margin-top:10px;
@@ -845,6 +845,22 @@ document.getElementById("valorModalIsaCoin");
 if(saldoIsaCoin){
 saldoIsaCoin.innerText =
 isaCoins.toLocaleString("pt-BR") + " ISC";
+}
+
+const valorIsaCoin =
+document.getElementById("isaCoinsValor");
+
+if(valorIsaCoin){
+
+ const valorReais = isaCoins * 0.01;
+
+ valorIsaCoin.innerHTML =
+ "💵 " +
+ valorReais.toLocaleString("pt-BR",{
+  style:"currency",
+  currency:"BRL"
+ });
+
 }
 
 if(saldoModalIsaCoin){

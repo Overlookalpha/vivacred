@@ -1440,34 +1440,7 @@ mostrarEvellyn(
 }
 
 }
-const campoSimulacao =
-document.getElementById("simularValor");
 
-const resultadoSimulacao =
-document.getElementById("resultadoSimulacao");
-
-if(campoSimulacao){
-
-campoSimulacao.addEventListener("input", ()=>{
-
-const valor =
-Number(campoSimulacao.value || 0);
-
-if(valor <= 0){
-
-resultadoSimulacao.innerHTML =
-"Digite um valor para simular";
-
-return;
-
-}
-
-resultadoSimulacao.innerHTML =
-"Calculando simulação...";
-
-});
-
-}
 // INICIAR TUTORIAL (PC / ANDROID)
 window.addEventListener("load", iniciarEvellyn);
 

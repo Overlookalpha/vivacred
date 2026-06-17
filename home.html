@@ -409,6 +409,31 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 usuarioLogado = user;
+
+  const usuariosSnap = await getDocs(
+ collection(db,"usuarios")
+);
+
+let usuarioSistema = null;
+
+usuariosSnap.forEach((docSnap)=>{
+
+ const dados = docSnap.data();
+
+ if(dados.email === user.email){
+   usuarioSistema = dados;
+ }
+
+});
+
+if(usuarioSistema && usuarioSistema.status === "bloqueado"){
+
+ alert("Sua conta está bloqueada. Entre em contato com a IsaCred.");
+
+ window.location.replace("login.html");
+ return;
+
+}
   
   document.getElementById("userEmail").innerText =
     "Logado como: " + user.email;

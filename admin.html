@@ -1836,6 +1836,37 @@ window.alternarStatusUsuarioFirestore = async function(id){
  renderizarUsuarios();
 
 }
+  window.adicionarIsaCoin = async function(id){
+
+ const valor = prompt("Quantidade de ISAcoin:");
+
+ if(valor === null) return;
+
+ if(Number(valor) <= 0){
+  alert("Valor inválido");
+  return;
+ }
+
+ const ref = doc(db,"usuarios",id);
+
+ const snap = await getDoc(ref);
+
+ if(!snap.exists()){
+  alert("Usuário não encontrado");
+  return;
+ }
+
+ const dados = snap.data();
+
+ await updateDoc(ref,{
+  isaCoins: (dados.isaCoins || 0) + Number(valor)
+ });
+
+ alert("ISAcoin adicionada!");
+
+ renderizarUsuarios();
+
+}
 window.verUsuario = function(index){
 
  const user = usuariosTeste[index];

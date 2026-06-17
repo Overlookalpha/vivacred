@@ -1168,41 +1168,55 @@ window.open(link,"_blank");
 
 let usuariosTeste = [];
 
-window.salvarNovoUsuario = function(){
+window.salvarNovoUsuario = async function(){
 
  const nome = document.getElementById("novoNome").value;
-const email = document.getElementById("novoEmail").value;
-const senha = document.getElementById("novaSenha").value;
-const telefone = document.getElementById("novoTelefone").value;
+ const email = document.getElementById("novoEmail").value;
+ const senha = document.getElementById("novaSenha").value;
+ const telefone = document.getElementById("novoTelefone").value;
  const pais = document.getElementById("novoPais").value;
  const documento = document.getElementById("novoDocumento").value;
- const limite = document.getElementById("novoLimite").value;
- const score = document.getElementById("novoScore").value;
+ const score = Number(document.getElementById("novoScore").value || 20);
 
- usuariosTeste.push({
-  nome,
-  email,
-  senha,
-  telefone,
-  pais,
-  documento,
-  limite,
-  score,
-  status: "ativo"
-});
+ if(!nome || !email){
+   alert("Preencha nome e email");
+   return;
+ }
+
+ await addDoc(collection(db,"usuarios"),{
+
+   nome: nome,
+   email: email,
+   telefone: telefone,
+   cpf: documento,
+
+   pais: pais,
+   moeda: pais === "PT" ? "€" : "R$",
+
+   score: score,
+
+   nivel: "Essencial",
+
+   limiteBase: 100,
+
+   status: "ativo",
+
+   criadoEm: new Date()
+
+ });
+
+ document.getElementById("formNovoUsuario").style.display = "none";
+
+ document.getElementById("novoNome").value = "";
+ document.getElementById("novoEmail").value = "";
+ document.getElementById("novaSenha").value = "";
+ document.getElementById("novoTelefone").value = "";
+ document.getElementById("novoDocumento").value = "";
+ document.getElementById("novoScore").value = "";
+
+ alert("Usuário salvo no Firestore!");
 
  renderizarUsuarios();
-
-document.getElementById("formNovoUsuario").style.display = "none";
-document.getElementById("novoNome").value = "";
-document.getElementById("novoEmail").value = "";
-document.getElementById("novaSenha").value = "";
-document.getElementById("novoTelefone").value = "";
-document.getElementById("novoDocumento").value = "";
-document.getElementById("novoLimite").value = "";
-document.getElementById("novoScore").value = "";
-
- alert("Usuário adicionado!");
 
 }
 

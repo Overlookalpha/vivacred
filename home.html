@@ -1438,6 +1438,56 @@ window.addEventListener("load", iniciarEvellyn);
 
 // NECESSÁRIO PARA IPHONE (voz só após toque)
 document.addEventListener("click", iniciarEvellyn);
+
+
+/* COLAR AQUI */
+
+const campoSimulacao =
+document.getElementById("valorSimulacao");
+
+const resultadoSimulacao =
+document.getElementById("resultadoSimulacao");
+
+if(campoSimulacao){
+
+campoSimulacao.addEventListener("input", ()=>{
+
+const valor =
+Number(campoSimulacao.value || 0);
+
+const limiteTexto =
+document.getElementById("limiteDisponivel").innerText;
+
+const limite =
+Number(
+limiteTexto.replace(/[^\d]/g,"")
+);
+
+if(valor <= 0){
+
+resultadoSimulacao.innerHTML =
+"Digite um valor para simular";
+
+return;
+
+}
+
+if(valor > limite){
+
+resultadoSimulacao.innerHTML =
+"<span style='color:#ff4c4c;font-weight:bold;'>⚠️ Valor acima do seu limite disponível</span>";
+
+return;
+
+}
+
+resultadoSimulacao.innerHTML =
+"<span style='color:#4cff88;font-weight:bold;'>✅ Valor dentro do seu limite</span>";
+
+});
+
+}
+
 </script>
 <div id="notificacaoCredito" style="
 position: fixed;

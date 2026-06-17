@@ -854,7 +854,7 @@ if(userSnap.exists()){
  const userData = userSnap.data();
 
  await updateDoc(userRef,{
-  isaCoin: (userData.isaCoin || 0) + 100
+  isaCoins: (userData.isaCoin || 0) + 100
  });
 
 }

@@ -515,8 +515,29 @@ currency:(dados.pais === "PT" ? "EUR" : "BRL")
 (usuarioSistema.score || 0) +
 "<br>" +
 
-"Limite: " +
-(usuarioSistema.limiteBase || 0) +
+"Limite Calculado: " +
+
+(
+(usuarioSistema.pais === "PT")
+?
+(
+(usuarioSistema.score <= 20 ? 100 :
+ usuarioSistema.score <= 40 ? 300 :
+ usuarioSistema.score <= 60 ? 500 :
+ usuarioSistema.score <= 80 ? 800 :
+ 2000)
+)
+:
+(
+(usuarioSistema.score <= 20 ? 300 :
+ usuarioSistema.score <= 40 ? 800 :
+ usuarioSistema.score <= 60 ? 1500 :
+ usuarioSistema.score <= 80 ? 3000 :
+ 5000)
+)
+)
+
++
 "<br>" +
 
 statusTexto +

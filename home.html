@@ -1511,14 +1511,43 @@ return;
 const parcelasMaximas =
 regras.maxParcelas;
 
+let simulacoesHTML = "";
+
+for(let parcela = 1; parcela <= parcelasMaximas; parcela++){
+
 const taxa =
-regras.juros[parcelasMaximas];
+regras.juros[parcela];
 
 const totalPagar =
 valor + (valor * taxa);
 
 const valorParcela =
-totalPagar / parcelasMaximas;
+totalPagar / parcela;
+
+simulacoesHTML +=
+`
+<div style="
+margin-top:10px;
+padding:10px;
+background:rgba(255,255,255,0.04);
+border-radius:8px;
+">
+<strong>${parcela}x</strong> de
+<strong>
+${valorParcela.toLocaleString("pt-BR",{
+style:"currency",
+currency:paisUsuarioGlobal==="PT" ? "EUR" : "BRL"
+})}
+</strong>
+<br>
+Total:
+${totalPagar.toLocaleString("pt-BR",{
+style:"currency",
+currency:paisUsuarioGlobal==="PT" ? "EUR" : "BRL"
+})}
+</div>
+`;
+}
 
 resultadoSimulacao.innerHTML =
 `
@@ -1532,8 +1561,8 @@ Perfil:
 </div>
 
 <div>
-Parcelamento máximo:
-<strong>${parcelasMaximas}x</strong>
+Parcelamentos disponíveis:
+<strong>1x até ${parcelasMaximas}x</strong>
 </div>
 
 <div>
@@ -1546,36 +1575,14 @@ currency:paisUsuarioGlobal==="PT" ? "EUR" : "BRL"
 </strong>
 </div>
 
-<div>
-Total a pagar:
-<strong>
-${totalPagar.toLocaleString("pt-BR",{
-style:"currency",
-currency:paisUsuarioGlobal==="PT" ? "EUR" : "BRL"
-})}
-</strong>
-</div>
-
-<div>
-${parcelasMaximas}x de
-<strong>
-${valorParcela.toLocaleString("pt-BR",{
-style:"currency",
-currency:paisUsuarioGlobal==="PT" ? "EUR" : "BRL"
-})}
-</strong>
-</div>
+${simulacoesHTML}
 
 <div style="margin-top:10px;color:#9BE8C7;">
 Seu perfil ${nivelNomeGlobal}
-permite parcelamento de até
+permite parcelamentos de 1x até
 ${parcelasMaximas}x.
 </div>
 `;
-
-});
-
-}
 
 </script>
 <div id="notificacaoCredito" style="

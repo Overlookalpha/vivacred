@@ -1473,6 +1473,10 @@ window.renderizarUsuarios = async function(){
       Editar
     </button>
 
+   <button onclick="adicionarIsaCoin('${id}')">
+🪙 + ISC
+</button>
+
     <button onclick="alternarStatusUsuarioFirestore('${id}')">
 ${user.status === "ativo" ? "Bloquear" : "Desbloquear"}
 </button>

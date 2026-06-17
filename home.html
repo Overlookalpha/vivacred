@@ -430,7 +430,10 @@ usuariosSnap.forEach((docSnap)=>{
     "Logado como: " + user.email;
 
  let usuarioBloqueado = false;
-
+  
+console.log("usuarioSistema =", usuarioSistema);
+console.log("status =", usuarioSistema?.status);
+  
 if(usuarioSistema && usuarioSistema.status === "bloqueado"){
 
  usuarioBloqueado = true;
@@ -997,7 +1000,9 @@ if (limiteElemento && data.limiteBase) {
 `;
      const area = document.getElementById("areaAvisoTopo");
   
+  area.innerHTML = "";
   area.appendChild(info);
+      
   const fecharBtn = document.createElement("span");
 fecharBtn.innerText = "✕";
 fecharBtn.style.position = "absolute";

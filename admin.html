@@ -1173,15 +1173,14 @@ window.salvarNovoUsuario = async function(){
  const nome = document.getElementById("novoNome").value;
  const email = document.getElementById("novoEmail").value;
  const senha = document.getElementById("novaSenha").value;
+if(!nome || !email || !senha){
+  alert("Preencha nome, email e senha");
+  return;
+}
  const telefone = document.getElementById("novoTelefone").value;
  const pais = document.getElementById("novoPais").value;
  const documento = document.getElementById("novoDocumento").value;
  const score = Number(document.getElementById("novoScore").value || 20);
-
- if(!nome || !email){
-   alert("Preencha nome e email");
-   return;
- }
 
  await addDoc(collection(db,"usuarios"),{
 

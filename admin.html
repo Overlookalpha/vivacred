@@ -1240,8 +1240,32 @@ if(userSnap.exists()){
  const userData = userSnap.data();
  const scoreAtual = userData.score || 0;
 
+ let bonusISC = Math.round(dados.valor);
+
+ const emprestimoRefBonus =
+ doc(db,"emprestimos",dados.emprestimoId);
+
+ const emprestimoSnapBonus =
+ await getDoc(emprestimoRefBonus);
+
+ if(emprestimoSnapBonus.exists()){
+
+   const emp = emprestimoSnapBonus.data();
+
+   const parcelasPagasDepois =
+   (emp.parcelasPagas || 0) + 1;
+
+   if(parcelasPagasDepois >= emp.parcelas){
+
+      bonusISC += 100;
+
+   }
+
+ }
+
  await updateDoc(userRef,{
-  score: scoreAtual + 5
+   score: scoreAtual + 5,
+   isaCoins: (userData.isaCoins || 0) + bonusISC
  });
 
 }

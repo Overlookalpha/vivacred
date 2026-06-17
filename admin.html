@@ -1559,6 +1559,57 @@ const totalAtrasadas =
 parcelasCliente.filter(p =>
  p.data().perfilPagamento === "atrasado"
 ).length;
+
+const totalPagamentos =
+totalAdiantadas +
+totalPontuais +
+totalAtrasadas;
+
+const maiorAtraso = Math.max(
+  0,
+  ...parcelasCliente
+    .filter(p =>
+      p.data().diasDiferenca > 0
+    )
+    .map(p =>
+      p.data().diasDiferenca
+    )
+);
+
+const confiabilidade =
+totalPagamentos === 0
+? 0
+: Math.round(
+ ((totalAdiantadas + totalPontuais) /
+ totalPagamentos) * 100
+);
+
+let recomendacao = "🟡 Requer Atenção";
+
+if(confiabilidade >= 90 && maiorAtraso <= 30){
+ recomendacao = "🟢 Cliente Recomendado";
+}
+else if(confiabilidade < 70 || maiorAtraso > 30){
+ recomendacao = "🔴 Cliente Alto Risco";
+}
+  
+let classificacao = "⭐⭐⭐ Cliente Novo";
+
+if(totalAtrasadas === 0 && totalPontuais >= 10){
+ classificacao = "⭐⭐⭐⭐⭐ Ouro";
+}
+else if(totalAtrasadas <= 1 && totalPontuais >= 5){
+ classificacao = "⭐⭐⭐⭐ Excelente";
+}
+else if(totalAtrasadas <= 3){
+ classificacao = "⭐⭐⭐ Bom";
+}
+else if(totalAtrasadas <= 5){
+ classificacao = "⭐⭐ Atenção";
+}
+else{
+ classificacao = "⭐ Risco";
+}
   
  alert(
   "Nome: " + (user.nome || "-") + "\n" +
@@ -1628,6 +1679,26 @@ totalRejeitados
 
 "🏅 PERFIL DE PAGADOR\n\n" +
 
+  "Classificação: " +
+classificacao +
+"\n\n" +
+
+  "Pagamentos Registrados: " +
+totalPagamentos +
+"\n\n" +
+
+"Maior Atraso: " +
+maiorAtraso +
+" dias\n\n" +
+
+  "Confiabilidade: " +
+confiabilidade +
+"%\n\n" + 
+
+ "Recomendação: " +
+recomendacao +
+"\n\n" +  
+   
 "Adiantadas: " +
 totalAdiantadas +
 "\n" +

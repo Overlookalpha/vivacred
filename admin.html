@@ -1190,10 +1190,31 @@ if(Number(valor) > restanteAtual){
  const snap = await getDoc(ref);
  const dados = snap.data();
 
- await updateDoc(ref,{
+const vencimento = dados.vencimento.toDate();
+
+const hoje = new Date();
+
+const diasDiferenca = Math.floor(
+ (hoje - vencimento) / (1000 * 60 * 60 * 24)
+);
+
+let perfilPagamento = "pontual";
+
+if(diasDiferenca < 0){
+ perfilPagamento = "adiantado";
+}
+
+if(diasDiferenca > 0){
+ perfilPagamento = "atrasado";
+}
+    
+await updateDoc(ref,{
  pago: dados.valor,
  restante: 0,
- status:"pago"
+ status:"pago",
+ dataPagamento: new Date(),
+ diasDiferenca: diasDiferenca,
+ perfilPagamento: perfilPagamento
 });
 
 // aumentar score do cliente
@@ -1509,6 +1530,36 @@ historicoCliente.filter(e =>
  e.data().status === "aguardando"
 ).length;
 
+const parcelasSnap = await getDocs(
+ collection(db,"parcelas")
+);
+
+const parcelasCliente =
+parcelasSnap.docs.filter(p => {
+
+ const dadosParcela = p.data();
+
+ return historicoCliente.some(e =>
+  e.id === dadosParcela.emprestimoId
+ );
+
+});
+
+const totalAdiantadas =
+parcelasCliente.filter(p =>
+ p.data().perfilPagamento === "adiantado"
+).length;
+
+const totalPontuais =
+parcelasCliente.filter(p =>
+ p.data().perfilPagamento === "pontual"
+).length;
+
+const totalAtrasadas =
+parcelasCliente.filter(p =>
+ p.data().perfilPagamento === "atrasado"
+).length;
+  
  alert(
   "Nome: " + (user.nome || "-") + "\n" +
   "Email: " + (user.email || "-") + "\n" +
@@ -1572,6 +1623,21 @@ totalRejeitados
 
 "Possui Empréstimo Ativo: " +
 (totalAtivos > 0 ? "SIM" : "NÃO")
+
++ "\n\n" +
+
+"🏅 PERFIL DE PAGADOR\n\n" +
+
+"Adiantadas: " +
+totalAdiantadas +
+"\n" +
+
+"Pontuais: " +
+totalPontuais +
+"\n" +
+
+"Atrasadas: " +
+totalAtrasadas
 
 );
 

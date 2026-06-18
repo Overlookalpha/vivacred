@@ -668,6 +668,49 @@ if (dados.status !== "ativo" || dados.arquivado === true) return;
  const hoje = new Date();
 const vencimento = new Date(dados.dataVencimento);
 
+const diferencaMs =
+vencimento - hoje;
+
+const diasRestantes =
+Math.ceil(
+ diferencaMs / (1000 * 60 * 60 * 24)
+);
+
+let alertaVencimento = "";
+
+if(diasRestantes < 0){
+
+ alertaVencimento =
+ "<div style='color:#ff4c4c;font-weight:bold;'>🔴 ATRASADO HÁ " +
+ Math.abs(diasRestantes) +
+ " DIAS</div>";
+
+}else if(diasRestantes === 0){
+
+ alertaVencimento =
+ "<div style='color:#ff4c4c;font-weight:bold;'>🔴 VENCE HOJE</div>";
+
+}else if(diasRestantes === 1){
+
+ alertaVencimento =
+ "<div style='color:#ff9800;font-weight:bold;'>🟠 VENCE AMANHÃ</div>";
+
+}else if(diasRestantes <= 7){
+
+ alertaVencimento =
+ "<div style='color:#ffd93d;font-weight:bold;'>🟡 FALTAM " +
+ diasRestantes +
+ " DIAS</div>";
+
+}else{
+
+ alertaVencimento =
+ "<div style='color:#4cff88;font-weight:bold;'>🟢 FALTAM " +
+ diasRestantes +
+ " DIAS</div>";
+
+}
+
 if(dados.parcelasPagas == 0){
  statusTexto = "<div style='color:#cccccc;font-weight:bold;'>SEM PAGAMENTO</div>";
 }
@@ -759,8 +802,10 @@ currency:(dados.pais === "PT" ? "EUR" : "BRL")
 }) +
 "<br>"+
  "Parcelas: " + dados.parcelas + "<br>" +
- statusTexto +
- "<br>" +
+statusTexto +
+"<br>" +
+alertaVencimento +
+"<br>" +
  "<button onclick=\"abrirParcelas('" + docSnap.id + "')\">Gerenciar Parcelas</button> " +
  "<button onclick=\"fecharEmprestimo('" + docSnap.id + "')\">❌</button>";
   

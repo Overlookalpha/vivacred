@@ -464,7 +464,24 @@ document.getElementById("naRuaTotal").innerText =
 document.getElementById("atrasoTotal").innerText =
 "R$ " + totalAtrasado.toFixed(2);
 if(proximaParcela){
+ const emprestimoRef = doc(
+ db,
+ "emprestimos",
+ proximaParcela.emprestimoId
+);
 
+const emprestimoSnap =
+await getDoc(emprestimoRef);
+
+let nomeCliente = "Cliente";
+
+if(emprestimoSnap.exists()){
+
+ nomeCliente =
+ emprestimoSnap.data().nomeCliente ||
+ "Cliente";
+
+}
  const diasRestantes = Math.ceil(
   (proximaParcela.vencimento - new Date()) /
   (1000 * 60 * 60 * 24)
@@ -472,16 +489,29 @@ if(proximaParcela){
 
  document.getElementById("proximoVencimentoInfo").innerHTML =
 
- "💰 Valor: " +
- Number(proximaParcela.valor || 0).toFixed(2) +
- "<br>" +
+"👤 Cliente: " +
+nomeCliente +
+"<br>" +
+
+"💰 Valor: " +
+Number(proximaParcela.valor || 0).toFixed(2) +
+"<br>" +
 
  "📅 Vencimento: " +
  proximaParcela.vencimento.toLocaleDateString("pt-BR") +
  "<br>" +
 
- "⏳ Dias: " +
- diasRestantes;
+if(diasRestantes < 0){
+
+ document.getElementById("proximoVencimentoInfo").innerHTML +=
+ "<br>🚨 ATRASADO HÁ " + Math.abs(diasRestantes) + " DIAS";
+
+}else{
+
+ document.getElementById("proximoVencimentoInfo").innerHTML +=
+ "<br>⏳ Faltam " + diasRestantes + " dias";
+
+}
 
 }
 

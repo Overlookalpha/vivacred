@@ -475,11 +475,17 @@ await getDoc(emprestimoRef);
 
 let nomeCliente = "Cliente";
 
+let telefoneCliente = "";
+
 if(emprestimoSnap.exists()){
 
  nomeCliente =
  emprestimoSnap.data().nomeCliente ||
  "Cliente";
+
+ telefoneCliente =
+ emprestimoSnap.data().telefoneCliente ||
+ "";
 
 }
  const diasRestantes = Math.ceil(
@@ -491,6 +497,10 @@ if(emprestimoSnap.exists()){
 
 "👤 Cliente: " +
 nomeCliente +
+"<br>" +
+
+"📞 Telefone: " +
+telefoneCliente +
 "<br>" +
 
 "💰 Valor: " +

@@ -341,6 +341,7 @@ let capitalEmprestadoPT = 0;
 
  const emprestimosSnap = await getDocs(collection(db,"emprestimos"));
  const parcelasSnap = await getDocs(collection(db,"parcelas"));
+  let proximaParcela = null;
  let totalAtrasado = 0;
 
 emprestimosSnap.forEach((docSnap)=>{
@@ -369,6 +370,28 @@ emprestimosSnap.forEach((docSnap)=>{
 parcelasSnap.forEach((docSnap)=>{
 
  const dados = docSnap.data();
+  if(
+ Number(dados.restante || 0) > 0
+){
+
+ const vencimentoParcela =
+ dados.vencimento?.toDate
+ ? dados.vencimento.toDate()
+ : new Date(dados.vencimento);
+
+ if(
+   !proximaParcela ||
+   vencimentoParcela < proximaParcela.vencimento
+ ){
+
+   proximaParcela = {
+     ...dados,
+     vencimento: vencimentoParcela
+   };
+
+ }
+
+}
 
 const vencimento = dados.vencimento?.toDate
  ? dados.vencimento.toDate()
@@ -440,6 +463,28 @@ document.getElementById("naRuaTotal").innerText =
 
 document.getElementById("atrasoTotal").innerText =
 "R$ " + totalAtrasado.toFixed(2);
+if(proximaParcela){
+
+ const diasRestantes = Math.ceil(
+  (proximaParcela.vencimento - new Date()) /
+  (1000 * 60 * 60 * 24)
+ );
+
+ document.getElementById("proximoVencimentoInfo").innerHTML =
+
+ "💰 Valor: " +
+ Number(proximaParcela.valor || 0).toFixed(2) +
+ "<br>" +
+
+ "📅 Vencimento: " +
+ proximaParcela.vencimento.toLocaleDateString("pt-BR") +
+ "<br>" +
+
+ "⏳ Dias: " +
+ diasRestantes;
+
+}
+
 }
 let capitalBR = 1000;
 let capitalPT = 1000;

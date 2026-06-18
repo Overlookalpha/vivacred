@@ -475,26 +475,6 @@ color:white;
 
 `;
 
-<strong style="font-size:20px;">
-👤 ${emp.nomeCliente || "Cliente"}
-</strong><br><br>
-
-💰 Valor:
-${emp.pais === "PT" ? "€" : "R$"}
-${Number(proximaParcela.valor || 0).toFixed(2)}
-<br><br>
-
-📅 Vencimento:
-${proximaParcela.vencimento.toLocaleDateString()}
-<br><br>
-
-⏳ ${
- diasRestantes >= 0
- ? "Faltam " + diasRestantes + " dias"
- : "Atrasado há " + Math.abs(diasRestantes) + " dias"
-}
-
-`;
   window.proximaParcelaDashboard = proximaParcela;
  }
 

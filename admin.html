@@ -88,7 +88,24 @@ color:white;
 
 <h2>Painel Administrativo VivaCred</h2>
 
-<div id="painelFinanceiro" style="display:flex; flex-direction:column; gap:15px; margin-bottom:20px;">
+<div class="card" id="cardProximoVencimento">
+
+<h3>⏰ Próximo Vencimento</h3>
+
+<div id="proximoVencimentoInfo">
+
+Nenhum vencimento encontrado.
+
+</div>
+
+</div>
+
+<div id="painelFinanceiro" style="
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+gap:15px;
+margin-bottom:20px;
+">
 
 <div class="card">
 

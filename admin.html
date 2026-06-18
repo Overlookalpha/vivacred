@@ -336,6 +336,7 @@ let proximaParcela = null;
 emprestimosSnap.forEach((docSnap)=>{
 
  const dados = docSnap.data();
+  console.log(dados);
  const pais = dados.pais || "BR";
 
  if(dados.status === "ativo"){

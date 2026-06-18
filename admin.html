@@ -88,53 +88,9 @@ color:white;
 
 <h2>Painel Administrativo VivaCred</h2>
 
-<div class="card" id="cardProximoVencimento">
-
-<h3>⏰ Próximo Vencimento</h3>
-
-<div id="proximoVencimentoInfo">
-
-Nenhum vencimento encontrado.
-
-</div>
-
-</div>
-<div id="resumoFinanceiro" style="
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-gap:15px;
-margin-bottom:20px;
-">
+<div id="painelFinanceiro" style="display:flex; flex-direction:column; gap:15px; margin-bottom:20px;">
 
 <div class="card">
-<h3>💰 Caixa</h3>
-<div id="caixaTotal">R$ 0,00</div>
-</div>
-
-<div class="card">
-<h3>🏦 Na Rua</h3>
-<div id="naRuaTotal">R$ 0,00</div>
-</div>
-
-<div class="card">
-<h3>📅 Esta Semana</h3>
-<div id="semanaTotal">R$ 0,00</div>
-</div>
-
-<div class="card">
-<h3>🚨 Em Atraso</h3>
-<div id="atrasoTotal">R$ 0,00</div>
-</div>
-
-</div>
-<div id="painelFinanceiro" style="
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-gap:15px;
-margin-bottom:20px;
-">
-
-<div class="card" style="display:none;">
 
 <strong>Capital Brasil</strong><br>
 <input id="capitalBRInput" type="number" value="1000" style="width:100px;"><br><br>
@@ -147,19 +103,30 @@ margin-bottom:20px;
 </div>
 
 <div class="card">
+<h3>🇧🇷 Brasil</h3>
 
-<h3>🌍 Resumo Geral</h3>
+Dinheiro na Rua:<br>
+<span id="dinheiroRuaBR">0</span><br><br>
 
-🇧🇷 Brasil<br>
-Rua: <span id="dinheiroRuaBR">0</span><br>
-Caixa: <span id="saldoBR">0</span>
+Recebido:<br>
+<span id="recebidoBR">0</span><br><br>
 
-<hr>
+Saldo:<br>
+<span id="saldoBR">0</span>
+</div>
 
-🇵🇹 Portugal<br>
-Rua: <span id="dinheiroRuaPT">0</span><br>
-Caixa: <span id="saldoPT">0</span>
+<div class="card">
+<h3>🇵🇹 Portugal</h3>
 
+Dinheiro na Rua:<br>
+<span id="dinheiroRuaPT">0</span><br><br>
+
+Recebido:<br>
+<span id="recebidoPT">0</span><br><br>
+
+Saldo:<br>
+<span id="saldoPT">0</span>
+</div>
 </div>
 
 </div>
@@ -341,8 +308,6 @@ let capitalEmprestadoPT = 0;
 
  const emprestimosSnap = await getDocs(collection(db,"emprestimos"));
  const parcelasSnap = await getDocs(collection(db,"parcelas"));
-  let proximaParcela = null;
- let totalAtrasado = 0;
 
 emprestimosSnap.forEach((docSnap)=>{
 
@@ -370,39 +335,6 @@ emprestimosSnap.forEach((docSnap)=>{
 parcelasSnap.forEach((docSnap)=>{
 
  const dados = docSnap.data();
-  if(
- Number(dados.restante || 0) > 0
-){
-
- const vencimentoParcela =
- dados.vencimento?.toDate
- ? dados.vencimento.toDate()
- : new Date(dados.vencimento);
-
- if(
-   !proximaParcela ||
-   vencimentoParcela < proximaParcela.vencimento
- ){
-
-   proximaParcela = {
-     ...dados,
-     vencimento: vencimentoParcela
-   };
-
- }
-
-}
-
-const vencimento = dados.vencimento?.toDate
- ? dados.vencimento.toDate()
- : new Date(dados.vencimento);
-
-if(
- vencimento < new Date() &&
- Number(dados.restante || 0) > 0
-){
- totalAtrasado += Number(dados.restante || 0);
-}
 
  if((dados.pais || "BR") === "PT"){
 
@@ -421,6 +353,7 @@ totalEmprestadoBR - totalRecebidoBR;
 
 const dinheiroRuaPT =
 totalEmprestadoPT - totalRecebidoPT;
+
 const saldoBR = Math.max(
   0,
   capitalBR - capitalEmprestadoBR + totalRecebidoBR
@@ -431,17 +364,11 @@ const saldoPT = Math.max(
   capitalPT - capitalEmprestadoPT + totalRecebidoPT
 );
 
-const caixaTotal =
-saldoBR + saldoPT;
-
-const naRuaTotal =
-dinheiroRuaBR + dinheiroRuaPT;
-
 document.getElementById("dinheiroRuaBR").innerText =
 "R$ " + dinheiroRuaBR.toFixed(2);
 
-//document.getElementById("recebidoBR").innerText =
-//"R$ " + totalRecebidoBR.toFixed(2);
+document.getElementById("recebidoBR").innerText =
+"R$ " + totalRecebidoBR.toFixed(2);
 
 document.getElementById("saldoBR").innerText =
 "R$ " + saldoBR.toFixed(2);
@@ -449,89 +376,11 @@ document.getElementById("saldoBR").innerText =
 document.getElementById("dinheiroRuaPT").innerText =
 "€ " + dinheiroRuaPT.toFixed(2);
 
-//document.getElementById("recebidoPT").innerText =
-//"€ " + totalRecebidoPT.toFixed(2);
+document.getElementById("recebidoPT").innerText =
+"€ " + totalRecebidoPT.toFixed(2);
 
 document.getElementById("saldoPT").innerText =
 "€ " + saldoPT.toFixed(2);
-
-document.getElementById("caixaTotal").innerText =
-"R$ " + caixaTotal.toFixed(2);
-
-document.getElementById("naRuaTotal").innerText =
-"R$ " + naRuaTotal.toFixed(2);
-
-document.getElementById("atrasoTotal").innerText =
-"R$ " + totalAtrasado.toFixed(2);
-if(proximaParcela){
- const emprestimoRef = doc(
- db,
- "emprestimos",
- proximaParcela.emprestimoId
-);
-
-const emprestimoSnap =
-await getDoc(emprestimoRef);
-
-let nomeCliente = "Cliente";
-
-let telefoneCliente = "";
-let telefoneLimpo = "";
-
-if(emprestimoSnap.exists()){
-
- nomeCliente =
- emprestimoSnap.data().nomeCliente ||
- "Cliente";
-
- telefoneCliente =
- emprestimoSnap.data().telefoneCliente ||
- "";
-
-telefoneLimpo =
-telefoneCliente.replace(/\D/g,"");
-  
-}
- const diasRestantes = Math.ceil(
-  (proximaParcela.vencimento - new Date()) /
-  (1000 * 60 * 60 * 24)
- );
-
- document.getElementById("proximoVencimentoInfo").innerHTML =
-
-"👤 Cliente: " +
-nomeCliente +
-"<br>" +
-
-"📞 Telefone: " +
-telefoneCliente +
-"<br>" +
-
-"💰 Valor: " +
-Number(proximaParcela.valor || 0).toFixed(2) +
-"<br>" +
-
- "📅 Vencimento: " +
- proximaParcela.vencimento.toLocaleDateString("pt-BR") +
- "<br>";
-
-if(diasRestantes < 0){
-
- document.getElementById("proximoVencimentoInfo").innerHTML +=
- "<br>🚨 ATRASADO HÁ " + Math.abs(diasRestantes) + " DIAS";
-document.getElementById("proximoVencimentoInfo").innerHTML +=
-"<br><br><a href='https://wa.me/" +
-telefoneLimpo +
-"' target='_blank' style='color:#4cff88;font-weight:bold;'>📱 Cobrar Cliente</a>";
-}else{
-
- document.getElementById("proximoVencimentoInfo").innerHTML +=
- "<br>⏳ Faltam " + diasRestantes + " dias";
-
-}
-
-}
-
 }
 let capitalBR = 1000;
 let capitalPT = 1000;
@@ -803,6 +652,109 @@ container.appendChild(div);
 });
 // ===== LISTAR EMPRÉSTIMOS AGUARDANDO =====
 
+const emprestimosSnapshot = await getDocs(collection(db, "emprestimos"));
+const containerEmprestimos = document.getElementById("listaEmprestimosAtivos");
+containerEmprestimos.innerHTML = "";
+
+emprestimosSnapshot.forEach((docSnap) => {
+
+  const dados = docSnap.data();
+
+if (dados.status !== "ativo" || dados.arquivado === true) return;
+
+  const div = document.createElement("div");
+  div.className = "card";
+  let statusTexto = "";
+ const hoje = new Date();
+const vencimento = new Date(dados.dataVencimento);
+
+const diferencaMs =
+vencimento - hoje;
+
+const diasRestantes =
+Math.ceil(
+ diferencaMs / (1000 * 60 * 60 * 24)
+);
+
+let alertaVencimento = "";
+
+if(diasRestantes < 0){
+
+ alertaVencimento =
+ "<div style='color:#ff4c4c;font-weight:bold;'>🔴 ATRASADO HÁ " +
+ Math.abs(diasRestantes) +
+ " DIAS</div>";
+
+}else if(diasRestantes === 0){
+
+ alertaVencimento =
+ "<div style='color:#ff4c4c;font-weight:bold;'>🔴 VENCE HOJE</div>";
+
+}else if(diasRestantes === 1){
+
+ alertaVencimento =
+ "<div style='color:#ff9800;font-weight:bold;'>🟠 VENCE AMANHÃ</div>";
+
+}else if(diasRestantes <= 7){
+
+ alertaVencimento =
+ "<div style='color:#ffd93d;font-weight:bold;'>🟡 FALTAM " +
+ diasRestantes +
+ " DIAS</div>";
+
+}else{
+
+ alertaVencimento =
+ "<div style='color:#4cff88;font-weight:bold;'>🟢 FALTAM " +
+ diasRestantes +
+ " DIAS</div>";
+
+}
+
+if(dados.parcelasPagas == 0){
+ statusTexto = "<div style='color:#cccccc;font-weight:bold;'>SEM PAGAMENTO</div>";
+}
+
+if(dados.parcelasPagas > 0 && dados.parcelasPagas < dados.parcelas){
+ statusTexto = "<div style='color:#ffd93d;font-weight:bold;'>PAGAMENTO PARCIAL</div>";
+}
+
+if(dados.parcelasPagas >= dados.parcelas){
+ statusTexto = "<div style='color:#4cff88;font-weight:bold;font-size:18px;'>QUITADO</div>";
+}
+
+if(hoje > vencimento && dados.parcelasPagas < dados.parcelas){
+ statusTexto = "<div style='color:#ff4c4c;font-weight:bold;'>ATRASADO</div>";
+}
+div.innerHTML = `
+<strong>${dados.email}</strong><br><br>
+
+<b>Cliente</b><br>
+Nome: ${dados.nomeCliente || "-"}<br>
+Telefone: ${dados.telefoneCliente || "-"}<br>
+${dados.pais === "PT" ? "NIF" : "CPF"}: ${dados.cpfCliente || "-"}<br>
+${dados.pais === "PT" ? "MB Way" : "Pix"}: ${dados.pixCliente || "-"}<br><br>
+
+<b>Avalista</b><br>
+Nome: ${dados.nomeAvalista || "-"}<br>
+Telefone: ${dados.telefoneAvalista || "-"}<br>
+${dados.pais === "PT" ? "NIF" : "CPF"}: ${dados.cpfAvalista || "-"}<br><br>
+
+Valor Total: ${dados.valorFinal}<br>
+Parcelas: ${dados.parcelas}<br>
+${statusTexto}<br>
+
+<button onclick="abrirParcelas('${docSnap.id}')">
+Gerenciar Parcelas
+</button>
+
+<button onclick="fecharEmprestimo('${docSnap.id}')">
+❌
+</button>
+`;
+  containerAtivos.appendChild(div);
+});
+});
 
 
 // EMPRÉSTIMOS ATIVOS
@@ -850,8 +802,10 @@ currency:(dados.pais === "PT" ? "EUR" : "BRL")
 }) +
 "<br>"+
  "Parcelas: " + dados.parcelas + "<br>" +
- statusTexto +
- "<br>" +
+statusTexto +
+"<br>" +
+alertaVencimento +
+"<br>" +
  "<button onclick=\"abrirParcelas('" + docSnap.id + "')\">Gerenciar Parcelas</button> " +
  "<button onclick=\"fecharEmprestimo('" + docSnap.id + "')\">❌</button>";
   

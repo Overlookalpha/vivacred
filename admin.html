@@ -87,7 +87,15 @@ color:white;
 <div id="telaDashboard">
 
 <h2>Painel Administrativo VivaCred</h2>
+<div class="card" id="cardProximoVencimento">
 
+<h3>🎯 Próximo Vencimento</h3>
+
+<div id="proximoVencimentoInfo">
+Nenhum vencimento encontrado.
+</div>
+
+</div>
 <div id="painelFinanceiro" style="display:flex; flex-direction:column; gap:15px; margin-bottom:20px;">
 
 <div class="card">
@@ -308,7 +316,7 @@ let capitalEmprestadoPT = 0;
 
  const emprestimosSnap = await getDocs(collection(db,"emprestimos"));
  const parcelasSnap = await getDocs(collection(db,"parcelas"));
-
+let proximaParcela = null;
 emprestimosSnap.forEach((docSnap)=>{
 
  const dados = docSnap.data();
@@ -343,6 +351,27 @@ parcelasSnap.forEach((docSnap)=>{
  }else{
 
    totalRecebidoBR += Number(dados.pago || 0);
+
+ }
+
+ if(
+   dados.status !== "pago" &&
+   dados.vencimento
+ ){
+
+   const vencimento = dados.vencimento.toDate();
+
+   if(
+     !proximaParcela ||
+     vencimento < proximaParcela.vencimento
+   ){
+
+     proximaParcela = {
+       ...dados,
+       vencimento
+     };
+
+   }
 
  }
 
@@ -384,7 +413,19 @@ document.getElementById("saldoPT").innerText =
 }
 let capitalBR = 1000;
 let capitalPT = 1000;
+const configSnap = await getDoc(
+  doc(db,"configuracoes","financeiro")
+);
 
+if(configSnap.exists()){
+
+  capitalBR =
+  configSnap.data().capitalBR || 1000;
+
+  capitalPT =
+  configSnap.data().capitalPT || 1000;
+
+}
   
 const firebaseConfig = {
   apiKey: "AIzaSyDJHtQp7OUxgYqtcD_2eTqzh1BRpufvKrY",

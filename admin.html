@@ -396,7 +396,7 @@ parcelasSnap.forEach((docSnap)=>{
 if(proximaParcela){
 
 document.getElementById("proximoVencimentoInfo").innerHTML = `
-<strong>${proximaParcela.nome || "Cliente"}</strong><br>
+<strong>${proximaParcela.nomeCliente || proximaParcela.pixCliente || "Cliente"}</strong>
 Valor: R$ ${Number(proximaParcela.valor || 0).toFixed(2)}<br>
 Vencimento: ${proximaParcela.vencimento.toLocaleDateString()}
 `;

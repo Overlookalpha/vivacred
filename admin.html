@@ -395,10 +395,10 @@ parcelasSnap.forEach((docSnap)=>{
 });
 if(proximaParcela){
 
+console.log("PROXIMA PARCELA",proximaParcela);
+
 document.getElementById("proximoVencimentoInfo").innerHTML = `
-<strong>${proximaParcela.nomeCliente || proximaParcela.pixCliente || "Cliente"}</strong>
-Valor: R$ ${Number(proximaParcela.valor || 0).toFixed(2)}<br>
-Vencimento: ${proximaParcela.vencimento.toLocaleDateString()}
+<strong>${JSON.stringify(proximaParcela)}</strong>
 `;
 
 }

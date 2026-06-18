@@ -411,8 +411,12 @@ document.getElementById("recebidoPT").innerText =
 document.getElementById("saldoPT").innerText =
 "€ " + saldoPT.toFixed(2);
 }
+
+/*
+
 let capitalBR = 1000;
 let capitalPT = 1000;
+
 const configSnap = await getDoc(
   doc(db,"configuracoes","financeiro")
 );
@@ -426,7 +430,9 @@ if(configSnap.exists()){
   configSnap.data().capitalPT || 1000;
 
 }
-  
+
+*/
+
 const firebaseConfig = {
   apiKey: "AIzaSyDJHtQp7OUxgYqtcD_2eTqzh1BRpufvKrY",
   authDomain: "vivacred-5a5b8.firebaseapp.com",

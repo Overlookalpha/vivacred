@@ -398,12 +398,6 @@ totalEmprestadoBR - totalRecebidoBR;
 
 const dinheiroRuaPT =
 totalEmprestadoPT - totalRecebidoPT;
-const caixaTotal =
-saldoBR + saldoPT;
-
-const naRuaTotal =
-dinheiroRuaBR + dinheiroRuaPT;
-  
 const saldoBR = Math.max(
   0,
   capitalBR - capitalEmprestadoBR + totalRecebidoBR
@@ -413,6 +407,12 @@ const saldoPT = Math.max(
   0,
   capitalPT - capitalEmprestadoPT + totalRecebidoPT
 );
+
+const caixaTotal =
+saldoBR + saldoPT;
+
+const naRuaTotal =
+dinheiroRuaBR + dinheiroRuaPT;
 
 document.getElementById("dinheiroRuaBR").innerText =
 "R$ " + dinheiroRuaBR.toFixed(2);

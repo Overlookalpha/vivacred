@@ -408,16 +408,37 @@ if(proximaParcela){
 
    const emp = emprestimoSnap.data();
 
-   document.getElementById(
-     "proximoVencimentoInfo"
-   ).innerHTML = `
-   <strong>${emp.nomeCliente || "Cliente"}</strong><br>
-   Valor: ${
-     emp.pais === "PT" ? "€" : "R$"
-   } ${Number(proximaParcela.valor || 0).toFixed(2)}<br>
-   Vencimento:
-   ${proximaParcela.vencimento.toLocaleDateString()}
-   `;
+   const hoje = new Date();
+
+const diasRestantes = Math.ceil(
+ (proximaParcela.vencimento - hoje) /
+ (1000 * 60 * 60 * 24)
+);
+
+document.getElementById(
+ "proximoVencimentoInfo"
+).innerHTML = `
+
+<strong style="font-size:20px;">
+👤 ${emp.nomeCliente || "Cliente"}
+</strong><br><br>
+
+💰 Valor:
+${emp.pais === "PT" ? "€" : "R$"}
+${Number(proximaParcela.valor || 0).toFixed(2)}
+<br><br>
+
+📅 Vencimento:
+${proximaParcela.vencimento.toLocaleDateString()}
+<br><br>
+
+⏳ ${
+ diasRestantes >= 0
+ ? "Faltam " + diasRestantes + " dias"
+ : "Atrasado há " + Math.abs(diasRestantes) + " dias"
+}
+
+`;
  }
 
 }

@@ -476,6 +476,7 @@ await getDoc(emprestimoRef);
 let nomeCliente = "Cliente";
 
 let telefoneCliente = "";
+let telefoneLimpo = "";
 
 if(emprestimoSnap.exists()){
 
@@ -487,6 +488,9 @@ if(emprestimoSnap.exists()){
  emprestimoSnap.data().telefoneCliente ||
  "";
 
+telefoneLimpo =
+telefoneCliente.replace(/\D/g,"");
+  
 }
  const diasRestantes = Math.ceil(
   (proximaParcela.vencimento - new Date()) /
@@ -515,7 +519,10 @@ if(diasRestantes < 0){
 
  document.getElementById("proximoVencimentoInfo").innerHTML +=
  "<br>🚨 ATRASADO HÁ " + Math.abs(diasRestantes) + " DIAS";
-
+document.getElementById("proximoVencimentoInfo").innerHTML +=
+"<br><br><a href='https://wa.me/" +
+telefoneLimpo +
+"' target='_blank' style='color:#4cff88;font-weight:bold;'>📱 Cobrar Cliente</a>";
 }else{
 
  document.getElementById("proximoVencimentoInfo").innerHTML +=

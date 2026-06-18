@@ -99,8 +99,7 @@ Nenhum vencimento encontrado.
 </div>
 
 </div>
-
-<div id="painelFinanceiro" style="
+<div id="resumoFinanceiro" style="
 display:grid;
 grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
 gap:15px;
@@ -108,6 +107,34 @@ margin-bottom:20px;
 ">
 
 <div class="card">
+<h3>💰 Caixa</h3>
+<div id="caixaTotal">R$ 0,00</div>
+</div>
+
+<div class="card">
+<h3>🏦 Na Rua</h3>
+<div id="naRuaTotal">R$ 0,00</div>
+</div>
+
+<div class="card">
+<h3>📅 Esta Semana</h3>
+<div id="semanaTotal">R$ 0,00</div>
+</div>
+
+<div class="card">
+<h3>🚨 Em Atraso</h3>
+<div id="atrasoTotal">R$ 0,00</div>
+</div>
+
+</div>
+<div id="painelFinanceiro" style="
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+gap:15px;
+margin-bottom:20px;
+">
+
+<div class="card" style="display:none;">
 
 <strong>Capital Brasil</strong><br>
 <input id="capitalBRInput" type="number" value="1000" style="width:100px;"><br><br>
@@ -325,6 +352,7 @@ let capitalEmprestadoPT = 0;
 
  const emprestimosSnap = await getDocs(collection(db,"emprestimos"));
  const parcelasSnap = await getDocs(collection(db,"parcelas"));
+ let totalAtrasado = 0;
 
 emprestimosSnap.forEach((docSnap)=>{
 
@@ -353,6 +381,17 @@ parcelasSnap.forEach((docSnap)=>{
 
  const dados = docSnap.data();
 
+const vencimento = dados.vencimento?.toDate
+ ? dados.vencimento.toDate()
+ : new Date(dados.vencimento);
+
+if(
+ vencimento < new Date() &&
+ Number(dados.restante || 0) > 0
+){
+ totalAtrasado += Number(dados.restante || 0);
+}
+
  if((dados.pais || "BR") === "PT"){
 
    totalRecebidoPT += Number(dados.pago || 0);
@@ -370,7 +409,12 @@ totalEmprestadoBR - totalRecebidoBR;
 
 const dinheiroRuaPT =
 totalEmprestadoPT - totalRecebidoPT;
+const caixaTotal =
+saldoBR + saldoPT;
 
+const naRuaTotal =
+dinheiroRuaBR + dinheiroRuaPT;
+  
 const saldoBR = Math.max(
   0,
   capitalBR - capitalEmprestadoBR + totalRecebidoBR
@@ -398,6 +442,15 @@ document.getElementById("recebidoPT").innerText =
 
 document.getElementById("saldoPT").innerText =
 "€ " + saldoPT.toFixed(2);
+
+document.getElementById("caixaTotal").innerText =
+"R$ " + caixaTotal.toFixed(2);
+
+document.getElementById("naRuaTotal").innerText =
+"R$ " + naRuaTotal.toFixed(2);
+
+document.getElementById("atrasoTotal").innerText =
+"R$ " + totalAtrasado.toFixed(2);
 }
 let capitalBR = 1000;
 let capitalPT = 1000;

@@ -384,9 +384,10 @@ parcelasSnap.forEach((docSnap)=>{
    ){
 
      proximaParcela = {
-       ...dados,
-       vencimento
-     };
+  id: docSnap.id,
+  ...dados,
+  vencimento
+};
 
    }
 
@@ -407,6 +408,11 @@ if(proximaParcela){
  if(emprestimoSnap.exists()){
 
    const emp = emprestimoSnap.data();
+   const telefoneCliente =
+emp.telefoneCliente || "";
+
+const telefoneWhats =
+telefoneCliente.replace(/\D/g,"");
 
    const hoje = new Date();
 
@@ -428,6 +434,56 @@ ${emp.pais === "PT" ? "€" : "R$"}
 ${Number(proximaParcela.valor || 0).toFixed(2)}
 <br><br>
 
+📞 ${telefoneCliente || "Não informado"}
+<br><br>
+
+📅 Vencimento:
+${proximaParcela.vencimento.toLocaleDateString()}
+<br><br>
+
+⏳ ${
+ diasRestantes >= 0
+ ? "Faltam " + diasRestantes + " dias"
+ : "Atrasado há " + Math.abs(diasRestantes) + " dias"
+}
+
+<br><br>
+
+<a
+href="https://wa.me/${telefoneWhats}"
+target="_blank"
+style="
+background:#25D366;
+color:white;
+padding:8px 12px;
+border-radius:6px;
+text-decoration:none;
+margin-right:8px;
+display:inline-block;
+">
+WhatsApp
+</a>
+
+<button
+onclick="cobrarCliente(window.proximaParcelaDashboard.id)"
+style="
+background:#ff9800;
+color:white;
+">
+📱 Cobrar Agora
+</button>
+
+`;
+
+<strong style="font-size:20px;">
+👤 ${emp.nomeCliente || "Cliente"}
+</strong><br><br>
+
+💰 Valor:
+${emp.pais === "PT" ? "€" : "R$"}
+${Number(proximaParcela.valor || 0).toFixed(2)}
+<br><br>
+
 📅 Vencimento:
 ${proximaParcela.vencimento.toLocaleDateString()}
 <br><br>
@@ -439,6 +495,7 @@ ${proximaParcela.vencimento.toLocaleDateString()}
 }
 
 `;
+  window.proximaParcelaDashboard = proximaParcela;
  }
 
 }

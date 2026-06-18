@@ -135,8 +135,22 @@ Recebido:<br>
 Saldo:<br>
 <span id="saldoPT">0</span>
 </div>
+
+<div class="card">
+
+<h3>🌍 Resumo Geral</h3>
+
+🇧🇷 Brasil<br>
+Na Rua: <span id="resumoRuaBR">0</span><br>
+Saldo: <span id="resumoSaldoBR">0</span><br><br>
+
+🇵🇹 Portugal<br>
+Na Rua: <span id="resumoRuaPT">0</span><br>
+Saldo: <span id="resumoSaldoPT">0</span>
+
 </div>
 
+</div>
 </div>
 
 <!-- SOLICITAÇÕES -->
@@ -411,6 +425,17 @@ document.getElementById("recebidoPT").innerText =
 "€ " + totalRecebidoPT.toFixed(2);
 
 document.getElementById("saldoPT").innerText =
+"€ " + saldoPT.toFixed(2);
+  document.getElementById("resumoRuaBR").innerText =
+"R$ " + dinheiroRuaBR.toFixed(2);
+
+document.getElementById("resumoSaldoBR").innerText =
+"R$ " + saldoBR.toFixed(2);
+
+document.getElementById("resumoRuaPT").innerText =
+"€ " + dinheiroRuaPT.toFixed(2);
+
+document.getElementById("resumoSaldoPT").innerText =
 "€ " + saldoPT.toFixed(2);
 }
 

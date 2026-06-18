@@ -395,11 +395,30 @@ parcelasSnap.forEach((docSnap)=>{
 });
 if(proximaParcela){
 
-console.log("PROXIMA PARCELA",proximaParcela);
+ const emprestimoRef = doc(
+   db,
+   "emprestimos",
+   proximaParcela.emprestimoId
+ );
 
-document.getElementById("proximoVencimentoInfo").innerHTML = `
-<strong>${JSON.stringify(proximaParcela)}</strong>
-`;
+ const emprestimoSnap =
+ await getDoc(emprestimoRef);
+
+ if(emprestimoSnap.exists()){
+
+   const emp = emprestimoSnap.data();
+
+   document.getElementById(
+     "proximoVencimentoInfo"
+   ).innerHTML = `
+   <strong>${emp.nomeCliente || "Cliente"}</strong><br>
+   Valor: ${
+     emp.pais === "PT" ? "€" : "R$"
+   } ${Number(proximaParcela.valor || 0).toFixed(2)}<br>
+   Vencimento:
+   ${proximaParcela.vencimento.toLocaleDateString()}
+   `;
+ }
 
 }
 const dinheiroRuaBR =

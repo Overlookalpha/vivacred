@@ -803,66 +803,6 @@ container.appendChild(div);
 });
 // ===== LISTAR EMPRÉSTIMOS AGUARDANDO =====
 
-const emprestimosSnapshot = await getDocs(collection(db, "emprestimos"));
-const containerEmprestimos = document.getElementById("listaEmprestimosAtivos");
-containerEmprestimos.innerHTML = "";
-
-emprestimosSnapshot.forEach((docSnap) => {
-
-  const dados = docSnap.data();
-
-if (dados.status !== "ativo" || dados.arquivado === true) return;
-
-  const div = document.createElement("div");
-  div.className = "card";
-  let statusTexto = "";
- const hoje = new Date();
-const vencimento = new Date(dados.dataVencimento);
-
-if(dados.parcelasPagas == 0){
- statusTexto = "<div style='color:#cccccc;font-weight:bold;'>SEM PAGAMENTO</div>";
-}
-
-if(dados.parcelasPagas > 0 && dados.parcelasPagas < dados.parcelas){
- statusTexto = "<div style='color:#ffd93d;font-weight:bold;'>PAGAMENTO PARCIAL</div>";
-}
-
-if(dados.parcelasPagas >= dados.parcelas){
- statusTexto = "<div style='color:#4cff88;font-weight:bold;font-size:18px;'>QUITADO</div>";
-}
-
-if(hoje > vencimento && dados.parcelasPagas < dados.parcelas){
- statusTexto = "<div style='color:#ff4c4c;font-weight:bold;'>ATRASADO</div>";
-}
-div.innerHTML = `
-<strong>${dados.email}</strong><br><br>
-
-<b>Cliente</b><br>
-Nome: ${dados.nomeCliente || "-"}<br>
-Telefone: ${dados.telefoneCliente || "-"}<br>
-${dados.pais === "PT" ? "NIF" : "CPF"}: ${dados.cpfCliente || "-"}<br>
-${dados.pais === "PT" ? "MB Way" : "Pix"}: ${dados.pixCliente || "-"}<br><br>
-
-<b>Avalista</b><br>
-Nome: ${dados.nomeAvalista || "-"}<br>
-Telefone: ${dados.telefoneAvalista || "-"}<br>
-${dados.pais === "PT" ? "NIF" : "CPF"}: ${dados.cpfAvalista || "-"}<br><br>
-
-Valor Total: ${dados.valorFinal}<br>
-Parcelas: ${dados.parcelas}<br>
-${statusTexto}<br>
-
-<button onclick="abrirParcelas('${docSnap.id}')">
-Gerenciar Parcelas
-</button>
-
-<button onclick="fecharEmprestimo('${docSnap.id}')">
-❌
-</button>
-`;
-  containerEmprestimos.appendChild(div);
-});
-});
 
 
 // EMPRÉSTIMOS ATIVOS

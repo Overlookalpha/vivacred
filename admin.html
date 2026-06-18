@@ -142,10 +142,34 @@ Saldo:<br>
 
 <div class="card">
 
-<h3>📊 Resumo Executivo</h3>
-
 <div id="resumoExecutivo">
-Carregando...
+
+<div id="caixaDisponivel">
+💰 Caixa Disponível<br>
+R$ 0
+</div>
+
+<br>
+
+<div id="dinheiroRua">
+🏦 Na Rua<br>
+R$ 0
+</div>
+
+<br>
+
+<div id="clientesAtraso">
+🚨 Em Atraso<br>
+0 clientes
+</div>
+
+<br>
+
+<div id="proximos7Dias">
+📅 Próximos 7 Dias<br>
+R$ 0
+</div>
+
 </div>
 
 </div>
@@ -494,7 +518,15 @@ const saldoPT = Math.max(
   0,
   capitalPT - capitalEmprestadoPT + totalRecebidoPT
 );
+const caixaDisponivel = saldoBR + saldoPT;
 
+document.getElementById("caixaDisponivel").innerHTML =
+"💰 Caixa Disponível<br>" +
+"R$ " + caixaDisponivel.toFixed(2);
+
+document.getElementById("dinheiroRua").innerHTML =
+"🏦 Na Rua<br>" +
+"R$ " + dinheiroRuaBR.toFixed(2);
 document.getElementById("dinheiroRuaBR").innerText =
 "R$ " + dinheiroRuaBR.toFixed(2);
 

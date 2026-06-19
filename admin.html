@@ -441,12 +441,18 @@ if(dados.vencimento){
 
  if(diasRestantes < 0 && dados.status !== "pago"){
 
-  atrasados.push({
-    emprestimoId: dados.emprestimoId,
-    parcelaId: docSnap.id,
-    diasAtraso: Math.abs(diasRestantes),
-    valor: dados.valor
-  });
+ atrasados.push({
+  emprestimoId: dados.emprestimoId,
+  parcelaId: docSnap.id,
+
+  diasAtraso: Math.abs(diasRestantes),
+
+  valor: dados.valor,
+  restante: dados.restante || 0,
+
+  multa: dados.multa || 0,
+  juros: dados.juros || 0
+});
 
 }
 
@@ -643,9 +649,7 @@ if(atrasados.length === 0){
    if(emprestimoSnap.exists()){
 
      const emp = emprestimoSnap.data();
- console.log("EMP:", emp);
-console.log("MULTA:", emp.multa);
-console.log("JUROS:", emp.juros);
+ 
      htmlAtrasados +=
 
 "👤 " + (emp.nomeCliente || "Cliente") +

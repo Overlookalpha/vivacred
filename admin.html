@@ -571,7 +571,27 @@ const firebaseConfig = {
   authDomain: "vivacred-5a5b8.firebaseapp.com",
   projectId: "vivacred-5a5b8",
 };
+async function enviarTelegram(texto){
 
+ const token = "8855201631:AAEm19qaN-OjFon9Pfb2KElLpfqSP4w2Qqs";
+ const chatId = "7136900890";
+
+ await fetch(
+  https://api.telegram.org/bot${token}/sendMessage,
+  {
+   method:"POST",
+   headers:{
+    "Content-Type":"application/json"
+   },
+   body:JSON.stringify({
+    chat_id: chatId,
+    text: texto
+   })
+  }
+ );
+
+}
+  enviarTelegram("🚀 Teste VivaCred funcionando!");
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);

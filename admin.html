@@ -1,4 +1,4 @@
-<!-- TESTE ISAIAS 123456 -->
+
 <!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
@@ -643,7 +643,9 @@ if(atrasados.length === 0){
    if(emprestimoSnap.exists()){
 
      const emp = emprestimoSnap.data();
-
+ console.log("EMP:", emp);
+console.log("MULTA:", emp.multa);
+console.log("JUROS:", emp.juros);
      htmlAtrasados +=
 
 "👤 " + (emp.nomeCliente || "Cliente") +

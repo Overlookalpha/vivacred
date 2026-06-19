@@ -2115,6 +2115,35 @@ parcelasSnap.docs.filter(p => {
 
 });
 
+const hoje = new Date();
+
+let atrasoAtual = 0;
+
+parcelasCliente.forEach(p => {
+
+ const parcela = p.data();
+
+ if(
+  parcela.status !== "pago" &&
+  parcela.vencimento
+ ){
+
+  const vencimento =
+  parcela.vencimento.toDate();
+
+  const dias = Math.floor(
+   (hoje - vencimento) /
+   (1000 * 60 * 60 * 24)
+  );
+
+  if(dias > atrasoAtual){
+   atrasoAtual = dias;
+  }
+
+ }
+
+});
+  
 const totalRecebido =
 parcelasCliente.reduce(
  (total,p) =>
@@ -2158,14 +2187,17 @@ totalPontuais +
 totalAtrasadas;
 
 const maiorAtraso = Math.max(
-  0,
-  ...parcelasCliente
-    .filter(p =>
-      p.data().diasDiferenca > 0
-    )
-    .map(p =>
-      p.data().diasDiferenca
-    )
+
+ atrasoAtual,
+
+ ...parcelasCliente
+  .filter(p =>
+   (p.data().diasDiferenca || 0) > 0
+  )
+  .map(p =>
+   p.data().diasDiferenca || 0
+  )
+
 );
 
 const confiabilidade =
@@ -2178,16 +2210,19 @@ totalPagamentos === 0
 
 let recomendacao = "⚪ Sem Histórico";
 
-if(totalPagamentos > 0){
+if(maiorAtraso > 0){
+ recomendacao = "🔴 Cliente Alto Risco";
+}
+else if(totalPagamentos > 0){
 
- if(confiabilidade >= 90 && maiorAtraso <= 30){
+ if(confiabilidade >= 90){
   recomendacao = "🟢 Cliente Recomendado";
  }
- else if(confiabilidade < 70 || maiorAtraso > 30){
-  recomendacao = "🔴 Cliente Alto Risco";
+ else if(confiabilidade >= 70){
+  recomendacao = "🟡 Requer Atenção";
  }
  else{
-  recomendacao = "🟡 Requer Atenção";
+  recomendacao = "🔴 Cliente Alto Risco";
  }
 
 }

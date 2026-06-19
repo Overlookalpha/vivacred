@@ -1328,32 +1328,33 @@ ${vencimento.toLocaleDateString("pt-BR")}
 console.log("Erro Telegram:", erro);
 }
  const valorParcela = Number((dados.valorFinal / dados.parcelas).toFixed(2));
+for (let i = 1; i <= dados.parcelas; i++) {
 
- for (let i = 1; i <= dados.parcelas; i++) {
+ const vencimentoParcela = new Date();
+ vencimentoParcela.setMonth(vencimentoParcela.getMonth() + i);
 
-   const vencimentoParcela = new Date();
-   vencimentoParcela.setMonth(vencimentoParcela.getMonth() + i);
+ await addDoc(
+  collection(db,"parcelas"),
+  {
+   emprestimoId: id,
+   userId: dados.userId,
+   pais: dados.pais || "BR",
 
-  (collection(db, "parcelas"), {
-  emprestimoId: id,
-  userId: dados.userId,
-  pais: dados.pais || "BR",
+   numero: i,
+   valor: valorParcela,
+   pago: 0,
+   restante: valorParcela,
 
-  numero: i,
-  valor: valorParcela,
-  pago: 0,
-  restante: valorParcela,
+   multa: 0,
+   juros: 0,
+   diasAtraso: 0,
 
-  multa: 0,
-  juros: 0,
-  diasAtraso: 0,
+   status: "pendente",
+   vencimento: vencimentoParcela
+  }
+ );
 
-  status: "pendente",
-  vencimento: vencimentoParcela
-});
-
- }
-
+}
  alert("Empréstimo aprovado!");
  location.reload();
 };

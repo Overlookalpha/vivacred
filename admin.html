@@ -2097,7 +2097,7 @@ parcelasCliente.reduce(
  0
 );
 
-const totalLiberado =
+const totalLiberadoCliente =
 historicoCliente
 .filter(e =>
  e.data().status === "ativo" ||
@@ -2110,7 +2110,7 @@ historicoCliente
 );
 
 const lucroGerado =
-totalRecebido - totalLiberado;
+totalRecebido - totalLiberadoCliente;
   
 const totalAdiantadas =
 parcelasCliente.filter(p =>
@@ -2238,6 +2238,12 @@ totalLiberado.toFixed(2) +
 moedaUsuario +
 " " +
 totalRecebido.toFixed(2) +
+"\n\n" +
+
+"📈 Lucro Gerado: " +
+moedaUsuario +
+" " +
+lucroGerado.toFixed(2) +
 "\n\n" +
    
 "Cliente Novo: " +

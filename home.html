@@ -1376,9 +1376,22 @@ parcelasOrdenadas.forEach((p) => {
     item.style.padding = "12px";
     item.style.background = "rgba(255,255,255,0.05)";
     item.style.borderRadius = "10px";
+    let statusEmprestimo = "🟢 Quitado";
 
+const possuiPendente = parcelasOrdenadas.some(
+p => p.data().pago < p.data().valor
+);
+
+if(possuiPendente){
+statusEmprestimo = "🔴 Em Aberto";
+}
     item.innerHTML =
-  "<strong>Valor Recebido:</strong> " +
+
+"<div style='font-size:18px;font-weight:bold;margin-bottom:10px;'>" +
+statusEmprestimo +
+"</div>" +
+
+"<strong>Valor Recebido:</strong> " +
   dados.valor.toLocaleString("pt-BR", {
     style: "currency",
     currency: paisUsuarioGlobal === "PT" ? "EUR" : "BRL"
@@ -1391,7 +1404,17 @@ parcelasOrdenadas.forEach((p) => {
   }) +
   "<br>" +
   "<strong>Parcelas:</strong> " +
-  dados.parcelas;
+dados.parcelas +
+"<br>" +
+"<strong>Próximo Vencimento:</strong> " +
+(
+parcelasOrdenadas.find(p => p.data().pago < p.data().valor)
+?.data()
+?.vencimento
+?.toDate()
+?.toLocaleDateString("pt-BR")
+|| "Quitado"
+);
 
     listaDiv.appendChild(item);
 

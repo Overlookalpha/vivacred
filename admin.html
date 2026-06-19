@@ -2151,6 +2151,23 @@ else{
   "Email: " + (user.email || "-") + "\n" +
   "Telefone: " + (user.telefone || "-") + "\n" +
   "CPF/NIF: " + (user.cpf || "-") + "\n" +
+   "🎂 Data Nascimento: " +
+(user.dataNascimento || "-") + "\n" +
+
+"💼 Profissão: " +
+(user.profissao || "-") + "\n" +
+
+"💰 Renda Mensal: " +
+(user.rendaMensal || "-") + "\n" +
+
+"🏙️ Cidade: " +
+(user.cidade || "-") + "\n" +
+
+"📍 Estado: " +
+(user.estado || "-") + "\n" +
+
+"💳 Pix / MB Way: " +
+(user.chavePix || "-") + "\n" +
   "Score: " + (user.score || 0) + "\n" +
 
 "Nível: " +
@@ -2336,8 +2353,8 @@ if(estado === null) return;
 
 const chavePix =
 prompt(
-"Chave Pix:",
-user.chavePix || ""
+ "Pix / MB Way:",
+ user.chavePix || ""
 );
 
 if(chavePix === null) return;

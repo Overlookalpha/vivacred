@@ -1382,6 +1382,12 @@ const possuiPendente = parcelasOrdenadas.some(
 p => p.data().pago < p.data().valor
 );
 
+const parcelasPagas = parcelasOrdenadas.filter(
+ p => p.data().pago >= p.data().valor
+).length;
+
+const totalParcelas = parcelasOrdenadas.length;
+    
 if(possuiPendente){
 statusEmprestimo = "🔴 Em Aberto";
 }
@@ -1403,8 +1409,8 @@ statusEmprestimo +
     currency: paisUsuarioGlobal === "PT" ? "EUR" : "BRL"
   }) +
   "<br>" +
-  "<strong>Parcelas:</strong> " +
-dados.parcelas +
+  "<strong>📊 Progresso:</strong> " +
+parcelasPagas + "/" + totalParcelas + " pagas" +
 "<br>" +
 "<strong>Próximo Vencimento:</strong> " +
 (

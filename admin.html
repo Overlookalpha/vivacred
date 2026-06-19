@@ -676,10 +676,8 @@ Number(atraso.juros || 0).toFixed(2) +
 
 "📌 Total Atualizado: R$ " +
 Number(
- (atraso.restante || atraso.valor || 0) +
- (atraso.multa || 0) +
- (atraso.juros || 0)
-).toFixed(2) +
+ atraso.restante || atraso.valor || 0
+).toFixed(2)
 
 "<br><br>";
 

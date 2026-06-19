@@ -2090,6 +2090,28 @@ parcelasSnap.docs.filter(p => {
 
 });
 
+const totalRecebido =
+parcelasCliente.reduce(
+ (total,p) =>
+ total + Number(p.data().pago || 0),
+ 0
+);
+
+const totalLiberado =
+historicoCliente
+.filter(e =>
+ e.data().status === "ativo" ||
+ e.data().finalizado === true
+)
+.reduce(
+ (total,e) =>
+ total + Number(e.data().valor || 0),
+ 0
+);
+
+const lucroGerado =
+totalRecebido - totalLiberado;
+  
 const totalAdiantadas =
 parcelasCliente.filter(p =>
  p.data().perfilPagamento === "adiantado"
@@ -2156,6 +2178,11 @@ else{
  classificacao = "⭐ Risco";
 }
   
+  const moedaUsuario =
+user.pais === "PT"
+? "€"
+: "R$";
+  
  alert(
   "Nome: " + (user.nome || "-") + "\n" +
   "Email: " + (user.email || "-") + "\n" +
@@ -2201,9 +2228,18 @@ else{
 + "\n\n" +
 
 "📊 HISTÓRICO FINANCEIRO\n\n" +
-"💰 Total Liberado: R$ " +
+"💰 Total Liberado: " +
+moedaUsuario +
+" " +
 totalLiberado.toFixed(2) +
 "\n\n" +
+
+"💸 Total Recebido: " +
+moedaUsuario +
+" " +
+totalRecebido.toFixed(2) +
+"\n\n" +
+   
 "Cliente Novo: " +
 (totalSolicitacoes <= 1 ? "SIM" : "NÃO") +
 "\n" +

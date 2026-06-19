@@ -622,8 +622,48 @@ document.getElementById("vencimentos1Dia").innerHTML =
 document.getElementById("vencimentosHoje").innerHTML =
 "📅 Vence hoje: " + vencemHoje.length;
 
-document.getElementById("vencimentosAtrasados").innerHTML =
-"🔴 Em atraso: " + atrasados.length;
+if(atrasados.length === 0){
+
+ document.getElementById("vencimentosAtrasados").innerHTML =
+ "🔴 Em atraso: 0";
+
+}else{
+
+ let htmlAtrasados = "🔴 Em atraso:<br><br>";
+
+ for(const atraso of atrasados){
+
+   const emprestimoRef =
+   doc(db,"emprestimos",atraso.emprestimoId);
+
+   const emprestimoSnap =
+   await getDoc(emprestimoRef);
+
+   if(emprestimoSnap.exists()){
+
+     const emp = emprestimoSnap.data();
+
+     htmlAtrasados +=
+     "👤 " + (emp.nomeCliente || "Cliente") +
+     "<br>" +
+
+     "⏳ " + atraso.diasAtraso +
+     " dias de atraso" +
+     "<br>" +
+
+     "💰 R$ " +
+     Number(atraso.valor).toFixed(2) +
+
+     "<br><br>";
+
+   }
+
+ }
+
+ document.getElementById("vencimentosAtrasados").innerHTML =
+ htmlAtrasados;
+
+}
 }
 
 /*

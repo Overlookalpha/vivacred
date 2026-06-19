@@ -2176,13 +2176,20 @@ totalPagamentos === 0
  totalPagamentos) * 100
 );
 
-let recomendacao = "🟡 Requer Atenção";
+let recomendacao = "⚪ Sem Histórico";
 
-if(confiabilidade >= 90 && maiorAtraso <= 30){
- recomendacao = "🟢 Cliente Recomendado";
-}
-else if(confiabilidade < 70 || maiorAtraso > 30){
- recomendacao = "🔴 Cliente Alto Risco";
+if(totalPagamentos > 0){
+
+ if(confiabilidade >= 90 && maiorAtraso <= 30){
+  recomendacao = "🟢 Cliente Recomendado";
+ }
+ else if(confiabilidade < 70 || maiorAtraso > 30){
+  recomendacao = "🔴 Cliente Alto Risco";
+ }
+ else{
+  recomendacao = "🟡 Requer Atenção";
+ }
+
 }
   
 let classificacao = "⭐⭐⭐ Cliente Novo";

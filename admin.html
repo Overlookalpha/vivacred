@@ -379,6 +379,11 @@ let capitalEmprestadoPT = 0;
  const emprestimosSnap = await getDocs(collection(db,"emprestimos"));
  const parcelasSnap = await getDocs(collection(db,"parcelas"));
 let proximaParcela = null;
+const vencemEm3Dias = [];
+const vencemEm2Dias = [];
+const vencemAmanha = [];
+const vencemHoje = [];
+const atrasados = [];
 emprestimosSnap.forEach((docSnap)=>{
 
  const dados = docSnap.data();
@@ -406,7 +411,38 @@ emprestimosSnap.forEach((docSnap)=>{
 parcelasSnap.forEach((docSnap)=>{
 
  const dados = docSnap.data();
+const hoje = new Date();
 
+if(dados.vencimento){
+
+ const vencimento = dados.vencimento.toDate();
+
+ const diasRestantes = Math.ceil(
+  (vencimento - hoje) /
+  (1000 * 60 * 60 * 24)
+ );
+
+ if(diasRestantes === 3){
+  vencemEm3Dias.push(dados);
+ }
+
+ if(diasRestantes === 2){
+  vencemEm2Dias.push(dados);
+ }
+
+ if(diasRestantes === 1){
+  vencemAmanha.push(dados);
+ }
+
+ if(diasRestantes === 0){
+  vencemHoje.push(dados);
+ }
+
+ if(diasRestantes < 0 && dados.status !== "pago"){
+  atrasados.push(dados);
+ }
+
+}
  if((dados.pais || "BR") === "PT"){
 
    totalRecebidoPT += Number(dados.pago || 0);
@@ -567,6 +603,20 @@ document.getElementById("recebidoPT").innerText =
 document.getElementById("saldoPT").innerText =
 "€ " + saldoPT.toFixed(2);
 
+document.getElementById("vencimentos3Dias").innerHTML =
+"🟡 Vence em 3 dias: " + vencemEm3Dias.length;
+
+document.getElementById("vencimentos2Dias").innerHTML =
+"🟠 Vence em 2 dias: " + vencemEm2Dias.length;
+
+document.getElementById("vencimentos1Dia").innerHTML =
+"🔵 Vence amanhã: " + vencemAmanha.length;
+
+document.getElementById("vencimentosHoje").innerHTML =
+"📅 Vence hoje: " + vencemHoje.length;
+
+document.getElementById("vencimentosAtrasados").innerHTML =
+"🔴 Em atraso: " + atrasados.length;
 }
 
 /*

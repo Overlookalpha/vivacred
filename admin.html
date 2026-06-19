@@ -423,37 +423,21 @@ if(dados.vencimento){
   (1000 * 60 * 60 * 24)
  );
 
-if(diasRestantes === 3){
-  vencemEm3Dias.push({
-    ...dados,
-    parcelaId: docSnap.id,
-    emprestimoId: dados.emprestimoId
-  });
-}
+ if(diasRestantes === 3){
+  vencemEm3Dias.push(dados);
+ }
 
-if(diasRestantes === 2){
-  vencemEm2Dias.push({
-    ...dados,
-    parcelaId: docSnap.id,
-    emprestimoId: dados.emprestimoId
-  });
-}
+ if(diasRestantes === 2){
+  vencemEm2Dias.push(dados);
+ }
 
-if(diasRestantes === 1){
-  vencemAmanha.push({
-    ...dados,
-    parcelaId: docSnap.id,
-    emprestimoId: dados.emprestimoId
-  });
-}
+ if(diasRestantes === 1){
+  vencemAmanha.push(dados);
+ }
 
-if(diasRestantes === 0){
-  vencemHoje.push({
-    ...dados,
-    parcelaId: docSnap.id,
-    emprestimoId: dados.emprestimoId
-  });
-}
+ if(diasRestantes === 0){
+  vencemHoje.push(dados);
+ }
 
  if(diasRestantes < 0 && dados.status !== "pago"){
 
@@ -541,29 +525,9 @@ document.getElementById(
 👤 ${emp.nomeCliente || "Cliente"}
 </strong><br><br>
 
-💰 Valor Original:
+💰 Valor:
 ${emp.pais === "PT" ? "€" : "R$"}
 ${Number(proximaParcela.valor || 0).toFixed(2)}
-<br>
-
-➕ Multa:
-${emp.pais === "PT" ? "€" : "R$"}
-${Number(proximaParcela.multa || 0).toFixed(2)}
-<br>
-
-➕ Juros:
-${emp.pais === "PT" ? "€" : "R$"}
-${Number(proximaParcela.juros || 0).toFixed(2)}
-<br>
-
-📌 Total Atualizado:
-${emp.pais === "PT" ? "€" : "R$"}
-${(
- Number(proximaParcela.valor || 0) +
- Number(proximaParcela.multa || 0) +
- Number(proximaParcela.juros || 0)
-).toFixed(2)}
-
 <br><br>
 
 📞 ${telefoneCliente || "Não informado"}
@@ -653,67 +617,17 @@ document.getElementById("recebidoPT").innerText =
 document.getElementById("saldoPT").innerText =
 "€ " + saldoPT.toFixed(2);
 
-async function montarListaVencimentos(lista,titulo){
-
- let html = titulo;
-
- for(const parcela of lista){
-
-   const emprestimoRef =
-   doc(db,"emprestimos",parcela.emprestimoId);
-
-   const emprestimoSnap =
-   await getDoc(emprestimoRef);
-
-   if(!emprestimoSnap.exists()) continue;
-
-   const emp = emprestimoSnap.data();
-
-   html +=
-   "<br><br>" +
-
-   "👤 " + (emp.nomeCliente || "Cliente") +
-   "<br>" +
-
-   "📞 " + (emp.telefoneCliente || "-") +
-   "<br>" +
-
-   "💰 Valor: " +
-   (emp.pais === "PT" ? "€ " : "R$ ") +
-   Number(parcela.valor || 0).toFixed(2) +
-   "<br>" +
-
-   "📅 " +
-   parcela.vencimento.toDate().toLocaleDateString("pt-BR") +
-   "<br>";
- }
-
- return html;
-}
-
 document.getElementById("vencimentos3Dias").innerHTML =
-await montarListaVencimentos(
- vencemEm3Dias,
- "🟡 Vence em 3 dias:"
-);
+"🟡 Vence em 3 dias: " + vencemEm3Dias.length;
 
 document.getElementById("vencimentos2Dias").innerHTML =
-await montarListaVencimentos(
- vencemEm2Dias,
- "🟠 Vence em 2 dias:"
-);
+"🟠 Vence em 2 dias: " + vencemEm2Dias.length;
 
 document.getElementById("vencimentos1Dia").innerHTML =
-await montarListaVencimentos(
- vencemAmanha,
- "🔵 Vence amanhã:"
-);
+"🔵 Vence amanhã: " + vencemAmanha.length;
 
 document.getElementById("vencimentosHoje").innerHTML =
-await montarListaVencimentos(
- vencemHoje,
- "📅 Vence hoje:"
-);
+"📅 Vence hoje: " + vencemHoje.length;
 
 if(atrasados.length === 0){
 
@@ -763,7 +677,7 @@ Number(atraso.juros || 0).toFixed(2) +
 "📌 Total Atualizado: R$ " +
 Number(
  atraso.restante || atraso.valor || 0
-).toFixed(2) +
+).toFixed(2)
 
 "<br><br>";
 
@@ -1329,30 +1243,30 @@ console.log("Erro Telegram:", erro);
 }
  const valorParcela = Number((dados.valorFinal / dados.parcelas).toFixed(2));
 
-for (let i = 1; i <= dados.parcelas; i++) {
+ for (let i = 1; i <= dados.parcelas; i++) {
 
    const vencimentoParcela = new Date();
    vencimentoParcela.setMonth(vencimentoParcela.getMonth() + i);
 
-   await addDoc(collection(db, "parcelas"), {
-      emprestimoId: id,
-      userId: dados.userId,
-      pais: dados.pais || "BR",
+  (collection(db, "parcelas"), {
+  emprestimoId: id,
+  userId: dados.userId,
+  pais: dados.pais || "BR",
 
-      numero: i,
-      valor: valorParcela,
-      pago: 0,
-      restante: valorParcela,
+  numero: i,
+  valor: valorParcela,
+  pago: 0,
+  restante: valorParcela,
 
-      multa: 0,
-      juros: 0,
-      diasAtraso: 0,
+  multa: 0,
+  juros: 0,
+  diasAtraso: 0,
 
-      status: "pendente",
-      vencimento: vencimentoParcela
-   });
+  status: "pendente",
+  vencimento: vencimentoParcela
+});
 
-}
+ }
 
  alert("Empréstimo aprovado!");
  location.reload();
@@ -1886,7 +1800,7 @@ if(!nome || !email || !senha){
  const documento = document.getElementById("novoDocumento").value;
  const score = Number(document.getElementById("novoScore").value || 20);
 
- await addDoc(collection(db,"usuarios"),{
+ (collection(db,"usuarios"),{
 
    nome: nome,
    email: email,

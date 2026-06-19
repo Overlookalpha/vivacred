@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
@@ -422,30 +423,52 @@ if(dados.vencimento){
   (1000 * 60 * 60 * 24)
  );
 
- if(diasRestantes === 3){
-  vencemEm3Dias.push(dados);
- }
+if(diasRestantes === 3){
+  vencemEm3Dias.push({
+    ...dados,
+    parcelaId: docSnap.id,
+    emprestimoId: dados.emprestimoId
+  });
+}
 
- if(diasRestantes === 2){
-  vencemEm2Dias.push(dados);
- }
+if(diasRestantes === 2){
+  vencemEm2Dias.push({
+    ...dados,
+    parcelaId: docSnap.id,
+    emprestimoId: dados.emprestimoId
+  });
+}
 
- if(diasRestantes === 1){
-  vencemAmanha.push(dados);
- }
+if(diasRestantes === 1){
+  vencemAmanha.push({
+    ...dados,
+    parcelaId: docSnap.id,
+    emprestimoId: dados.emprestimoId
+  });
+}
 
- if(diasRestantes === 0){
-  vencemHoje.push(dados);
- }
+if(diasRestantes === 0){
+  vencemHoje.push({
+    ...dados,
+    parcelaId: docSnap.id,
+    emprestimoId: dados.emprestimoId
+  });
+}
 
  if(diasRestantes < 0 && dados.status !== "pago"){
 
-  atrasados.push({
-    emprestimoId: dados.emprestimoId,
-    parcelaId: docSnap.id,
-    diasAtraso: Math.abs(diasRestantes),
-    valor: dados.valor
-  });
+ atrasados.push({
+  emprestimoId: dados.emprestimoId,
+  parcelaId: docSnap.id,
+
+  diasAtraso: Math.abs(diasRestantes),
+
+  valor: dados.valor,
+  restante: dados.restante || 0,
+
+  multa: dados.multa || 0,
+  juros: dados.juros || 0
+});
 
 }
 
@@ -518,9 +541,29 @@ document.getElementById(
 👤 ${emp.nomeCliente || "Cliente"}
 </strong><br><br>
 
-💰 Valor:
+💰 Valor Original:
 ${emp.pais === "PT" ? "€" : "R$"}
 ${Number(proximaParcela.valor || 0).toFixed(2)}
+<br>
+
+➕ Multa:
+${emp.pais === "PT" ? "€" : "R$"}
+${Number(proximaParcela.multa || 0).toFixed(2)}
+<br>
+
+➕ Juros:
+${emp.pais === "PT" ? "€" : "R$"}
+${Number(proximaParcela.juros || 0).toFixed(2)}
+<br>
+
+📌 Total Atualizado:
+${emp.pais === "PT" ? "€" : "R$"}
+${(
+ Number(proximaParcela.valor || 0) +
+ Number(proximaParcela.multa || 0) +
+ Number(proximaParcela.juros || 0)
+).toFixed(2)}
+
 <br><br>
 
 📞 ${telefoneCliente || "Não informado"}
@@ -610,20 +653,128 @@ document.getElementById("recebidoPT").innerText =
 document.getElementById("saldoPT").innerText =
 "€ " + saldoPT.toFixed(2);
 
+async function montarListaVencimentos(lista,titulo){
+
+ let html = titulo;
+
+ for(const parcela of lista){
+
+   const emprestimoRef =
+   doc(db,"emprestimos",parcela.emprestimoId);
+
+   const emprestimoSnap =
+   await getDoc(emprestimoRef);
+
+   if(!emprestimoSnap.exists()) continue;
+
+   const emp = emprestimoSnap.data();
+
+   html +=
+   "<br><br>" +
+
+   "👤 " + (emp.nomeCliente || "Cliente") +
+   "<br>" +
+
+   "📞 " + (emp.telefoneCliente || "-") +
+   "<br>" +
+
+   "💰 Valor: " +
+   (emp.pais === "PT" ? "€ " : "R$ ") +
+   Number(parcela.valor || 0).toFixed(2) +
+   "<br>" +
+
+   "📅 " +
+   parcela.vencimento.toDate().toLocaleDateString("pt-BR") +
+   "<br>";
+ }
+
+ return html;
+}
+
 document.getElementById("vencimentos3Dias").innerHTML =
-"🟡 Vence em 3 dias: " + vencemEm3Dias.length;
+await montarListaVencimentos(
+ vencemEm3Dias,
+ "🟡 Vence em 3 dias:"
+);
 
 document.getElementById("vencimentos2Dias").innerHTML =
-"🟠 Vence em 2 dias: " + vencemEm2Dias.length;
+await montarListaVencimentos(
+ vencemEm2Dias,
+ "🟠 Vence em 2 dias:"
+);
 
 document.getElementById("vencimentos1Dia").innerHTML =
-"🔵 Vence amanhã: " + vencemAmanha.length;
+await montarListaVencimentos(
+ vencemAmanha,
+ "🔵 Vence amanhã:"
+);
 
 document.getElementById("vencimentosHoje").innerHTML =
-"📅 Vence hoje: " + vencemHoje.length;
+await montarListaVencimentos(
+ vencemHoje,
+ "📅 Vence hoje:"
+);
 
-document.getElementById("vencimentosAtrasados").innerHTML =
-"🔴 Em atraso: " + atrasados.length;
+if(atrasados.length === 0){
+
+ document.getElementById("vencimentosAtrasados").innerHTML =
+ "🔴 Em atraso: 0";
+
+}else{
+
+ let htmlAtrasados = "🔴 Em atraso:<br><br>";
+
+ for(const atraso of atrasados){
+
+   const emprestimoRef =
+   doc(db,"emprestimos",atraso.emprestimoId);
+
+   const emprestimoSnap =
+   await getDoc(emprestimoRef);
+
+   if(emprestimoSnap.exists()){
+
+     const emp = emprestimoSnap.data();
+ 
+     htmlAtrasados +=
+
+"👤 " + (emp.nomeCliente || "Cliente") +
+"<br>" +
+
+"📞 " + (emp.telefoneCliente || "-") +
+"<br><br>" +
+
+"⏳ " + atraso.diasAtraso +
+" dias de atraso" +
+"<br>" +
+
+"💰 Valor Original: R$ " +
+Number(atraso.valor || 0).toFixed(2) +
+"<br>" +
+
+"➕ Multa: R$ " +
+Number(atraso.multa || 0).toFixed(2) +
+"<br>" +
+
+"➕ Juros: R$ " +
+Number(atraso.juros || 0).toFixed(2) +
+"<br>" +
+
+"📌 Total Atualizado: R$ " +
+Number(
+ atraso.restante || atraso.valor || 0
+).toFixed(2) +
+
+"<br><br>";
+
+   }
+
+ }
+
+ document.getElementById("vencimentosAtrasados").innerHTML =
+ htmlAtrasados;
+
+}
 }
 
 /*
@@ -1178,30 +1329,30 @@ console.log("Erro Telegram:", erro);
 }
  const valorParcela = Number((dados.valorFinal / dados.parcelas).toFixed(2));
 
- for (let i = 1; i <= dados.parcelas; i++) {
+for (let i = 1; i <= dados.parcelas; i++) {
 
    const vencimentoParcela = new Date();
    vencimentoParcela.setMonth(vencimentoParcela.getMonth() + i);
 
-  (collection(db, "parcelas"), {
-  emprestimoId: id,
-  userId: dados.userId,
-  pais: dados.pais || "BR",
+   await addDoc(collection(db, "parcelas"), {
+      emprestimoId: id,
+      userId: dados.userId,
+      pais: dados.pais || "BR",
 
-  numero: i,
-  valor: valorParcela,
-  pago: 0,
-  restante: valorParcela,
+      numero: i,
+      valor: valorParcela,
+      pago: 0,
+      restante: valorParcela,
 
-  multa: 0,
-  juros: 0,
-  diasAtraso: 0,
+      multa: 0,
+      juros: 0,
+      diasAtraso: 0,
 
-  status: "pendente",
-  vencimento: vencimentoParcela
-});
+      status: "pendente",
+      vencimento: vencimentoParcela
+   });
 
- }
+}
 
  alert("Empréstimo aprovado!");
  location.reload();
@@ -1735,7 +1886,7 @@ if(!nome || !email || !senha){
  const documento = document.getElementById("novoDocumento").value;
  const score = Number(document.getElementById("novoScore").value || 20);
 
- (collection(db,"usuarios"),{
+ await addDoc(collection(db,"usuarios"),{
 
    nome: nome,
    email: email,

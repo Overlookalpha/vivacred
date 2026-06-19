@@ -1,4 +1,4 @@
-
+<!-- TESTE ISAIAS 123456 -->
 <!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
@@ -441,18 +441,12 @@ if(dados.vencimento){
 
  if(diasRestantes < 0 && dados.status !== "pago"){
 
- atrasados.push({
-  emprestimoId: dados.emprestimoId,
-  parcelaId: docSnap.id,
-
-  diasAtraso: Math.abs(diasRestantes),
-
-  valor: dados.valor,
-  restante: dados.restante || 0,
-
-  multa: dados.multa || 0,
-  juros: dados.juros || 0
-});
+  atrasados.push({
+    emprestimoId: dados.emprestimoId,
+    parcelaId: docSnap.id,
+    diasAtraso: Math.abs(diasRestantes),
+    valor: dados.valor
+  });
 
 }
 
@@ -649,7 +643,7 @@ if(atrasados.length === 0){
    if(emprestimoSnap.exists()){
 
      const emp = emprestimoSnap.data();
- 
+
      htmlAtrasados +=
 
 "👤 " + (emp.nomeCliente || "Cliente") +
@@ -676,8 +670,10 @@ Number(atraso.juros || 0).toFixed(2) +
 
 "📌 Total Atualizado: R$ " +
 Number(
- atraso.restante || atraso.valor || 0
-).toFixed(2)
+ (atraso.restante || atraso.valor || 0) +
+ (atraso.multa || 0) +
+ (atraso.juros || 0)
+).toFixed(2) +
 
 "<br><br>";
 

@@ -1069,7 +1069,32 @@ if(userSnap.exists()){
    parcelasPagas: 0,
    finalizado: false
  });
+try{
 
+await enviarTelegram(`
+✅ EMPRÉSTIMO APROVADO
+
+👤 Cliente: ${dados.nomeCliente}
+
+📧 Email: ${dados.email}
+
+📱 Telefone: ${dados.telefoneCliente}
+
+🌍 País: ${dados.pais || "BR"}
+
+💰 Valor Liberado: ${dados.moeda || "R$"}${dados.valor}
+
+📊 Parcelas: ${dados.parcelas}x
+
+📅 Vencimento:
+${vencimento.toLocaleDateString("pt-BR")}
+
+🟢 Status: APROVADO
+`);
+
+}catch(erro){
+console.log("Erro Telegram:", erro);
+}
  const valorParcela = Number((dados.valorFinal / dados.parcelas).toFixed(2));
 
  for (let i = 1; i <= dados.parcelas; i++) {
@@ -1077,7 +1102,7 @@ if(userSnap.exists()){
    const vencimentoParcela = new Date();
    vencimentoParcela.setMonth(vencimentoParcela.getMonth() + i);
 
-  await addDoc(collection(db, "parcelas"), {
+  (collection(db, "parcelas"), {
   emprestimoId: id,
   userId: dados.userId,
   pais: dados.pais || "BR",
@@ -1511,7 +1536,40 @@ if(userSnap.exists()){
   status:"rejeitado",
   motivoRecusa: motivo
  });
+try{
 
+const emprestimoSnap = await getDoc(ref);
+
+if(emprestimoSnap.exists()){
+
+const dados = emprestimoSnap.data();
+
+await enviarTelegram(`
+❌ EMPRÉSTIMO RECUSADO
+
+👤 Cliente: ${dados.nomeCliente}
+
+📧 Email: ${dados.email}
+
+📱 Telefone: ${dados.telefoneCliente}
+
+🌍 País: ${dados.pais || "BR"}
+
+💰 Valor Solicitado: ${dados.moeda || "R$"}${dados.valor}
+
+📊 Parcelas: ${dados.parcelas}x
+
+🚫 Motivo:
+${motivo}
+
+🔴 Status: RECUSADO
+`);
+
+}
+
+}catch(erro){
+console.log("Erro Telegram:", erro);
+}
  alert("Solicitação rejeitada");
 
  location.reload();
@@ -1596,7 +1654,7 @@ if(!nome || !email || !senha){
  const documento = document.getElementById("novoDocumento").value;
  const score = Number(document.getElementById("novoScore").value || 20);
 
- await addDoc(collection(db,"usuarios"),{
+ (collection(db,"usuarios"),{
 
    nome: nome,
    email: email,

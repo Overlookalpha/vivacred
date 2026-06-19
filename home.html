@@ -424,7 +424,26 @@ const firebaseConfig = {
   messagingSenderId: "932933359706",
   appId: "1:932933359706:web:59fd16618feea3b2fa6063"
 };
+async function enviarTelegram(mensagem){
 
+const token = "8855201631:AAEm19qaN-OjFon9Pfb2KElLpfqSP4w2Qqs";
+const chatId = "7136900890";
+
+await fetch(
+`https://api.telegram.org/bot${token}/sendMessage`,
+{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body: JSON.stringify({
+chat_id: chatId,
+text: mensagem
+})
+}
+);
+
+}
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -1209,6 +1228,34 @@ await addDoc(collection(db, "emprestimos"), {
   dataAprovacao: null,
   dataVencimento: null
 });
+
+try{
+
+await enviarTelegram(`
+🚨 NOVA SOLICITAÇÃO ISA CRED
+
+👤 Cliente: ${nomeCliente}
+
+📧 Email: ${user.email}
+
+📱 Telefone: ${telefoneCliente}
+
+🌍 País: ${paisUsuarioGlobal}
+
+💰 Valor: ${paisUsuarioGlobal === "PT" ? "€" : "R$"}${valorFinal}
+
+📊 Parcelas: ${parcelasFinal}x
+
+👨 Avalista: ${nomeAvalista}
+
+📞 Avalista: ${telefoneAvalista}
+
+⏳ Status: AGUARDANDO ANÁLISE
+`);
+
+}catch(erro){
+console.log("Erro Telegram:", erro);
+}
         
 await criarNotificacao(
   user.uid,

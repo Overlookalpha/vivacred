@@ -644,17 +644,37 @@ if(atrasados.length === 0){
      const emp = emprestimoSnap.data();
 
      htmlAtrasados +=
-     "👤 " + (emp.nomeCliente || "Cliente") +
-     "<br>" +
 
-     "⏳ " + atraso.diasAtraso +
-     " dias de atraso" +
-     "<br>" +
+"👤 " + (emp.nomeCliente || "Cliente") +
+"<br>" +
 
-     "💰 R$ " +
-     Number(atraso.valor).toFixed(2) +
+"📞 " + (emp.telefoneCliente || "-") +
+"<br><br>" +
 
-     "<br><br>";
+"⏳ " + atraso.diasAtraso +
+" dias de atraso" +
+"<br>" +
+
+"💰 Valor Original: R$ " +
+Number(atraso.valor || 0).toFixed(2) +
+"<br>" +
+
+"➕ Multa: R$ " +
+Number(atraso.multa || 0).toFixed(2) +
+"<br>" +
+
+"➕ Juros: R$ " +
+Number(atraso.juros || 0).toFixed(2) +
+"<br>" +
+
+"📌 Total Atualizado: R$ " +
+Number(
+ (atraso.restante || atraso.valor || 0) +
+ (atraso.multa || 0) +
+ (atraso.juros || 0)
+).toFixed(2) +
+
+"<br><br>";
 
    }
 

@@ -423,21 +423,37 @@ if(dados.vencimento){
   (1000 * 60 * 60 * 24)
  );
 
- if(diasRestantes === 3){
-  vencemEm3Dias.push(dados);
- }
+if(diasRestantes === 3){
+  vencemEm3Dias.push({
+    ...dados,
+    parcelaId: docSnap.id,
+    emprestimoId: dados.emprestimoId
+  });
+}
 
- if(diasRestantes === 2){
-  vencemEm2Dias.push(dados);
- }
+if(diasRestantes === 2){
+  vencemEm2Dias.push({
+    ...dados,
+    parcelaId: docSnap.id,
+    emprestimoId: dados.emprestimoId
+  });
+}
 
- if(diasRestantes === 1){
-  vencemAmanha.push(dados);
- }
+if(diasRestantes === 1){
+  vencemAmanha.push({
+    ...dados,
+    parcelaId: docSnap.id,
+    emprestimoId: dados.emprestimoId
+  });
+}
 
- if(diasRestantes === 0){
-  vencemHoje.push(dados);
- }
+if(diasRestantes === 0){
+  vencemHoje.push({
+    ...dados,
+    parcelaId: docSnap.id,
+    emprestimoId: dados.emprestimoId
+  });
+}
 
  if(diasRestantes < 0 && dados.status !== "pago"){
 
@@ -637,17 +653,67 @@ document.getElementById("recebidoPT").innerText =
 document.getElementById("saldoPT").innerText =
 "€ " + saldoPT.toFixed(2);
 
+async function montarListaVencimentos(lista,titulo){
+
+ let html = titulo;
+
+ for(const parcela of lista){
+
+   const emprestimoRef =
+   doc(db,"emprestimos",parcela.emprestimoId);
+
+   const emprestimoSnap =
+   await getDoc(emprestimoRef);
+
+   if(!emprestimoSnap.exists()) continue;
+
+   const emp = emprestimoSnap.data();
+
+   html +=
+   "<br><br>" +
+
+   "👤 " + (emp.nomeCliente || "Cliente") +
+   "<br>" +
+
+   "📞 " + (emp.telefoneCliente || "-") +
+   "<br>" +
+
+   "💰 Valor: " +
+   (emp.pais === "PT" ? "€ " : "R$ ") +
+   Number(parcela.valor || 0).toFixed(2) +
+   "<br>" +
+
+   "📅 " +
+   parcela.vencimento.toDate().toLocaleDateString("pt-BR") +
+   "<br>";
+ }
+
+ return html;
+}
+
 document.getElementById("vencimentos3Dias").innerHTML =
-"🟡 Vence em 3 dias: " + vencemEm3Dias.length;
+await montarListaVencimentos(
+ vencemEm3Dias,
+ "🟡 Vence em 3 dias:"
+);
 
 document.getElementById("vencimentos2Dias").innerHTML =
-"🟠 Vence em 2 dias: " + vencemEm2Dias.length;
+await montarListaVencimentos(
+ vencemEm2Dias,
+ "🟠 Vence em 2 dias:"
+);
 
 document.getElementById("vencimentos1Dia").innerHTML =
-"🔵 Vence amanhã: " + vencemAmanha.length;
+await montarListaVencimentos(
+ vencemAmanha,
+ "🔵 Vence amanhã:"
+);
 
 document.getElementById("vencimentosHoje").innerHTML =
-"📅 Vence hoje: " + vencemHoje.length;
+await montarListaVencimentos(
+ vencemHoje,
+ "📅 Vence hoje:"
+);
 
 if(atrasados.length === 0){
 

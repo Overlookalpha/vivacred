@@ -2143,6 +2143,19 @@ parcelasCliente.forEach(p => {
  }
 
 });
+
+const atrasadasEmAberto =
+parcelasCliente.filter(p => {
+
+ const parcela = p.data();
+
+ return (
+  parcela.status !== "pago" &&
+  parcela.vencimento &&
+  parcela.vencimento.toDate() < hoje
+ );
+
+}).length;
   
 const totalRecebido =
 parcelasCliente.reduce(
@@ -2229,20 +2242,23 @@ else if(totalPagamentos > 0){
   
 let classificacao = "⭐⭐⭐ Cliente Novo";
 
-if(totalAtrasadas === 0 && totalPontuais >= 10){
+if(maiorAtraso >= 60){
+ classificacao = "⛔ Péssimo";
+}
+else if(maiorAtraso >= 30){
+ classificacao = "🔴 Ruim";
+}
+else if(totalAtrasadas > 3){
+ classificacao = "🟠 Atenção";
+}
+else if(totalAtrasadas <= 1 && totalPontuais >= 10){
  classificacao = "⭐⭐⭐⭐⭐ Ouro";
 }
 else if(totalAtrasadas <= 1 && totalPontuais >= 5){
  classificacao = "⭐⭐⭐⭐ Excelente";
 }
-else if(totalAtrasadas <= 3){
+else if(totalPontuais > 0){
  classificacao = "⭐⭐⭐ Bom";
-}
-else if(totalAtrasadas <= 5){
- classificacao = "⭐⭐ Atenção";
-}
-else{
- classificacao = "⭐ Risco";
 }
   
   const moedaUsuario =
@@ -2329,7 +2345,7 @@ ${recomendacao}
 
 🟢 Adiantadas: ${totalAdiantadas}<br>
 🟡 Pontuais: ${totalPontuais}<br>
-🔴 Atrasadas: ${totalAtrasadas}
+🔴 🔴 Atrasadas: ${totalAtrasadas + atrasadasEmAberto} ${totalAtrasadas}
 
 `;
 

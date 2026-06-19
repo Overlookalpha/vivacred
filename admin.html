@@ -1700,6 +1700,26 @@ if(userSnap.exists()){
 
  let bonusISC = Math.round(dados.valor);
 
+let bonusAntecipacao = 0;
+
+if(diasDiferenca <= -30){
+ bonusAntecipacao = 200;
+}
+else if(diasDiferenca <= -15){
+ bonusAntecipacao = 100;
+}
+else if(diasDiferenca <= -10){
+ bonusAntecipacao = 50;
+}
+else if(diasDiferenca <= -5){
+ bonusAntecipacao = 25;
+}
+else if(diasDiferenca < 0){
+ bonusAntecipacao = 10;
+}
+
+bonusISC += bonusAntecipacao;
+  
  const emprestimoRefBonus =
  doc(db,"emprestimos",dados.emprestimoId);
 
@@ -1721,10 +1741,15 @@ if(userSnap.exists()){
 
  }
 
- await updateDoc(userRef,{
+await updateDoc(userRef,{
    score: scoreAtual + 5,
-   isaCoins: (userData.isaCoins || 0) + bonusISC
- });
+
+   isaCoins: (userData.isaCoins || 0) + bonusISC,
+
+   pagamentosAdiantados:
+   (userData.pagamentosAdiantados || 0) +
+   (perfilPagamento === "adiantado" ? 1 : 0)
+});
 
 }
 
@@ -2285,6 +2310,10 @@ totalRejeitados
 
 "🏅 PERFIL DE PAGADOR\n\n" +
 
+"🚀 Pagamentos Adiantados: " +
+(user.pagamentosAdiantados || 0) +
+"\n\n" +
+   
   "Classificação: " +
 classificacao +
 "\n\n" +

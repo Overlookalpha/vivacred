@@ -525,9 +525,29 @@ document.getElementById(
 👤 ${emp.nomeCliente || "Cliente"}
 </strong><br><br>
 
-💰 Valor:
+💰 Valor Original:
 ${emp.pais === "PT" ? "€" : "R$"}
 ${Number(proximaParcela.valor || 0).toFixed(2)}
+<br>
+
+➕ Multa:
+${emp.pais === "PT" ? "€" : "R$"}
+${Number(proximaParcela.multa || 0).toFixed(2)}
+<br>
+
+➕ Juros:
+${emp.pais === "PT" ? "€" : "R$"}
+${Number(proximaParcela.juros || 0).toFixed(2)}
+<br>
+
+📌 Total Atualizado:
+${emp.pais === "PT" ? "€" : "R$"}
+${(
+ Number(proximaParcela.valor || 0) +
+ Number(proximaParcela.multa || 0) +
+ Number(proximaParcela.juros || 0)
+).toFixed(2)}
+
 <br><br>
 
 📞 ${telefoneCliente || "Não informado"}

@@ -2044,7 +2044,17 @@ emprestimosSnap.docs.filter(e =>
 
 const totalSolicitacoes =
 historicoCliente.length;
-
+const totalLiberado =
+historicoCliente
+.filter(e =>
+ e.data().status === "ativo" ||
+ e.data().finalizado === true
+)
+.reduce(
+ (total,e) =>
+ total + Number(e.data().valor || 0),
+ 0
+);
 const totalQuitados =
 historicoCliente.filter(e =>
  e.data().finalizado === true
@@ -2191,7 +2201,9 @@ else{
 + "\n\n" +
 
 "📊 HISTÓRICO FINANCEIRO\n\n" +
-
+"💰 Total Liberado: R$ " +
+totalLiberado.toFixed(2) +
+"\n\n" +
 "Cliente Novo: " +
 (totalSolicitacoes <= 1 ? "SIM" : "NÃO") +
 "\n" +

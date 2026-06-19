@@ -2294,8 +2294,54 @@ if(pais === null) return;
  prompt("Limite:", user.limiteBase || 0);
 
  if(limite === null) return;
+const dataNascimento =
+prompt(
+"Data Nascimento (dd/mm/aaaa):",
+user.dataNascimento || ""
+);
 
- await updateDoc(ref,{
+if(dataNascimento === null) return;
+
+const profissao =
+prompt(
+"Profissão:",
+user.profissao || ""
+);
+
+if(profissao === null) return;
+
+const rendaMensal =
+prompt(
+"Renda Mensal:",
+user.rendaMensal || ""
+);
+
+if(rendaMensal === null) return;
+
+const cidade =
+prompt(
+"Cidade:",
+user.cidade || ""
+);
+
+if(cidade === null) return;
+
+const estado =
+prompt(
+"Estado:",
+user.estado || ""
+);
+
+if(estado === null) return;
+
+const chavePix =
+prompt(
+"Chave Pix:",
+user.chavePix || ""
+);
+
+if(chavePix === null) return;
+await updateDoc(ref,{
   nome: nome,
   email: email,
   telefone: telefone,
@@ -2306,7 +2352,14 @@ if(pais === null) return;
   moeda: pais === "PT" ? "€" : "R$",
 
   score: Number(score),
-  limiteBase: Number(limite)
+  limiteBase: Number(limite),
+
+  dataNascimento: dataNascimento,
+  profissao: profissao,
+  rendaMensal: rendaMensal,
+  cidade: cidade,
+  estado: estado,
+  chavePix: chavePix
 });
     
  alert("Usuário atualizado!");

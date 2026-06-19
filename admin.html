@@ -439,8 +439,15 @@ if(dados.vencimento){
  }
 
  if(diasRestantes < 0 && dados.status !== "pago"){
-  atrasados.push(dados);
- }
+
+  atrasados.push({
+    emprestimoId: dados.emprestimoId,
+    parcelaId: docSnap.id,
+    diasAtraso: Math.abs(diasRestantes),
+    valor: dados.valor
+  });
+
+}
 
 }
  if((dados.pais || "BR") === "PT"){

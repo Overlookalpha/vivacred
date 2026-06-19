@@ -2208,146 +2208,106 @@ user.pais === "PT"
 ? "€"
 : "R$";
   
- alert(
-  "Nome: " + (user.nome || "-") + "\n" +
-  "Email: " + (user.email || "-") + "\n" +
-  "Telefone: " + (user.telefone || "-") + "\n" +
-  "CPF/NIF: " + (user.cpf || "-") + "\n" +
-   "🎂 Data Nascimento: " +
-(user.dataNascimento || "-") + "\n" +
+const conteudo = `
 
-"💼 Profissão: " +
-(user.profissao || "-") + "\n" +
+<h3>👤 ${user.nome || "-"}</h3>
 
-"💰 Renda Mensal: " +
-(user.rendaMensal || "-") + "\n" +
+<p>
+📧 ${user.email || "-"}<br>
+📞 ${user.telefone || "-"}<br>
+📄 ${user.cpf || "-"}<br>
+🎂 ${user.dataNascimento || "-"}<br>
+💼 ${user.profissao || "-"}<br>
+💰 ${user.rendaMensal || "-"}<br>
+🏙️ ${user.cidade || "-"}<br>
+📍 ${user.estado || "-"}<br>
+💳 ${user.chavePix || "-"}
+</p>
 
-"🏙️ Cidade: " +
-(user.cidade || "-") + "\n" +
+<hr>
 
-"📍 Estado: " +
-(user.estado || "-") + "\n" +
+<h3>📊 Histórico Financeiro</h3>
 
-"💳 Pix / MB Way: " +
-(user.chavePix || "-") + "\n" +
-  "Score: " + (user.score || 0) + "\n" +
+💰 Total Liberado:
+${moedaUsuario} ${totalLiberado.toFixed(2)}
+<br><br>
 
-"Nível: " +
-(
-(user.score || 0) <= 20 ? "Essencial" :
-(user.score || 0) <= 40 ? "Bronze" :
-(user.score || 0) <= 60 ? "Prata" :
-(user.score || 0) <= 80 ? "Ouro" :
-"Black"
-) + "\n" +
+💸 Total Recebido:
+${moedaUsuario} ${totalRecebido.toFixed(2)}
+<br><br>
 
-"Limite Calculado: " +
-(
- user.score <= 20 ? 300 :
- user.score <= 40 ? 800 :
- user.score <= 60 ? 1500 :
- user.score <= 80 ? 3000 :
- 5000
-)
+📈 Lucro Gerado:
+${moedaUsuario} ${lucroGerado.toFixed(2)}
 
-+ "\n\n" +
+<hr>
 
-"📊 HISTÓRICO FINANCEIRO\n\n" +
-"💰 Total Liberado: " +
-moedaUsuario +
-" " +
-totalLiberado.toFixed(2) +
-"\n\n" +
-
-"💸 Total Recebido: " +
-moedaUsuario +
-" " +
-totalRecebido.toFixed(2) +
-"\n\n" +
-
-"📈 Lucro Gerado: " +
-moedaUsuario +
-" " +
-lucroGerado.toFixed(2) +
-"\n\n" +
-   
-"Cliente Novo: " +
-(totalSolicitacoes <= 1 ? "SIM" : "NÃO") +
-"\n" +
-
-"Solicitações Totais: " +
-totalSolicitacoes +
-"\n" +
-
-"Solicitações em Aberto: " +
-totalAbertos +
-"\n" +
-
-"Aprovados: " +
+Cliente Novo: ${totalSolicitacoes <= 1 ? "SIM" : "NÃO"}<br>
+Solicitações Totais: ${totalSolicitacoes}<br>
+Solicitações em Aberto: ${totalAbertos}<br>
+Aprovados: ${
 historicoCliente.filter(e =>
- e.data().status === "ativo" ||
- e.data().finalizado === true
-).length +
-"\n" +
+e.data().status === "ativo" ||
+e.data().finalizado === true
+).length
+}<br>
 
-"Quitados: " +
-totalQuitados +
-"\n" +
+Quitados: ${totalQuitados}<br>
+Ativos: ${totalAtivos}<br>
+Rejeitados: ${totalRejeitados}<br>
 
-"Ativos: " +
-totalAtivos +
-"\n" +
+Possui Empréstimo Ativo:
+${totalAtivos > 0 ? "SIM" : "NÃO"}
 
-"Rejeitados: " +
-totalRejeitados
+<hr>
 
-+ "\n" +
+<h3>🏅 Perfil de Pagador</h3>
 
-"Possui Empréstimo Ativo: " +
-(totalAtivos > 0 ? "SIM" : "NÃO")
+🚀 Pagamentos Adiantados:
+${user.pagamentosAdiantados || 0}
+<br><br>
 
-+ "\n\n" +
+⭐ Classificação:
+${classificacao}
+<br><br>
 
-"🏅 PERFIL DE PAGADOR\n\n" +
+📋 Pagamentos Registrados:
+${totalPagamentos}
+<br><br>
 
-"🚀 Pagamentos Adiantados: " +
-(user.pagamentosAdiantados || 0) +
-"\n\n" +
-   
-  "Classificação: " +
-classificacao +
-"\n\n" +
+⏳ Maior Atraso:
+${maiorAtraso} dias
+<br><br>
 
-  "Pagamentos Registrados: " +
-totalPagamentos +
-"\n\n" +
+🎯 Confiabilidade:
+${confiabilidade}%
+<br><br>
 
-"Maior Atraso: " +
-maiorAtraso +
-" dias\n\n" +
+${recomendacao}
+<br><br>
 
-  "Confiabilidade: " +
-confiabilidade +
-"%\n\n" + 
+🟢 Adiantadas: ${totalAdiantadas}<br>
+🟡 Pontuais: ${totalPontuais}<br>
+🔴 Atrasadas: ${totalAtrasadas}
 
- "Recomendação: " +
-recomendacao +
-"\n\n" +  
-   
-"Adiantadas: " +
-totalAdiantadas +
-"\n" +
+`;
 
-"Pontuais: " +
-totalPontuais +
-"\n" +
+document.getElementById(
+"conteudoPerfilUsuario"
+).innerHTML = conteudo;
 
-"Atrasadas: " +
-totalAtrasadas
+document.getElementById(
+"modalPerfilUsuario"
+).style.display = "flex";
+}
 
-);
+window.fecharPerfilUsuario = function(){
+
+ document.getElementById(
+  "modalPerfilUsuario"
+ ).style.display = "none";
 
 }
+  
   window.editarUsuarioFirestore = async function(id){
 
  const ref = doc(db,"usuarios",id);
@@ -2684,6 +2644,45 @@ return mensagem;
 
 }
 </script>
+
+<div id="modalPerfilUsuario" style="
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.8);
+justify-content:center;
+align-items:center;
+z-index:9999;
+">
+
+<div style="
+background:#1c1c1c;
+padding:20px;
+border-radius:12px;
+width:90%;
+max-width:700px;
+max-height:85vh;
+overflow:auto;
+color:white;
+">
+
+<h2>👤 Perfil Completo do Cliente</h2>
+
+<div id="conteudoPerfilUsuario"></div>
+
+<br>
+
+<button onclick="fecharPerfilUsuario()">
+Fechar
+</button>
+
+</div>
+
+</div>
+  
 <div id="modalParcelas" style="
 display:none;
 position:fixed;

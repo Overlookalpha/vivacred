@@ -677,6 +677,35 @@ console.log("HOJE", resultado.cobrancas.hoje.length);
 console.log("AMANHA", resultado.cobrancas.amanha.length);
 console.log("2 DIAS", resultado.cobrancas.doisDias.length);
 console.log("3 DIAS", resultado.cobrancas.tresDias.length);
+
+const emprestimosSnap =
+await getDocs(collection(db,"emprestimos"));
+
+let totalNaRua = 0;
+
+emprestimosSnap.forEach((docSnap)=>{
+
+ const emp = docSnap.data();
+
+ if(
+  emp.status === "ativo" &&
+  emp.finalizado !== true
+ ){
+
+  totalNaRua += Number(emp.valor || 0);
+
+ }
+
+});
+
+resultado.financeiro.naRua =
+totalNaRua;
+
+resultado.financeiro.caixa =
+Math.max(
+ 0,
+ (capitalBR + capitalPT) - totalNaRua
+);
   
  return resultado;
 

@@ -366,6 +366,216 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
   let capitalBR = 1000;
 let capitalPT = 1000;
+
+async function gerarDiagnosticoSistema(){
+
+ const resultado = {
+
+  clientes:{
+   total:0,
+   ativos:0,
+   bloqueados:0,
+   vip:0
+  },
+
+  cobrancas:{
+   hoje:[],
+   amanha:[],
+   doisDias:[],
+   tresDias:[],
+   atrasados:[]
+  },
+
+  financeiro:{
+   caixa:0,
+   naRua:0,
+   lucro:0
+  },
+
+  isacoin:{
+   totalCirculacao:0,
+   proximosSaques:[],
+   ranking:[]
+  },
+
+  oportunidades:{
+   aumentoLimite:[],
+   clientesVIP:[],
+   futurosAvalistas:[]
+  }
+
+ };
+
+ const usuariosSnap =
+ await getDocs(collection(db,"usuarios"));
+
+ usuariosSnap.forEach((docSnap)=>{
+
+  const user = docSnap.data();
+
+  resultado.clientes.total++;
+
+  if(user.status === "ativo"){
+   resultado.clientes.ativos++;
+  }
+
+  if(user.status === "bloqueado"){
+   resultado.clientes.bloqueados++;
+  }
+
+  if((user.score || 0) >= 80){
+   resultado.clientes.vip++;
+  }
+
+  resultado.isacoin.totalCirculacao +=
+  Number(user.isaCoins || 0);
+
+if((user.score || 0) >= 80){
+
+ resultado.oportunidades.clientesVIP.push({
+
+  id: docSnap.id,
+  nome: user.nome || "Cliente",
+  score: user.score || 0,
+  isaCoins: user.isaCoins || 0
+
+ });
+
+}
+
+   if((user.isaCoins || 0) >= 8000){
+
+ resultado.isacoin.proximosSaques.push({
+
+  id: docSnap.id,
+  nome: user.nome || "Cliente",
+  isaCoins: user.isaCoins || 0,
+  faltam: Math.max(
+   0,
+   10000 - (user.isaCoins || 0)
+  )
+
+ });
+
+}
+   
+ });
+const parcelasSnap =
+await getDocs(collection(db,"parcelas"));
+
+const hoje = new Date();
+
+parcelasSnap.forEach((docSnap)=>{
+
+ const parcela = docSnap.data();
+
+ if(
+  parcela.status === "pago" ||
+  !parcela.vencimento
+ ) return;
+
+ const vencimento =
+ parcela.vencimento.toDate();
+
+ const dias = Math.ceil(
+  (vencimento - hoje) /
+  (1000 * 60 * 60 * 24)
+ );
+
+ if(dias < 0){
+
+  resultado.cobrancas.atrasados.push({
+   id: docSnap.id,
+   emprestimoId: parcela.emprestimoId,
+   valor: parcela.restante || parcela.valor,
+   diasAtraso: Math.abs(dias)
+  });
+
+ }
+
+if(dias === 0){
+ resultado.cobrancas.hoje.push({
+  id: docSnap.id,
+  emprestimoId: parcela.emprestimoId,
+  valor: parcela.restante || parcela.valor
+ });
+}
+
+if(dias === 1){
+ resultado.cobrancas.amanha.push({
+  id: docSnap.id,
+  emprestimoId: parcela.emprestimoId,
+  valor: parcela.restante || parcela.valor
+ });
+}
+
+if(dias === 2){
+ resultado.cobrancas.doisDias.push({
+  id: docSnap.id,
+  emprestimoId: parcela.emprestimoId,
+  valor: parcela.restante || parcela.valor
+ });
+}
+
+if(dias === 3){
+ resultado.cobrancas.tresDias.push({
+  id: docSnap.id,
+  emprestimoId: parcela.emprestimoId,
+  valor: parcela.restante || parcela.valor
+ });
+}
+  
+});
+
+resultado.cobrancas.totalHoje =
+resultado.cobrancas.hoje.reduce(
+ (total,item)=> total + Number(item.valor || 0),
+ 0
+);
+
+resultado.cobrancas.totalAmanha =
+resultado.cobrancas.amanha.reduce(
+ (total,item)=> total + Number(item.valor || 0),
+ 0
+);
+
+resultado.cobrancas.total2Dias =
+resultado.cobrancas.doisDias.reduce(
+ (total,item)=> total + Number(item.valor || 0),
+ 0
+);
+
+resultado.cobrancas.total3Dias =
+resultado.cobrancas.tresDias.reduce(
+ (total,item)=> total + Number(item.valor || 0),
+ 0
+);
+
+resultado.cobrancas.totalAtrasado =
+resultado.cobrancas.atrasados.reduce(
+ (total,item)=> total + Number(item.valor || 0),
+ 0
+);
+
+resultado.cobrancas.quantidadeHoje =
+resultado.cobrancas.hoje.length;
+
+resultado.cobrancas.quantidadeAmanha =
+resultado.cobrancas.amanha.length;
+
+resultado.cobrancas.quantidade2Dias =
+resultado.cobrancas.doisDias.length;
+
+resultado.cobrancas.quantidade3Dias =
+resultado.cobrancas.tresDias.length;
+
+resultado.cobrancas.quantidadeAtrasados =
+resultado.cobrancas.atrasados.length;
+  
+ return resultado;
+
+}
+  
 async function calcularFinanceiro(){
 
  let totalEmprestadoBR = 0;
@@ -857,6 +1067,12 @@ if (!adminSnap.exists()) {
 }
 
   console.log("Admin autenticado");
+  
+const diagnostico =
+await gerarDiagnosticoSistema();
+
+console.log(diagnostico);
+  
   await calcularFinanceiro();
 
 const snapshot = await getDocs(collection(db,"emprestimos"));

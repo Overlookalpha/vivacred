@@ -636,7 +636,7 @@ const atrasados = [];
 emprestimosSnap.forEach((docSnap)=>{
 
  const dados = docSnap.data();
-  console.log(dados);
+  (dados);
  const pais = dados.pais || "BR";
 
  if(dados.status === "ativo"){
@@ -1114,7 +1114,7 @@ console.log("🚀 DIAGNOSTICO", diagnostico);
 const resumoTelegram =
 gerarResumoTelegram(diagnostico);
 
-console.log(resumoTelegram);
+await enviarTelegram(resumoTelegram);
   
   await calcularFinanceiro();
 

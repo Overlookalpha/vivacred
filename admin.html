@@ -1118,22 +1118,39 @@ const firebaseConfig = {
 };
 async function enviarTelegram(texto){
 
- const token = "8855201631:AAEm19qaN-OjFon9Pfb2KElLpfqSP4w2Qqs";
- const chatId = "7136900890";
+ try{
 
- await fetch(
-  `https://api.telegram.org/bot${token}/sendMessage`,
-  {
-   method:"POST",
-   headers:{
-    "Content-Type":"application/json"
-   },
-   body:JSON.stringify({
-    chat_id: chatId,
-    text: texto
-   })
-  }
- );
+  console.log("🚀 ENVIANDO TELEGRAM");
+  console.log(texto);
+
+  const token = "8855201631:AAEm19qaN-OjFon9Pfb2KElLpfqSP4w2Qqs";
+  const chatId = "7136900890";
+
+  const resposta = await fetch(
+   `https://api.telegram.org/bot${token}/sendMessage`,
+   {
+    method:"POST",
+    headers:{
+     "Content-Type":"application/json"
+    },
+    body:JSON.stringify({
+      chat_id: chatId,
+      text: texto
+    })
+   }
+  );
+
+  const retorno = await resposta.text();
+
+  console.log("✅ RESPOSTA TELEGRAM");
+  console.log(retorno);
+
+ }catch(erro){
+
+  console.error("❌ ERRO TELEGRAM");
+  console.error(erro);
+
+ }
 
 }
  // enviarTelegram("🚀 Teste VivaCred funcionando!");

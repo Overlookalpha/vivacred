@@ -498,7 +498,7 @@ console.log(
  "STATUS:",
  parcela.status
 );
- if(dias < 0){
+if(dias < 0){
 
  resultado.cobrancas.atrasados.push({
 
@@ -511,7 +511,14 @@ console.log(
 
   numeroParcela: parcela.numero || 0,
 
-  valor: parcela.restante || parcela.valor,
+  valorOriginal: parcela.valor || 0,
+  valorAtualizado: parcela.restante || parcela.valor,
+
+  multa: parcela.multa || 0,
+  juros: parcela.juros || 0,
+
+  vencimento: parcela.vencimento,
+
   diasAtraso: Math.abs(dias)
 
  });
@@ -531,7 +538,13 @@ if(dias === 0){
 
   numeroParcela: parcela.numero || 0,
 
-  valor: parcela.restante || parcela.valor
+  valorOriginal: parcela.valor || 0,
+  valorAtualizado: parcela.restante || parcela.valor,
+
+  multa: parcela.multa || 0,
+  juros: parcela.juros || 0,
+
+  vencimento: parcela.vencimento
 
  });
 
@@ -550,7 +563,13 @@ if(dias === 1){
 
   numeroParcela: parcela.numero || 0,
 
-  valor: parcela.restante || parcela.valor
+  valorOriginal: parcela.valor || 0,
+  valorAtualizado: parcela.restante || parcela.valor,
+
+  multa: parcela.multa || 0,
+  juros: parcela.juros || 0,
+
+  vencimento: parcela.vencimento
 
  });
 
@@ -569,7 +588,13 @@ if(dias === 2){
 
   numeroParcela: parcela.numero || 0,
 
-  valor: parcela.restante || parcela.valor
+  valorOriginal: parcela.valor || 0,
+  valorAtualizado: parcela.restante || parcela.valor,
+
+  multa: parcela.multa || 0,
+  juros: parcela.juros || 0,
+
+  vencimento: parcela.vencimento
 
  });
 
@@ -588,7 +613,13 @@ if(dias === 3){
 
   numeroParcela: parcela.numero || 0,
 
-  valor: parcela.restante || parcela.valor
+  valorOriginal: parcela.valor || 0,
+  valorAtualizado: parcela.restante || parcela.valor,
+
+  multa: parcela.multa || 0,
+  juros: parcela.juros || 0,
+
+  vencimento: parcela.vencimento
 
  });
 
@@ -699,11 +730,33 @@ ${d.cobrancas.quantidade3Dias} cobrança(s)
   d.cobrancas.atrasados.forEach(cliente => {
 
    texto +=
-   "👤 " + (cliente.nome || "Cliente") + "\n" +
-   "📞 " + (cliente.telefone || "-") + "\n" +
-   "📄 Parcela: " + (cliente.numeroParcela || "-") + "\n" +
-   "💰 R$ " + Number(cliente.valor || 0).toFixed(2) + "\n" +
-   "⏳ " + (cliente.diasAtraso || 0) + " dia(s) de atraso\n\n";
+"👤 " + (cliente.nome || "Cliente") + "\n" +
+"📞 " + (cliente.telefone || "-") + "\n\n" +
+
+"📄 Parcela: " + (cliente.numeroParcela || "-") + "\n" +
+
+"📅 Vencimento: " +
+(
+ cliente.vencimento
+ ? cliente.vencimento.toDate().toLocaleDateString("pt-BR")
+ : "-"
+) + "\n" +
+
+"⏳ " + (cliente.diasAtraso || 0) + " dia(s) de atraso\n\n" +
+
+"💰 Valor Original: R$ " +
+Number(cliente.valorOriginal || 0).toFixed(2) + "\n" +
+
+"➕ Multa: R$ " +
+Number(cliente.multa || 0).toFixed(2) + "\n" +
+
+"➕ Juros: R$ " +
+Number(cliente.juros || 0).toFixed(2) + "\n\n" +
+
+"📌 Total Atualizado: R$ " +
+Number(cliente.valorAtualizado || 0).toFixed(2) +
+
+"\n\n━━━━━━━━━━━━━━━\n\n";
 
   });
 

@@ -469,6 +469,15 @@ parcelasSnap.forEach((docSnap)=>{
 
  const parcela = docSnap.data();
 
+const userSnap = await getDoc(
+    doc(db,"usuarios",parcela.userId)
+);
+
+const user = userSnap.exists()
+    ? userSnap.data()
+    : {};
+  
+
  if(
   parcela.status === "pago" ||
   !parcela.vencimento

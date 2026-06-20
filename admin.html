@@ -457,6 +457,39 @@ if(user.dataNascimento){
 
 });
 
+const aniversarioEsteAno =
+new Date(
+ hoje.getFullYear(),
+ mes - 1,
+ dia
+);
+
+const diferencaDias = Math.ceil(
+ (aniversarioEsteAno - hoje) /
+ (1000 * 60 * 60 * 24)
+);
+
+if(
+ diferencaDias > 0 &&
+ diferencaDias <= 7
+){
+
+ resultado.aniversarios.proximos7Dias.push({
+
+  nome: user.nome || "Cliente",
+
+  dataNascimento:
+  user.dataNascimento,
+
+  idade: idade + 1,
+
+  diasRestantes:
+  diferencaDias
+
+ });
+
+}
+    
   }
 
  }catch(erro){

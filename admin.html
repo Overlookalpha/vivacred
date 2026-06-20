@@ -481,7 +481,7 @@ const user = userSnap.exists()
  if(
   parcela.status === "pago" ||
   !parcela.vencimento
- ) return;
+ ) continue;
 
  const vencimento =
  parcela.vencimento.toDate();

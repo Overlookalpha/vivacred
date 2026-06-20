@@ -465,7 +465,7 @@ await getDocs(collection(db,"parcelas"));
 
 const hoje = new Date();
 
-parcelasSnap.forEach((docSnap)=>{
+parcelasSnap.forEach(async (docSnap)=>{
 
  const parcela = docSnap.data();
 

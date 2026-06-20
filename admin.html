@@ -398,6 +398,11 @@ async function gerarDiagnosticoSistema(){
    ranking:[]
   },
 
+aniversarios:{
+ hoje:[],
+ proximos7Dias:[]
+},
+   
   oportunidades:{
    aumentoLimite:[],
    clientesVIP:[],
@@ -412,7 +417,49 @@ async function gerarDiagnosticoSistema(){
  usuariosSnap.forEach((docSnap)=>{
 
   const user = docSnap.data();
+if(user.dataNascimento){
 
+ try{
+
+  const partes =
+  user.dataNascimento.split("/");
+
+  const dia =
+  Number(partes[0]);
+
+  const mes =
+  Number(partes[1]);
+
+  const hoje = new Date();
+
+  const diaHoje = hoje.getDate();
+  const mesHoje = hoje.getMonth() + 1;
+
+  if(
+   dia === diaHoje &&
+   mes === mesHoje
+  ){
+
+   resultado.aniversarios.hoje.push({
+
+    nome: user.nome || "Cliente",
+    dataNascimento:
+    user.dataNascimento
+
+   });
+
+  }
+
+ }catch(erro){
+
+  console.log(
+   "Erro aniversário:",
+   user.nome
+  );
+
+ }
+
+}
   resultado.clientes.total++;
 
   if(user.status === "ativo"){

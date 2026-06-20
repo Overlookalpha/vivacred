@@ -850,6 +850,36 @@ ${d.aniversarios.hoje.length}
 
 🎈 Próximos 7 Dias:
 ${d.aniversarios.proximos7Dias.length}
+
+${d.aniversarios.hoje.length > 0 ?
+
+"\n🎂 HOJE:\n" +
+
+d.aniversarios.hoje.map(a =>
+
+"👤 " + a.nome +
+" (" + a.idade + " anos)"
+
+).join("\n")
+
+: ""}
+
+${d.aniversarios.proximos7Dias.length > 0 ?
+
+"\n\n🎈 PRÓXIMOS 7 DIAS:\n" +
+
+d.aniversarios.proximos7Dias.map(a =>
+
+"👤 " + a.nome +
+" • " +
+a.diasRestantes +
+" dia(s) • " +
+a.idade +
+" anos"
+
+).join("\n")
+
+: ""}
 `;
 }
  function gerarAlertasTelegram(d){

@@ -726,6 +726,12 @@ ${Number(d.isacoin.totalCirculacao || 0).toLocaleString("pt-BR")} ISC
 🏆 Clientes VIP:
 ${d.clientes.vip}
 
+💵 Caixa Disponível:
+R$ ${Number(d.financeiro.caixa || 0).toFixed(2)}
+
+🏦 Dinheiro na Rua:
+R$ ${Number(d.financeiro.naRua || 0).toFixed(2)}
+
 🚨 Cobranças em atraso:
 ${d.cobrancas.quantidadeAtrasados}
 

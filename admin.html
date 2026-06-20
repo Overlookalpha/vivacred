@@ -430,6 +430,12 @@ if(user.dataNascimento){
   const mes =
   Number(partes[1]);
 
+   const ano =
+  Number(partes[2]);
+
+  const idade =
+  new Date().getFullYear() - ano;
+
   const hoje = new Date();
 
   const diaHoje = hoje.getDate();
@@ -440,13 +446,16 @@ if(user.dataNascimento){
    mes === mesHoje
   ){
 
-   resultado.aniversarios.hoje.push({
+  resultado.aniversarios.hoje.push({
 
-    nome: user.nome || "Cliente",
-    dataNascimento:
-    user.dataNascimento
+ nome: user.nome || "Cliente",
 
-   });
+ dataNascimento:
+ user.dataNascimento,
+
+ idade: idade
+
+});
 
   }
 

@@ -1271,6 +1271,12 @@ console.log("ALERTAS TELEGRAM");
 console.log(alertasTelegram);
 
 await enviarTelegram(resumoTelegram);
+
+if(alertasTelegram.trim() !== ""){
+
+ await enviarTelegram(alertasTelegram);
+
+}
   
   await calcularFinanceiro();
 

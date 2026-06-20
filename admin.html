@@ -956,6 +956,28 @@ Number(cliente.valorAtualizado || 0).toFixed(2) +
 
 }
 
+if(d.isacoin.proximosSaques.length > 0){
+
+ texto += "\n🪙 PRÓXIMOS SAQUES ISAcoin\n\n";
+
+ d.isacoin.proximosSaques.forEach(cliente => {
+
+  texto +=
+
+"👤 " + (cliente.nome || "Cliente") + "\n" +
+
+"🪙 Saldo: " +
+Number(cliente.isaCoins || 0).toLocaleString("pt-BR") +
+" ISC\n" +
+
+"🎯 Faltam: " +
+Number(cliente.faltam || 0).toLocaleString("pt-BR") +
+" ISC\n\n";
+
+ });
+
+}
+   
  return texto;
 
 }

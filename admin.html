@@ -500,67 +500,97 @@ console.log(
 );
  if(dias < 0){
 
-    resultado.cobrancas.atrasados.push({
+ resultado.cobrancas.atrasados.push({
 
-        id: docSnap.id,
-        emprestimoId: parcela.emprestimoId,
+  id: docSnap.id,
+  emprestimoId: parcela.emprestimoId,
+  userId: parcela.userId,
 
-        valor: parcela.restante || parcela.valor,
-        diasAtraso: Math.abs(dias)
+  nome: user.nome || "Cliente",
+  telefone: user.telefone || "-",
 
-    });
+  numeroParcela: parcela.numero || 0,
+
+  valor: parcela.restante || parcela.valor,
+  diasAtraso: Math.abs(dias)
+
+ });
 
 }
 
 if(dias === 0){
 
-    resultado.cobrancas.hoje.push({
+ resultado.cobrancas.hoje.push({
 
-        id: docSnap.id,
-        emprestimoId: parcela.emprestimoId,
+  id: docSnap.id,
+  emprestimoId: parcela.emprestimoId,
+  userId: parcela.userId,
 
-        valor: parcela.restante || parcela.valor
+  nome: user.nome || "Cliente",
+  telefone: user.telefone || "-",
 
-    });
+  numeroParcela: parcela.numero || 0,
+
+  valor: parcela.restante || parcela.valor
+
+ });
 
 }
 
 if(dias === 1){
 
-    resultado.cobrancas.amanha.push({
+ resultado.cobrancas.amanha.push({
 
-        id: docSnap.id,
-        emprestimoId: parcela.emprestimoId,
+  id: docSnap.id,
+  emprestimoId: parcela.emprestimoId,
+  userId: parcela.userId,
 
-        valor: parcela.restante || parcela.valor
+  nome: user.nome || "Cliente",
+  telefone: user.telefone || "-",
 
-    });
+  numeroParcela: parcela.numero || 0,
+
+  valor: parcela.restante || parcela.valor
+
+ });
 
 }
 
 if(dias === 2){
 
-    resultado.cobrancas.doisDias.push({
+ resultado.cobrancas.doisDias.push({
 
-        id: docSnap.id,
-        emprestimoId: parcela.emprestimoId,
+  id: docSnap.id,
+  emprestimoId: parcela.emprestimoId,
+  userId: parcela.userId,
 
-        valor: parcela.restante || parcela.valor
+  nome: user.nome || "Cliente",
+  telefone: user.telefone || "-",
 
-    });
+  numeroParcela: parcela.numero || 0,
+
+  valor: parcela.restante || parcela.valor
+
+ });
 
 }
 
 if(dias === 3){
 
-    resultado.cobrancas.tresDias.push({
+ resultado.cobrancas.tresDias.push({
 
-        id: docSnap.id,
-        emprestimoId: parcela.emprestimoId,
+  id: docSnap.id,
+  emprestimoId: parcela.emprestimoId,
+  userId: parcela.userId,
 
-        valor: parcela.restante || parcela.valor
+  nome: user.nome || "Cliente",
+  telefone: user.telefone || "-",
 
-    });
+  numeroParcela: parcela.numero || 0,
+
+  valor: parcela.restante || parcela.valor
+
+ });
 
 }
   

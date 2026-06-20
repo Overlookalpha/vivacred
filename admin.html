@@ -613,7 +613,27 @@ ${d.cobrancas.quantidade2Dias} cobrança(s)
 ${d.cobrancas.quantidade3Dias} cobrança(s)
 `;
 }
-  
+  function gerarAlertasTelegram(d){
+
+let texto = "";
+
+if(d.cobrancas.quantidadeAtrasados > 0){
+
+ texto += "\n🚨 CLIENTES EM ATRASO\n\n";
+
+ d.cobrancas.atrasados.forEach(cliente => {
+
+  texto +=
+  "👤 " + (cliente.nome || "Cliente") + "\n" +
+  "💰 " + Number(cliente.valor || 0).toFixed(2) + "\n\n";
+
+ });
+
+}
+
+return texto;
+
+}
 async function calcularFinanceiro(){
 
  let totalEmprestadoBR = 0;
@@ -1113,6 +1133,11 @@ console.log("🚀 DIAGNOSTICO", diagnostico);
 
 const resumoTelegram =
 gerarResumoTelegram(diagnostico);
+
+ const alertasTelegram =
+gerarAlertasTelegram(diagnostico);
+
+console.log(alertasTelegram); 
 
 await enviarTelegram(resumoTelegram);
   

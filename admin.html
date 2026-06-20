@@ -484,45 +484,105 @@ parcelasSnap.forEach((docSnap)=>{
 
  if(dias < 0){
 
-  resultado.cobrancas.atrasados.push({
-   id: docSnap.id,
-   emprestimoId: parcela.emprestimoId,
-   valor: parcela.restante || parcela.valor,
-   diasAtraso: Math.abs(dias)
-  });
+    resultado.cobrancas.atrasados.push({
 
- }
+        id: docSnap.id,
+        emprestimoId: parcela.emprestimoId,
 
+        nome: user.nome || "Cliente",
+        telefone: user.telefone || "",
+        pais: user.pais || "",
+        score: user.score || 0,
+        nivel: user.nivel || 1,
+        isaCoins: user.isaCoins || 0,
+
+        valor: parcela.restante || parcela.valor,
+        diasAtraso: Math.abs(dias)
+
+    });
+
+}
 if(dias === 0){
- resultado.cobrancas.hoje.push({
-  id: docSnap.id,
-  emprestimoId: parcela.emprestimoId,
-  valor: parcela.restante || parcela.valor
- });
+
+resultado.cobrancas.hoje.push({
+
+    id: docSnap.id,
+    emprestimoId: parcela.emprestimoId,
+
+    nome: user.nome || "Cliente",
+    telefone: user.telefone || "",
+    pais: user.pais || "",
+
+    score: user.score || 0,
+    nivel: user.nivel || 1,
+    isaCoins: user.isaCoins || 0,
+
+    valor: parcela.restante || parcela.valor
+
+});
+
 }
 
 if(dias === 1){
- resultado.cobrancas.amanha.push({
-  id: docSnap.id,
-  emprestimoId: parcela.emprestimoId,
-  valor: parcela.restante || parcela.valor
- });
+
+    resultado.cobrancas.amanha.push({
+
+        id: docSnap.id,
+        emprestimoId: parcela.emprestimoId,
+
+        nome: user.nome || "Cliente",
+        telefone: user.telefone || "",
+        pais: user.pais || "",
+
+        score: user.score || 0,
+        nivel: user.nivel || 1,
+        isaCoins: user.isaCoins || 0,
+
+        valor: parcela.restante || parcela.valor
+
+    });
+
 }
 
 if(dias === 2){
- resultado.cobrancas.doisDias.push({
-  id: docSnap.id,
-  emprestimoId: parcela.emprestimoId,
-  valor: parcela.restante || parcela.valor
- });
-}
 
+    resultado.cobrancas.doisDias.push({
+
+        id: docSnap.id,
+        emprestimoId: parcela.emprestimoId,
+
+        nome: user.nome || "Cliente",
+        telefone: user.telefone || "",
+        pais: user.pais || "",
+
+        score: user.score || 0,
+        nivel: user.nivel || 1,
+        isaCoins: user.isaCoins || 0,
+
+        valor: parcela.restante || parcela.valor
+
+    });
+
+}
 if(dias === 3){
- resultado.cobrancas.tresDias.push({
-  id: docSnap.id,
-  emprestimoId: parcela.emprestimoId,
-  valor: parcela.restante || parcela.valor
- });
+
+    resultado.cobrancas.tresDias.push({
+
+        id: docSnap.id,
+        emprestimoId: parcela.emprestimoId,
+
+        nome: user.nome || "Cliente",
+        telefone: user.telefone || "",
+        pais: user.pais || "",
+
+        score: user.score || 0,
+        nivel: user.nivel || 1,
+        isaCoins: user.isaCoins || 0,
+
+        valor: parcela.restante || parcela.valor
+
+    });
+
 }
   
 });

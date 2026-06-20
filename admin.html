@@ -1088,6 +1088,26 @@ if(d.aniversarios.hoje.length > 0){
  });
 
 }
+
+if(d.aniversarios.proximos7Dias.length > 0){
+
+ texto += "\n🎈 PRÓXIMOS 7 DIAS\n\n";
+
+ d.aniversarios.proximos7Dias.forEach(cliente => {
+
+  texto +=
+
+"👤 " + (cliente.nome || "Cliente") + "\n" +
+
+"🎂 Fará " + (cliente.idade || 0) + " anos\n" +
+
+"⏳ Faltam " +
+(cliente.diasRestantes || 0) +
+" dia(s)\n\n";
+
+ });
+
+}
    
  return texto;
 

@@ -489,37 +489,23 @@ parcelasSnap.forEach((docSnap)=>{
         id: docSnap.id,
         emprestimoId: parcela.emprestimoId,
 
-        nome: user.nome || "Cliente",
-        telefone: user.telefone || "",
-        pais: user.pais || "",
-        score: user.score || 0,
-        nivel: user.nivel || 1,
-        isaCoins: user.isaCoins || 0,
-
         valor: parcela.restante || parcela.valor,
         diasAtraso: Math.abs(dias)
 
     });
 
 }
+
 if(dias === 0){
 
-resultado.cobrancas.hoje.push({
+    resultado.cobrancas.hoje.push({
 
-    id: docSnap.id,
-    emprestimoId: parcela.emprestimoId,
+        id: docSnap.id,
+        emprestimoId: parcela.emprestimoId,
 
-    nome: user.nome || "Cliente",
-    telefone: user.telefone || "",
-    pais: user.pais || "",
+        valor: parcela.restante || parcela.valor
 
-    score: user.score || 0,
-    nivel: user.nivel || 1,
-    isaCoins: user.isaCoins || 0,
-
-    valor: parcela.restante || parcela.valor
-
-});
+    });
 
 }
 
@@ -529,14 +515,6 @@ if(dias === 1){
 
         id: docSnap.id,
         emprestimoId: parcela.emprestimoId,
-
-        nome: user.nome || "Cliente",
-        telefone: user.telefone || "",
-        pais: user.pais || "",
-
-        score: user.score || 0,
-        nivel: user.nivel || 1,
-        isaCoins: user.isaCoins || 0,
 
         valor: parcela.restante || parcela.valor
 
@@ -551,33 +529,18 @@ if(dias === 2){
         id: docSnap.id,
         emprestimoId: parcela.emprestimoId,
 
-        nome: user.nome || "Cliente",
-        telefone: user.telefone || "",
-        pais: user.pais || "",
-
-        score: user.score || 0,
-        nivel: user.nivel || 1,
-        isaCoins: user.isaCoins || 0,
-
         valor: parcela.restante || parcela.valor
 
     });
 
 }
+
 if(dias === 3){
 
     resultado.cobrancas.tresDias.push({
 
         id: docSnap.id,
         emprestimoId: parcela.emprestimoId,
-
-        nome: user.nome || "Cliente",
-        telefone: user.telefone || "",
-        pais: user.pais || "",
-
-        score: user.score || 0,
-        nivel: user.nivel || 1,
-        isaCoins: user.isaCoins || 0,
 
         valor: parcela.restante || parcela.valor
 

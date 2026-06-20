@@ -465,7 +465,7 @@ await getDocs(collection(db,"parcelas"));
 
 const hoje = new Date();
 
-parcelasSnap.forEach(async (docSnap)=>{
+for (const docSnap of parcelasSnap.docs) {
 
  const parcela = docSnap.data();
 
@@ -564,7 +564,7 @@ if(dias === 3){
 
 }
   
-});
+}
 
 resultado.cobrancas.totalHoje =
 resultado.cobrancas.hoje.reduce(

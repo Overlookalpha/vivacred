@@ -1179,11 +1179,14 @@ console.log("DIAGNOSTICO FINAL:", diagnostico);
 const resumoTelegram =
 gerarResumoTelegram(diagnostico);
 
-
- const alertasTelegram =
+const alertasTelegram =
 gerarAlertasTelegram(diagnostico);
 
-console.log(alertasTelegram); 
+console.log("RESUMO TELEGRAM");
+console.log(resumoTelegram);
+
+console.log("ALERTAS TELEGRAM");
+console.log(alertasTelegram);
 
 await enviarTelegram(resumoTelegram);
   

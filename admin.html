@@ -688,25 +688,60 @@ ${d.cobrancas.quantidade2Dias} cobrança(s)
 ${d.cobrancas.quantidade3Dias} cobrança(s)
 `;
 }
-  function gerarAlertasTelegram(d){
+ function gerarAlertasTelegram(d){
 
-let texto = "";
+ let texto = "";
 
-if(d.cobrancas.quantidadeAtrasados > 0){
+ if(d.cobrancas.quantidadeAtrasados > 0){
 
- texto += "\n🚨 CLIENTES EM ATRASO\n\n";
+  texto += "\n🚨 CLIENTES EM ATRASO\n\n";
 
- d.cobrancas.atrasados.forEach(cliente => {
+  d.cobrancas.atrasados.forEach(cliente => {
 
-  texto +=
-  "👤 " + (cliente.nome || "Cliente") + "\n" +
-  "💰 " + Number(cliente.valor || 0).toFixed(2) + "\n\n";
+   texto +=
+   "👤 " + (cliente.nome || "Cliente") + "\n" +
+   "📞 " + (cliente.telefone || "-") + "\n" +
+   "📄 Parcela: " + (cliente.numeroParcela || "-") + "\n" +
+   "💰 R$ " + Number(cliente.valor || 0).toFixed(2) + "\n" +
+   "⏳ " + (cliente.diasAtraso || 0) + " dia(s) de atraso\n\n";
 
- });
+  });
 
-}
+ }
 
-return texto;
+ if(d.cobrancas.quantidadeHoje > 0){
+
+  texto += "\n📅 VENCE HOJE\n\n";
+
+  d.cobrancas.hoje.forEach(cliente => {
+
+   texto +=
+   "👤 " + (cliente.nome || "Cliente") + "\n" +
+   "📞 " + (cliente.telefone || "-") + "\n" +
+   "📄 Parcela: " + (cliente.numeroParcela || "-") + "\n" +
+   "💰 R$ " + Number(cliente.valor || 0).toFixed(2) + "\n\n";
+
+  });
+
+ }
+
+ if(d.cobrancas.quantidadeAmanha > 0){
+
+  texto += "\n🔵 VENCE AMANHÃ\n\n";
+
+  d.cobrancas.amanha.forEach(cliente => {
+
+   texto +=
+   "👤 " + (cliente.nome || "Cliente") + "\n" +
+   "📞 " + (cliente.telefone || "-") + "\n" +
+   "📄 Parcela: " + (cliente.numeroParcela || "-") + "\n" +
+   "💰 R$ " + Number(cliente.valor || 0).toFixed(2) + "\n\n";
+
+  });
+
+ }
+
+ return texto;
 
 }
 async function calcularFinanceiro(){

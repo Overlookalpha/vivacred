@@ -769,10 +769,33 @@ Number(cliente.valorAtualizado || 0).toFixed(2) +
   d.cobrancas.hoje.forEach(cliente => {
 
    texto +=
-   "👤 " + (cliente.nome || "Cliente") + "\n" +
-   "📞 " + (cliente.telefone || "-") + "\n" +
-   "📄 Parcela: " + (cliente.numeroParcela || "-") + "\n" +
-   "💰 R$ " + Number(cliente.valor || 0).toFixed(2) + "\n\n";
+
+"👤 " + (cliente.nome || "Cliente") + "\n" +
+
+"📞 " + (cliente.telefone || "-") + "\n\n" +
+
+"📄 Parcela: " + (cliente.numeroParcela || "-") + "\n" +
+
+"📅 Vencimento: " +
+(
+ cliente.vencimento
+ ? cliente.vencimento.toDate().toLocaleDateString("pt-BR")
+ : "-"
+) + "\n\n" +
+
+"💰 Valor Original: R$ " +
+Number(cliente.valorOriginal || 0).toFixed(2) + "\n" +
+
+"➕ Multa: R$ " +
+Number(cliente.multa || 0).toFixed(2) + "\n" +
+
+"➕ Juros: R$ " +
+Number(cliente.juros || 0).toFixed(2) + "\n\n" +
+
+"📌 Total Atualizado: R$ " +
+Number(cliente.valorAtualizado || 0).toFixed(2) +
+
+"\n\n━━━━━━━━━━━━━━━\n\n";
 
   });
 
@@ -785,14 +808,115 @@ Number(cliente.valorAtualizado || 0).toFixed(2) +
   d.cobrancas.amanha.forEach(cliente => {
 
    texto +=
-   "👤 " + (cliente.nome || "Cliente") + "\n" +
-   "📞 " + (cliente.telefone || "-") + "\n" +
-   "📄 Parcela: " + (cliente.numeroParcela || "-") + "\n" +
-   "💰 R$ " + Number(cliente.valor || 0).toFixed(2) + "\n\n";
+
+"👤 " + (cliente.nome || "Cliente") + "\n" +
+
+"📞 " + (cliente.telefone || "-") + "\n\n" +
+
+"📄 Parcela: " + (cliente.numeroParcela || "-") + "\n" +
+
+"📅 Vencimento: " +
+(
+ cliente.vencimento
+ ? cliente.vencimento.toDate().toLocaleDateString("pt-BR")
+ : "-"
+) + "\n\n" +
+
+"💰 Valor Original: R$ " +
+Number(cliente.valorOriginal || 0).toFixed(2) + "\n" +
+
+"➕ Multa: R$ " +
+Number(cliente.multa || 0).toFixed(2) + "\n" +
+
+"➕ Juros: R$ " +
+Number(cliente.juros || 0).toFixed(2) + "\n\n" +
+
+"📌 Total Atualizado: R$ " +
+Number(cliente.valorAtualizado || 0).toFixed(2) +
+
+"\n\n━━━━━━━━━━━━━━━\n\n";
 
   });
 
  }
+
+  if(d.cobrancas.quantidade2Dias > 0){
+
+ texto += "\n🟡 VENCE EM 2 DIAS\n\n";
+
+ d.cobrancas.doisDias.forEach(cliente => {
+
+  texto +=
+
+"👤 " + (cliente.nome || "Cliente") + "\n" +
+
+"📞 " + (cliente.telefone || "-") + "\n\n" +
+
+"📄 Parcela: " + (cliente.numeroParcela || "-") + "\n" +
+
+"📅 Vencimento: " +
+(
+ cliente.vencimento
+ ? cliente.vencimento.toDate().toLocaleDateString("pt-BR")
+ : "-"
+) + "\n\n" +
+
+"💰 Valor Original: R$ " +
+Number(cliente.valorOriginal || 0).toFixed(2) + "\n" +
+
+"➕ Multa: R$ " +
+Number(cliente.multa || 0).toFixed(2) + "\n" +
+
+"➕ Juros: R$ " +
+Number(cliente.juros || 0).toFixed(2) + "\n\n" +
+
+"📌 Total Atualizado: R$ " +
+Number(cliente.valorAtualizado || 0).toFixed(2) +
+
+"\n\n━━━━━━━━━━━━━━━\n\n";
+
+ });
+
+}
+
+if(d.cobrancas.quantidade3Dias > 0){
+
+ texto += "\n🟠 VENCE EM 3 DIAS\n\n";
+
+ d.cobrancas.tresDias.forEach(cliente => {
+
+  texto +=
+
+"👤 " + (cliente.nome || "Cliente") + "\n" +
+
+"📞 " + (cliente.telefone || "-") + "\n\n" +
+
+"📄 Parcela: " + (cliente.numeroParcela || "-") + "\n" +
+
+"📅 Vencimento: " +
+(
+ cliente.vencimento
+ ? cliente.vencimento.toDate().toLocaleDateString("pt-BR")
+ : "-"
+) + "\n\n" +
+
+"💰 Valor Original: R$ " +
+Number(cliente.valorOriginal || 0).toFixed(2) + "\n" +
+
+"➕ Multa: R$ " +
+Number(cliente.multa || 0).toFixed(2) + "\n" +
+
+"➕ Juros: R$ " +
+Number(cliente.juros || 0).toFixed(2) + "\n\n" +
+
+"📌 Total Atualizado: R$ " +
+Number(cliente.valorAtualizado || 0).toFixed(2) +
+
+"\n\n━━━━━━━━━━━━━━━\n\n";
+
+ });
+
+}
 
  return texto;
 

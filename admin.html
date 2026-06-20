@@ -847,6 +847,9 @@ ${d.cobrancas.quantidade3Dias} cobrança(s)
 
 🎂 Aniversários Hoje:
 ${d.aniversarios.hoje.length}
+
+🎈 Próximos 7 Dias:
+${d.aniversarios.proximos7Dias.length}
 `;
 }
  function gerarAlertasTelegram(d){
@@ -1065,6 +1068,22 @@ Number(cliente.isaCoins || 0).toLocaleString("pt-BR") +
 "🎯 Faltam: " +
 Number(cliente.faltam || 0).toLocaleString("pt-BR") +
 " ISC\n\n";
+
+ });
+
+}
+
+if(d.aniversarios.hoje.length > 0){
+
+ texto += "\n🎂 ANIVERSÁRIOS DE HOJE\n\n";
+
+ d.aniversarios.hoje.forEach(cliente => {
+
+  texto +=
+
+"👤 " + (cliente.nome || "Cliente") + "\n" +
+
+"🎉 " + (cliente.idade || 0) + " anos\n\n";
 
  });
 

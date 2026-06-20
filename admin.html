@@ -575,6 +575,44 @@ resultado.cobrancas.atrasados.length;
  return resultado;
 
 }
+
+function gerarResumoTelegram(d){
+
+return `
+📊 RESUMO ISACRED
+
+👥 Clientes: ${d.clientes.total}
+🟢 Ativos: ${d.clientes.ativos}
+🔴 Bloqueados: ${d.clientes.bloqueados}
+
+🪙 ISAcoin em circulação:
+${Number(d.isacoin.totalCirculacao || 0).toLocaleString("pt-BR")} ISC
+
+🏆 Clientes VIP:
+${d.clientes.vip}
+
+🚨 Cobranças em atraso:
+${d.cobrancas.quantidadeAtrasados}
+
+📅 Hoje:
+${d.cobrancas.quantidadeHoje} cobrança(s)
+
+💰 Total:
+R$ ${Number(d.cobrancas.totalHoje || 0).toFixed(2)}
+
+📅 Amanhã:
+${d.cobrancas.quantidadeAmanha} cobrança(s)
+
+💰 Total:
+R$ ${Number(d.cobrancas.totalAmanha || 0).toFixed(2)}
+
+📅 Em 2 dias:
+${d.cobrancas.quantidade2Dias} cobrança(s)
+
+📅 Em 3 dias:
+${d.cobrancas.quantidade3Dias} cobrança(s)
+`;
+}
   
 async function calcularFinanceiro(){
 
@@ -1072,6 +1110,11 @@ const diagnostico =
 await gerarDiagnosticoSistema();
 
 console.log("🚀 DIAGNOSTICO", diagnostico);
+
+const resumoTelegram =
+gerarResumoTelegram(diagnostico);
+
+console.log(resumoTelegram);
   
   await calcularFinanceiro();
 

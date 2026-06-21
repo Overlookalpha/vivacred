@@ -457,12 +457,23 @@ if(user.dataNascimento){
 
 });
 
-const aniversarioEsteAno =
+let aniversarioEsteAno =
 new Date(
  hoje.getFullYear(),
  mes - 1,
  dia
 );
+
+if(aniversarioEsteAno < hoje){
+
+ aniversarioEsteAno =
+ new Date(
+  hoje.getFullYear() + 1,
+  mes - 1,
+  dia
+ );
+
+}
 
 const diferencaDias = Math.ceil(
  (aniversarioEsteAno - hoje) /

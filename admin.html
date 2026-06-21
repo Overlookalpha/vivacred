@@ -479,7 +479,11 @@ const diferencaDias = Math.ceil(
  (aniversarioEsteAno - hoje) /
  (1000 * 60 * 60 * 24)
 );
-
+console.log(
+ user.nome,
+ user.dataNascimento,
+ diferencaDias
+);
 if(
  diferencaDias > 0 &&
  diferencaDias <= 7

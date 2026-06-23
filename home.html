@@ -1350,6 +1350,10 @@ const parcelasOrdenadas = snapshotParcelas.docs
   .filter(p => p.data().emprestimoId === docSnap.id)
   .sort((a,b) => a.data().numero - b.data().numero);
 
+const primeiraParcelaPendente = parcelasOrdenadas.find(
+  p => p.data().pago < p.data().valor
+);
+    
 parcelasOrdenadas.forEach((p) => {
 
   const dadosParcela = p.data();
@@ -1396,7 +1400,7 @@ const totalParcelas = parcelasOrdenadas.length;
 if(possuiPendente){
     statusEmprestimo =
         "🔴 Em Aberto" +
-        "<br><button onclick=\"gerarPagamentoParcela('" + docSnap.id + "')\" style='margin-top:10px;padding:8px 12px;background:#22c55e;color:white;border:none;border-radius:6px;cursor:pointer;'>💳 Pagar Parcela</button>";
+        "<br><button onclick=\"gerarPagamentoParcela('" + primeiraParcelaPendente.id + "')\" style='margin-top:10px;'>💳 Pagar Parcela</button>";
 }
     item.innerHTML =
 
@@ -1796,6 +1800,28 @@ ${parcelasMaximas}x.
 
 }
 
+async function gerarPagamentoParcela(parcelaId){
+
+const parcelaRef = doc(db, "parcelas", parcelaId);
+const parcelaSnap = await getDoc(parcelaRef);
+
+if(!parcelaSnap.exists()){
+  alert("Parcela não encontrada.");
+  return;
+}
+
+const dados = parcelaSnap.data();
+
+const valor = Number(dados.restante || dados.valor || 0);
+
+alert(
+"Pagamento PIX em implantação.\n\n" +
+"Parcela: " + dados.numero + "\n" +
+"Valor: " + valor.toFixed(2)
+);
+
+}
+  
 </script>
 <div id="notificacaoCredito" style="
 position: fixed;

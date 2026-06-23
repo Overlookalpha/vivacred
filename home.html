@@ -1641,26 +1641,9 @@ modalIsaCoin.style.display = "none";
 
 
 function gerarBotaoPagamento(parcelaId, valor){
-
-return `
-<button
-onclick="gerarPagamentoParcela('${parcelaId}')"
-style="
-margin-top:10px;
-width:100%;
-padding:10px;
-background:#22c55e;
-border:none;
-border-radius:8px;
-color:white;
-font-weight:bold;
-cursor:pointer;
-">
-💳 Pagar Parcela
-</button>
-`;
-
+    return "";
 }
+  
 window.pagarParcela = function(parcelaId){
 
 alert("Parcela: " + parcelaId);

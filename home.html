@@ -291,14 +291,14 @@ Digite um valor para simular
      </button>
     </div>
      <div class="card">
-    <div><strong>📊 Resumo dos Empréstimos</strong></div>
+    <div><>📊 Resumo dos Empréstimos</></div>
    <div id="listaEmprestimos" style="margin-top:15px; font-size:14px;">
     Carregando...
     </div>
      </div>
 
    <div class="card">
-   <strong>📅 Controle de Parcelas</strong>
+   <>📅 Controle de Parcelas</>
    <div id="minhasParcelas"></div>
    </div>
    <div id="modalCredito" class="modal">
@@ -306,7 +306,7 @@ Digite um valor para simular
     <h3>Simulação de Crédito</h3>
 
     <p id="valorPadraoTexto">
-Valor padrão disponível: <strong>R$100</strong>
+Valor padrão disponível: <>R$100</>
 </p>
 
     <label>Valor desejado:</label>
@@ -525,7 +525,7 @@ if(lista){
     div.style.borderRadius = "8px";
 
     div.innerHTML =
-      "<strong>" + dados.titulo + "</strong><br>" +
+      "<>" + dados.titulo + "</><br>" +
       dados.mensagem;
 
     lista.appendChild(div);
@@ -630,17 +630,17 @@ else if(dados.pago > 0){
 }
   
 div.innerHTML =
-"<strong>Parcela " + dados.numero + "</strong> - " + status + "<br><br>" +
+"<>Parcela " + dados.numero + "</> - " + status + "<br><br>" +
 
-"<strong>Valor:</strong> " + dados.valor + "<br>" +
+"<>Valor:</> " + dados.valor + "<br>" +
 "<strong>Pago:</strong> " + dados.pago + "<br>" +
 "<strong>Multa:</strong> " + multa.toFixed(2) + "<br>" +
 "<strong>Juros atraso:</strong> " + juros.toFixed(2) + "<br>" +
 "<strong>Restante:</strong> " + restante.toFixed(2) +
 
 (restante > 0
-? "<br><br><button onclick='pagarParcela(\"" + docSnap.id + "\")'>💳 Pagar Parcela</button>"
-: "");
+ ? ""
+ : "");
 containerParcelas.appendChild(div);
 
 });

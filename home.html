@@ -583,6 +583,8 @@ for(const emprestimoId in emprestimosMap){
 
   const dados = docSnap.data();
 
+  const parcelaId = docSnap.id;
+
   const div = document.createElement("div");
   div.style.marginBottom = "18px";
 div.style.padding = "16px";
@@ -634,8 +636,11 @@ div.innerHTML =
 "<strong>Pago:</strong> " + dados.pago + "<br>" +
 "<strong>Multa:</strong> " + multa.toFixed(2) + "<br>" +
 "<strong>Juros atraso:</strong> " + juros.toFixed(2) + "<br>" +
-"<strong>Restante:</strong> " + restante.toFixed(2);
+"<strong>Restante:</strong> " + restante.toFixed(2) +
 
+(restante > 0
+? "<br><br><button onclick='pagarParcela(\"" + docSnap.id + "\")'>💳 Pagar Parcela</button>"
+: "");
 containerParcelas.appendChild(div);
 
 });
@@ -1629,8 +1634,32 @@ modalIsaCoin.style.display = "none";
 }
 
 
-/* COLAR AQUI */
+function gerarBotaoPagamento(parcelaId, valor){
 
+return `
+<button
+onclick="pagarParcela('${parcelaId}')"
+style="
+margin-top:10px;
+width:100%;
+padding:10px;
+background:#22c55e;
+border:none;
+border-radius:8px;
+color:white;
+font-weight:bold;
+cursor:pointer;
+">
+💳 Pagar Parcela
+</button>
+`;
+
+}
+window.pagarParcela = function(parcelaId){
+
+alert("Parcela: " + parcelaId);
+
+}
 const campoSimulacao =
 document.getElementById("valorSimulacao");
 

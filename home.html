@@ -1800,7 +1800,7 @@ ${parcelasMaximas}x.
 
 }
 
-async function gerarPagamentoParcela(parcelaId){
+window.gerarPagamentoParcela = async function(parcelaId){
 
 const parcelaRef = doc(db, "parcelas", parcelaId);
 const parcelaSnap = await getDoc(parcelaRef);

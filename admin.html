@@ -2520,12 +2520,18 @@ if(diasDiferenca > 0){
 }
     
 await updateDoc(ref,{
- pago: dados.valor,
- restante: 0,
- status:"pago",
- dataPagamento: new Date(),
- diasDiferenca: diasDiferenca,
- perfilPagamento: perfilPagamento
+    pago: dados.valor,
+    restante: 0,
+    status:"pago",
+
+    pagoEm: new Date(),
+    formaPagamento: "manual",
+    transacaoId: "manual",
+    confirmadoPor: "admin",
+
+    dataPagamento: new Date(),
+    diasDiferenca: diasDiferenca,
+    perfilPagamento: perfilPagamento
 });
 
 // aumentar score do cliente

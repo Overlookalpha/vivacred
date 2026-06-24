@@ -1381,7 +1381,31 @@ if (querySnapshot.empty) {
 
   listaDiv.innerHTML = "";
 
-  querySnapshot.forEach((docSnap) => {
+  const emprestimosOrdenados = querySnapshot.docs.sort((a, b) => {
+
+  const parcelasA = snapshotParcelas.docs
+    .filter(p => p.data().emprestimoId === a.id)
+    .sort((x, y) => x.data().numero - y.data().numero);
+
+  const parcelasB = snapshotParcelas.docs
+    .filter(p => p.data().emprestimoId === b.id)
+    .sort((x, y) => x.data().numero - y.data().numero);
+
+  const proximaA = parcelasA.find(
+    p => p.data().pago < p.data().valor
+  );
+
+  const proximaB = parcelasB.find(
+    p => p.data().pago < p.data().valor
+  );
+
+  const dataA = proximaA?.data()?.vencimento?.toDate?.() || new Date(9999, 11, 31);
+  const dataB = proximaB?.data()?.vencimento?.toDate?.() || new Date(9999, 11, 31);
+
+  return dataA - dataB;
+});
+
+emprestimosOrdenados.forEach((docSnap) => {
 
     const dados = docSnap.data();
 

@@ -476,6 +476,7 @@ location.reload();
 let nivelNomeGlobal = null;
 let paisUsuarioGlobal = "BR";
 let usuarioLogado = null;
+let isaCoinsGlobal = 0;
 onAuthStateChanged(auth, async (user) => {
   
 
@@ -861,6 +862,7 @@ const moedaUsuario = paisUsuario === "PT" ? "EUR" : "BRL";
 const localizacaoMoeda = paisUsuario === "PT" ? "pt-PT" : "pt-BR";   
 
  const isaCoins = data.isaCoins || 0;
+isaCoinsGlobal = isaCoins;
 
 const saldoIsaCoin =
 document.getElementById("isaCoinsSaldo");
@@ -922,7 +924,8 @@ const valorPorIsaCoin = paisUsuario === "PT" ? 0.002 : 0.01;
 
 const valorSaqueMinimo = minimoSaqueIsaCoin * valorPorIsaCoin;
 
-const faltamParaSaque = Math.max(0, minimoSaqueIsaCoin - isaCoins);
+const faltamParaSaque =
+      Math.max(0, minimoSaqueIsaCoin - isaCoinsGlobal);
 
 const valorSaqueFormatado = valorSaqueMinimo.toLocaleString(localizacaoMoeda, {
   style: "currency",

@@ -855,6 +855,11 @@ window.calcularNivel = calcularNivel;
     console.log("Usuário já existe");
 
  const data = userSnap.data();
+
+ const paisUsuario = data.pais || "BR";
+const moedaUsuario = paisUsuario === "PT" ? "EUR" : "BRL";
+const localizacaoMoeda = paisUsuario === "PT" ? "pt-PT" : "pt-BR";   
+
  const isaCoins = data.isaCoins || 0;
 
 const saldoIsaCoin =
@@ -876,13 +881,13 @@ document.getElementById("isaCoinsValor");
 
 if(valorIsaCoin){
 
- const valorReais = isaCoins * 0.01;
+ const valorConvertido = isaCoins * 0.01;
 
  valorIsaCoin.innerHTML =
  "💵 " +
- valorReais.toLocaleString("pt-BR",{
+ valorConvertido.toLocaleString(localizacaoMoeda,{
   style:"currency",
-  currency:"BRL"
+  currency: moedaUsuario
  });
 
 }
@@ -894,17 +899,27 @@ isaCoins.toLocaleString("pt-BR") + " ISC";
 
 if(valorModalIsaCoin){
 
-const valorReais =
+const valorConvertido =
 isaCoins * 0.01;
 
 valorModalIsaCoin.innerText =
-valorReais.toLocaleString("pt-BR",{
+valorConvertido.toLocaleString(localizacaoMoeda,{
 style:"currency",
-currency:"BRL"
+currency: moedaUsuario
 });
 
 }
- const paisUsuario = data.pais || "BR";
+
+const faltamIsaCoins = document.getElementById("faltamIsaCoins");
+
+const minimoSaqueIsaCoin = 10000;
+const faltamParaSaque = Math.max(0, minimoSaqueIsaCoin - isaCoins);
+
+if(faltamIsaCoins){
+  faltamIsaCoins.innerText =
+    faltamParaSaque.toLocaleString(localizacaoMoeda) + " ISC";
+}
+    
  paisUsuarioGlobal = paisUsuario;
  
  if(paisUsuario === "PT"){
@@ -1639,6 +1654,35 @@ modalIsaCoin.style.display = "none";
 
 }
 
+const btnSacarIsaCoin = document.getElementById("btnSacarIsaCoin");
+
+if(btnSacarIsaCoin){
+
+  btnSacarIsaCoin.addEventListener("click", ()=>{
+
+    const minimoSaqueIsaCoin = 10000;
+    const faltamParaSaque = Math.max(0, minimoSaqueIsaCoin - isaCoins);
+
+    if(faltamParaSaque > 0){
+
+      alert(
+        "Você ainda não pode solicitar o saque.\n\n" +
+        "Faltam " +
+        faltamParaSaque.toLocaleString(localizacaoMoeda) +
+        " ISAcoin para atingir o mínimo de 10.000 ISC."
+      );
+
+      return;
+    }
+
+    alert(
+      "Você já atingiu o mínimo para saque.\n\n" +
+      "Sua solicitação será enviada para análise."
+    );
+
+  });
+
+}  
 
 function gerarBotaoPagamento(parcelaId, valor){
     return "";
@@ -1785,23 +1829,47 @@ ${parcelasMaximas}x.
 
 window.gerarPagamentoParcela = async function(parcelaId){
 
-const parcelaRef = doc(db, "parcelas", parcelaId);
-const parcelaSnap = await getDoc(parcelaRef);
+  const parcelaRef = doc(db, "parcelas", parcelaId);
+  const parcelaSnap = await getDoc(parcelaRef);
 
-if(!parcelaSnap.exists()){
-  alert("Parcela não encontrada.");
-  return;
-}
+  if(!parcelaSnap.exists()){
+    alert("Parcela não encontrada.");
+    return;
+  }
 
-const dados = parcelaSnap.data();
+  const dados = parcelaSnap.data();
 
-const valor = Number(dados.restante || dados.valor || 0);
+  const clienteSnap = await getDoc(doc(db, "usuarios", usuarioLogado.uid));
+const cliente = clienteSnap.exists() ? clienteSnap.data() : {};
 
-alert(
-"Pagamento PIX em implantação.\n\n" +
-"Parcela: " + dados.numero + "\n" +
-"Valor: " + valor.toFixed(2)
+  const valor = Number(dados.restante || dados.valor || 0);
+
+  const moeda = paisUsuarioGlobal === "PT" ? "EUR" : "BRL";
+  const localizacao = paisUsuarioGlobal === "PT" ? "pt-PT" : "pt-BR";
+
+  const valorFormatado = valor.toLocaleString(localizacao, {
+    style: "currency",
+    currency: moeda
+  });
+
+ await enviarTelegram(
+`👀 CLIENTE ABRIU PAGAMENTO
+
+👤 Cliente: ${cliente.nome || usuarioLogado.email}
+📱 Telefone: ${cliente.telefone || "Não informado"}
+
+📄 Parcela: ${dados.numero}
+💰 Valor: ${valorFormatado}
+🌍 País: ${paisUsuarioGlobal}
+
+⏳ Status: abriu a tela de pagamento e pode estar efetuando o pagamento.`
 );
+  alert(
+    "💳 Pagamento de parcela\n\n" +
+    "Você abriu a área de pagamento da parcela " + dados.numero + ".\n\n" +
+    "Valor: " + valorFormatado + "\n\n" +
+    "Em seguida, serão exibidas as instruções de pagamento."
+  );
 
 }
   

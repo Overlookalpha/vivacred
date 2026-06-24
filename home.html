@@ -1864,12 +1864,130 @@ const cliente = clienteSnap.exists() ? clienteSnap.data() : {};
 
 ⏳ Status: abriu a tela de pagamento e pode estar efetuando o pagamento.`
 );
-  alert(
-    "💳 Pagamento de parcela\n\n" +
-    "Você abriu a área de pagamento da parcela " + dados.numero + ".\n\n" +
-    "Valor: " + valorFormatado + "\n\n" +
-    "Em seguida, serão exibidas as instruções de pagamento."
-  );
+ const modalPagamento = document.createElement("div");
+
+modalPagamento.id = "modalPagamentoParcela";
+
+modalPagamento.style.cssText = `
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    padding: 20px;
+`;
+
+const dadosPagamento = paisUsuarioGlobal === "PT"
+    ? `
+        <div style="background:#f5f5f5;padding:14px;border-radius:12px;margin-top:14px;text-align:left;">
+            <b>🇵🇹 Pagamento por MB WAY</b><br><br>
+            Envie o valor de <b>${valorFormatado}</b> para o número abaixo:<br><br>
+            <b>📱 MB WAY: 931714823</b>
+            <b>👤 Titular: Isaias Figueira Rodrigues</b>
+        </div>
+      `
+    : `
+        <div style="background:#f5f5f5;padding:14px;border-radius:12px;margin-top:14px;text-align:left;">
+            <b>🇧🇷 Pagamento por Pix</b><br><br>
+            Pague o valor de <b>${valorFormatado}</b> usando a chave abaixo:<br><br>
+            <b>🔑 Pix: (51)99892-0455</b>
+            <b>👤 Titular: Isaias Figueira Rodrigues</b>
+        </div>
+      `;
+
+modalPagamento.innerHTML = `
+    <div style="
+        background:white;
+        width:100%;
+        max-width:420px;
+        border-radius:18px;
+        padding:22px;
+        text-align:center;
+        font-family:Arial,sans-serif;
+        box-sizing:border-box;
+    ">
+        <div style="font-size:22px;font-weight:bold;">💳 Pagamento da parcela</div>
+
+        <div style="margin-top:12px;font-size:16px;">
+            Parcela <b>${dados.numero}</b><br>
+            Valor: <b>${valorFormatado}</b>
+        </div>
+
+        ${dadosPagamento}
+
+        <div style="margin-top:18px;font-size:14px;color:#555;">
+            Após realizar o pagamento, clique no botão abaixo para enviar sua confirmação.
+        </div>
+
+        <button id="btnConfirmarPagamentoParcela" style="
+            width:100%;
+            margin-top:14px;
+            padding:15px;
+            border:none;
+            border-radius:12px;
+            font-size:16px;
+            font-weight:bold;
+            cursor:pointer;
+            background:#1f9d55;
+            color:white;
+        ">
+            ✅ Já efetuei o pagamento
+        </button>
+
+        <button id="btnFecharPagamentoParcela" style="
+            width:100%;
+            margin-top:10px;
+            padding:12px;
+            border:none;
+            border-radius:12px;
+            font-size:15px;
+            cursor:pointer;
+            background:#e5e5e5;
+            color:#333;
+        ">
+            Fechar
+        </button>
+    </div>
+`;
+
+document.body.appendChild(modalPagamento);
+
+document.getElementById("btnFecharPagamentoParcela").onclick = function(){
+    modalPagamento.remove();
+};
+
+document.getElementById("btnConfirmarPagamentoParcela").onclick = async function(){
+
+    const confirmou = confirm(
+        "Confirma que você já realizou o pagamento da parcela " +
+        dados.numero +
+        " no valor de " +
+        valorFormatado +
+        "?"
+    );
+
+    if(!confirmou) return;
+
+    await enviarTelegram(
+        "✅ CLIENTE CONFIRMOU PAGAMENTO\n\n" +
+        "👤 Cliente: " + (cliente.nome || usuarioLogado.email) + "\n" +
+        "📱 Telefone: " + (cliente.telefone || "Não informado") + "\n\n" +
+        "📄 Parcela: " + dados.numero + "\n" +
+        "💰 Valor: " + valorFormatado + "\n" +
+        "🌍 País: " + paisUsuarioGlobal + "\n\n" +
+        "⏳ Status: cliente informou que realizou o pagamento. Aguardando conferência."
+    );
+
+    alert(
+        "✅ Confirmação recebida!\n\n" +
+        "Seu pagamento será conferido e atualizado em até 24 horas.\n\n" +
+        "Enquanto isso, a parcela continuará aparecendo como pendente até a confirmação do banco."
+    );
+
+    modalPagamento.remove();
+};
 
 }
   

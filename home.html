@@ -911,13 +911,40 @@ currency: moedaUsuario
 }
 
 const faltamIsaCoins = document.getElementById("faltamIsaCoins");
+const cotacaoIsaCoin = document.getElementById("cotacaoIsaCoin");
+const proximoSaqueIsaCoin = document.getElementById("proximoSaqueIsaCoin");
 
 const minimoSaqueIsaCoin = 10000;
+
+/* Brasil: 10.000 ISC = R$100
+   Portugal: 10.000 ISC = €20 */
+const valorPorIsaCoin = paisUsuario === "PT" ? 0.002 : 0.01;
+
+const valorSaqueMinimo = minimoSaqueIsaCoin * valorPorIsaCoin;
+
 const faltamParaSaque = Math.max(0, minimoSaqueIsaCoin - isaCoins);
+
+const valorSaqueFormatado = valorSaqueMinimo.toLocaleString(localizacaoMoeda, {
+  style: "currency",
+  currency: moedaUsuario
+});
+
+if(cotacaoIsaCoin){
+  cotacaoIsaCoin.innerText =
+    "1 ISC = " +
+    valorPorIsaCoin.toLocaleString(localizacaoMoeda, {
+      style: "currency",
+      currency: moedaUsuario
+    });
+}
+
+if(proximoSaqueIsaCoin){
+  proximoSaqueIsaCoin.innerText = valorSaqueFormatado;
+}
 
 if(faltamIsaCoins){
   faltamIsaCoins.innerText =
-    faltamParaSaque.toLocaleString(localizacaoMoeda) + " ISC";
+    faltamParaSaque.toLocaleString("pt-BR") + " ISC";
 }
     
  paisUsuarioGlobal = paisUsuario;
@@ -1661,28 +1688,52 @@ if(btnSacarIsaCoin){
   btnSacarIsaCoin.addEventListener("click", ()=>{
 
     const minimoSaqueIsaCoin = 10000;
-    const faltamParaSaque = Math.max(0, minimoSaqueIsaCoin - isaCoins);
+
+    const valorPorIsaCoin =
+      paisUsuarioGlobal === "PT" ? 0.002 : 0.01;
+
+    const moedaSaque =
+      paisUsuarioGlobal === "PT" ? "EUR" : "BRL";
+
+    const localizacaoSaque =
+      paisUsuarioGlobal === "PT" ? "pt-PT" : "pt-BR";
+
+    const valorSaqueMinimo =
+      minimoSaqueIsaCoin * valorPorIsaCoin;
+
+    const valorSaqueFormatado =
+      valorSaqueMinimo.toLocaleString(localizacaoSaque, {
+        style: "currency",
+        currency: moedaSaque
+      });
+
+    const faltamParaSaque =
+      Math.max(0, minimoSaqueIsaCoin - isaCoins);
 
     if(faltamParaSaque > 0){
 
       alert(
         "Você ainda não pode solicitar o saque.\n\n" +
-        "Faltam " +
-        faltamParaSaque.toLocaleString(localizacaoMoeda) +
-        " ISAcoin para atingir o mínimo de 10.000 ISC."
+        "Para sacar " + valorSaqueFormatado +
+        ", você precisa alcançar o total de 10.000 ISAcoins.\n\n" +
+        "Ainda faltam " +
+        faltamParaSaque.toLocaleString("pt-BR") +
+        " ISAcoins para você poder solicitar seu saque."
       );
 
       return;
     }
 
     alert(
-      "Você já atingiu o mínimo para saque.\n\n" +
-      "Sua solicitação será enviada para análise."
+      "🎉 Você atingiu o mínimo para saque!\n\n" +
+      "Você poderá solicitar o saque de " +
+      valorSaqueFormatado +
+      ".\n\nSua solicitação será enviada para análise."
     );
 
   });
 
-}  
+}
 
 function gerarBotaoPagamento(parcelaId, valor){
     return "";
@@ -2073,12 +2124,12 @@ Entendi
 <br><br>
 
 <strong>Cotação Atual</strong><br>
-1 ISC = R$ 0,01
+<span id="cotacaoIsaCoin">1 ISC = R$ 0,01</span>
 
 <br><br>
 
 <strong>Próximo saque</strong><br>
-R$ 100,00
+<span id="proximoSaqueIsaCoin">R$ 100,00</span>
 <br><br>
 
 <strong>Faltam</strong><br>

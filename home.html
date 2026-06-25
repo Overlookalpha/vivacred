@@ -1633,14 +1633,27 @@ setTimeout(() => {
  modal.style.display = "none";
  valorInput.value = "";
 parcelasSelect.value = "1";
-document.getElementById("nomeCliente").value = "";
-document.getElementById("telefoneCliente").value = "";
-document.getElementById("cpfCliente").value = "";
-document.getElementById("pixCliente").value = "";
-document.getElementById("nomeAvalista").value = "";
-document.getElementById("telefoneAvalista").value = "";
-document.getElementById("cpfAvalista").value = "";
-aceitarTermos.checked = false;
+const camposParaLimpar = [
+  "nomeCliente",
+  "telefoneCliente",
+  "cpfCliente",
+  "pixCliente",
+  "nomeAvalista",
+  "telefoneAvalista",
+  "cpfAvalista"
+];
+
+camposParaLimpar.forEach(id => {
+  const campo = document.getElementById(id);
+
+  if (campo) {
+    campo.value = "";
+  }
+});
+
+if (aceitarTermos) {
+  aceitarTermos.checked = false;
+}
 
       } catch (error) {
   console.error("ERRO COMPLETO AO ENVIAR:", error);

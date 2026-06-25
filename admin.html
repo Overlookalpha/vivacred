@@ -364,8 +364,94 @@ import {
   query,
   where
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
-  let capitalBR = 1000;
+ let capitalBR = 1000;
 let capitalPT = 1000;
+
+function calcularCobrancaParcela(parcela, hojeReferencia = new Date()){
+
+ if(!parcela){
+  return {
+   valorOriginal: 0,
+   valorPago: 0,
+   diasAtraso: 0,
+   multa: 0,
+   juros: 0,
+   totalAtualizado: 0
+  };
+ }
+
+ const valorOriginal = Number(parcela.valor || 0);
+ const valorPago = Number(parcela.pago || 0);
+
+ if(parcela.status === "pago"){
+  return {
+   valorOriginal,
+   valorPago,
+   diasAtraso: 0,
+   multa: 0,
+   juros: 0,
+   totalAtualizado: 0
+  };
+ }
+
+ if(!parcela.vencimento){
+  return {
+   valorOriginal,
+   valorPago,
+   diasAtraso: 0,
+   multa: 0,
+   juros: 0,
+   totalAtualizado: Math.max(0, valorOriginal - valorPago)
+  };
+ }
+
+ const vencimento = parcela.vencimento.toDate
+  ? parcela.vencimento.toDate()
+  : new Date(parcela.vencimento);
+
+ const inicioHoje = new Date(
+  hojeReferencia.getFullYear(),
+  hojeReferencia.getMonth(),
+  hojeReferencia.getDate()
+ );
+
+ const inicioVencimento = new Date(
+  vencimento.getFullYear(),
+  vencimento.getMonth(),
+  vencimento.getDate()
+ );
+
+ const diasAtraso = Math.max(
+  0,
+  Math.floor(
+   (inicioHoje - inicioVencimento) /
+   (1000 * 60 * 60 * 24)
+  )
+ );
+
+ const multa = diasAtraso > 0
+  ? Number((valorOriginal * 0.05).toFixed(2))
+  : 0;
+
+ const juros = diasAtraso > 0
+  ? Number((valorOriginal * 0.01 * diasAtraso).toFixed(2))
+  : 0;
+
+ const restanteBase = Math.max(0, valorOriginal - valorPago);
+
+ const totalAtualizado = Number(
+  (restanteBase + multa + juros).toFixed(2)
+ );
+
+ return {
+  valorOriginal,
+  valorPago,
+  diasAtraso,
+  multa,
+  juros,
+  totalAtualizado
+ };
+}
 
 async function gerarDiagnosticoSistema(){
 
@@ -576,82 +662,7 @@ await getDocs(collection(db,"parcelas"));
 
 const hoje = new Date();
 
-function calcularCobrancaParcela(parcela, hojeReferencia = new Date()){
 
- if(!parcela){
-  return {
-   valorOriginal: 0,
-   valorPago: 0,
-   diasAtraso: 0,
-   multa: 0,
-   juros: 0,
-   totalAtualizado: 0
-  };
- }
-
- const valorOriginal = Number(parcela.valor || 0);
-
- if(
-  parcela.status === "pago" ||
-  !parcela.vencimento
- ){
-  return {
-   valorOriginal,
-   valorPago: Number(parcela.pago || 0),
-   diasAtraso: 0,
-   multa: 0,
-   juros: 0,
-   totalAtualizado: Number(
-    parcela.restante ?? valorOriginal
-   )
-  };
- }
-
- const vencimento = parcela.vencimento.toDate
-  ? parcela.vencimento.toDate()
-  : new Date(parcela.vencimento);
-
- const inicioHoje = new Date(
-  hojeReferencia.getFullYear(),
-  hojeReferencia.getMonth(),
-  hojeReferencia.getDate()
- );
-
- const inicioVencimento = new Date(
-  vencimento.getFullYear(),
-  vencimento.getMonth(),
-  vencimento.getDate()
- );
-
- const diasAtraso = Math.max(
-  0,
-  Math.floor(
-   (inicioHoje - inicioVencimento) /
-   (1000 * 60 * 60 * 24)
-  )
- );
-
- const multa = diasAtraso > 0
-  ? Number((valorOriginal * 0.05).toFixed(2))
-  : 0;
-
- const juros = diasAtraso > 0
-  ? Number((valorOriginal * 0.01 * diasAtraso).toFixed(2))
-  : 0;
-
- const totalAtualizado = Number(
-  (valorOriginal + multa + juros).toFixed(2)
- );
-
- return {
-  valorOriginal,
-  valorPago: Number(parcela.pago || 0),
-  diasAtraso,
-  multa,
-  juros,
-  totalAtualizado
- };
-}
 for (const docSnap of parcelasSnap.docs) {
 
  const parcela = docSnap.data();
@@ -825,32 +836,27 @@ if(dias === 3){
 
 resultado.cobrancas.totalHoje =
 resultado.cobrancas.hoje.reduce(
- (total,item)=> total + Number(item.valor || 0),
- 0
+ (total,item)=> total + Number(item.valorAtualizado || item.valorOriginal || 0),
 );
 
 resultado.cobrancas.totalAmanha =
 resultado.cobrancas.amanha.reduce(
- (total,item)=> total + Number(item.valor || 0),
- 0
+ (total,item)=> total + Number(item.valorAtualizado || item.valorOriginal || 0),
 );
 
 resultado.cobrancas.total2Dias =
 resultado.cobrancas.doisDias.reduce(
- (total,item)=> total + Number(item.valor || 0),
- 0
+ (total,item)=> total + Number(item.valorAtualizado || item.valorOriginal || 0),
 );
 
 resultado.cobrancas.total3Dias =
 resultado.cobrancas.tresDias.reduce(
- (total,item)=> total + Number(item.valor || 0),
- 0
+ (total,item)=> total + Number(item.valorAtualizado || item.valorOriginal || 0),
 );
 
 resultado.cobrancas.totalAtrasado =
 resultado.cobrancas.atrasados.reduce(
- (total,item)=> total + Number(item.valor || 0),
- 0
+ (total,item)=> total + Number(item.valorAtualizado || item.valorOriginal || 0),
 );
 
 resultado.cobrancas.quantidadeHoje =

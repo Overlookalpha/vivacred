@@ -578,6 +578,17 @@ const hoje = new Date();
 
 function calcularCobrancaParcela(parcela, hojeReferencia = new Date()){
 
+ if(!parcela){
+  return {
+   valorOriginal: 0,
+   valorPago: 0,
+   diasAtraso: 0,
+   multa: 0,
+   juros: 0,
+   totalAtualizado: 0
+  };
+ }
+
  const valorOriginal = Number(parcela.valor || 0);
 
  if(
@@ -585,6 +596,8 @@ function calcularCobrancaParcela(parcela, hojeReferencia = new Date()){
   !parcela.vencimento
  ){
   return {
+   valorOriginal,
+   valorPago: Number(parcela.pago || 0),
    diasAtraso: 0,
    multa: 0,
    juros: 0,
@@ -594,7 +607,9 @@ function calcularCobrancaParcela(parcela, hojeReferencia = new Date()){
   };
  }
 
- const vencimento = parcela.vencimento.toDate();
+ const vencimento = parcela.vencimento.toDate
+  ? parcela.vencimento.toDate()
+  : new Date(parcela.vencimento);
 
  const inicioHoje = new Date(
   hojeReferencia.getFullYear(),
@@ -629,14 +644,14 @@ function calcularCobrancaParcela(parcela, hojeReferencia = new Date()){
  );
 
  return {
+  valorOriginal,
+  valorPago: Number(parcela.pago || 0),
   diasAtraso,
   multa,
   juros,
   totalAtualizado
  };
-
-}  
-
+}
 for (const docSnap of parcelasSnap.docs) {
 
  const parcela = docSnap.data();

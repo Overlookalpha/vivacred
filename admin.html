@@ -1234,6 +1234,54 @@ if(d.aniversarios.proximos7Dias.length > 0){
  return texto;
 
 }
+
+function calcularCobrancaParcela(parcela){
+
+  const valorOriginal = Number(parcela.valor || 0);
+  const valorPago = Number(parcela.pago || 0);
+
+  let diasAtraso = 0;
+  let multa = 0;
+  let juros = 0;
+
+  if(parcela.vencimento && valorPago < valorOriginal){
+
+    const hoje = new Date();
+    hoje.setHours(0,0,0,0);
+
+    const vencimento = parcela.vencimento.toDate
+      ? parcela.vencimento.toDate()
+      : new Date(parcela.vencimento);
+
+    vencimento.setHours(0,0,0,0);
+
+    if(hoje > vencimento){
+
+      diasAtraso = Math.floor(
+        (hoje - vencimento) / (1000 * 60 * 60 * 24)
+      );
+
+      multa = valorOriginal * 0.05;
+      juros = valorOriginal * 0.01 * diasAtraso;
+    }
+  }
+
+  const totalAtualizado = Math.max(
+    0,
+    valorOriginal + multa + juros - valorPago
+  );
+
+  return {
+    valorOriginal,
+    valorPago,
+    diasAtraso,
+    multa,
+    juros,
+    totalAtualizado
+  };
+
+}
+  
 async function calcularFinanceiro(){
 
  let totalEmprestadoBR = 0;

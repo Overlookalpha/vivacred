@@ -561,6 +561,77 @@ text: mensagem
 );
 
 }
+
+document.addEventListener("click", async (event) => {
+
+  if (event.target.id !== "btnSolicitarAtendimento") return;
+
+  if (!usuarioLogado) {
+    alert("Não foi possível identificar seu usuário. Atualize a página.");
+    return;
+  }
+
+  const botao = event.target;
+
+  try {
+
+    botao.disabled = true;
+    botao.innerText = "⏳ Enviando solicitação...";
+
+    const clienteRef = doc(db, "usuarios", usuarioLogado.uid);
+    const clienteSnap = await getDoc(clienteRef);
+
+    const cliente = clienteSnap.exists() ? clienteSnap.data() : {};
+
+    const pais = cliente.pais || "BR";
+    const moeda = pais === "PT" ? "EUR" : "BRL";
+    const localizacao = pais === "PT" ? "pt-PT" : "pt-BR";
+
+    const score = Number(cliente.score || 20);
+    const nivel = calcularNivel(score, pais);
+
+    const limite = Number(nivel.max || 0).toLocaleString(localizacao, {
+      style: "currency",
+      currency: moeda
+    });
+
+    await enviarTelegram(
+`💬 SOLICITAÇÃO DE ATENDIMENTO ISACRED
+
+👤 Cliente: ${cliente.nome || usuarioLogado.email}
+📧 E-mail: ${usuarioLogado.email}
+📱 Telefone: ${cliente.telefone || "Não informado"}
+
+🌍 País: ${pais}
+⭐ Score: ${score}
+${nivel.emoji} Nível: ${nivel.nome}
+💳 Limite atual: ${limite}
+
+📌 Motivo:
+Cliente solicitou atendimento para alteração de renda ou revisão de limite.`
+    );
+
+    alert(
+      "✅ Solicitação enviada!\n\n" +
+      "O atendimento IsaCred foi avisado e analisará seu pedido."
+    );
+
+    botao.innerText = "✅ Atendimento solicitado";
+
+  } catch (erro) {
+
+    console.error("Erro ao solicitar atendimento:", erro);
+
+    alert(
+      "Não foi possível enviar sua solicitação agora. Tente novamente."
+    );
+
+    botao.disabled = false;
+    botao.innerText = "💬 Solicitar atendimento";
+  }
+
+});
+  
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);

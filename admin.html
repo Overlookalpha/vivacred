@@ -576,6 +576,67 @@ await getDocs(collection(db,"parcelas"));
 
 const hoje = new Date();
 
+function calcularCobrancaParcela(parcela, hojeReferencia = new Date()){
+
+ const valorOriginal = Number(parcela.valor || 0);
+
+ if(
+  parcela.status === "pago" ||
+  !parcela.vencimento
+ ){
+  return {
+   diasAtraso: 0,
+   multa: 0,
+   juros: 0,
+   totalAtualizado: Number(
+    parcela.restante ?? valorOriginal
+   )
+  };
+ }
+
+ const vencimento = parcela.vencimento.toDate();
+
+ const inicioHoje = new Date(
+  hojeReferencia.getFullYear(),
+  hojeReferencia.getMonth(),
+  hojeReferencia.getDate()
+ );
+
+ const inicioVencimento = new Date(
+  vencimento.getFullYear(),
+  vencimento.getMonth(),
+  vencimento.getDate()
+ );
+
+ const diasAtraso = Math.max(
+  0,
+  Math.floor(
+   (inicioHoje - inicioVencimento) /
+   (1000 * 60 * 60 * 24)
+  )
+ );
+
+ const multa = diasAtraso > 0
+  ? Number((valorOriginal * 0.05).toFixed(2))
+  : 0;
+
+ const juros = diasAtraso > 0
+  ? Number((valorOriginal * 0.01 * diasAtraso).toFixed(2))
+  : 0;
+
+ const totalAtualizado = Number(
+  (valorOriginal + multa + juros).toFixed(2)
+ );
+
+ return {
+  diasAtraso,
+  multa,
+  juros,
+  totalAtualizado
+ };
+
+}  
+
 for (const docSnap of parcelasSnap.docs) {
 
  const parcela = docSnap.data();
@@ -611,6 +672,9 @@ console.log(
 );
 if(dias < 0){
 
+ const cobranca =
+ calcularCobrancaParcela(parcela, hoje);
+
  resultado.cobrancas.atrasados.push({
 
   id: docSnap.id,
@@ -623,14 +687,20 @@ if(dias < 0){
   numeroParcela: parcela.numero || 0,
 
   valorOriginal: parcela.valor || 0,
-  valorAtualizado: parcela.restante || parcela.valor,
 
-  multa: parcela.multa || 0,
-  juros: parcela.juros || 0,
+  valorAtualizado:
+  cobranca.totalAtualizado,
+
+  multa:
+  cobranca.multa,
+
+  juros:
+  cobranca.juros,
 
   vencimento: parcela.vencimento,
 
-  diasAtraso: Math.abs(dias)
+  diasAtraso:
+  cobranca.diasAtraso
 
  });
 

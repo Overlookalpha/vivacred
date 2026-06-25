@@ -302,63 +302,180 @@ Digite um valor para simular
    <div id="minhasParcelas"></div>
    </div>
    <div id="modalCredito" class="modal">
-    <div class="modal-content">
-    <h3>Simulação de Crédito</h3>
+  <div class="modal-content" style="max-width:430px;">
 
-    <p id="valorPadraoTexto">
-Valor padrão disponível: <>R$100</>
-</p>
+    <div style="
+      text-align:center;
+      padding:8px 0 18px;
+      border-bottom:1px solid rgba(255,255,255,0.12);
+      margin-bottom:18px;
+    ">
+      <div style="font-size:32px;">🚀</div>
+      <h3 style="margin:8px 0 5px;">Solicitar Crédito</h3>
+      <div style="font-size:13px;opacity:.72;">
+        Confira seus dados antes de enviar sua solicitação.
+      </div>
+    </div>
+
+    <div style="
+      background:linear-gradient(135deg,rgba(34,197,94,.22),rgba(16,185,129,.08));
+      border:1px solid rgba(74,222,128,.35);
+      border-radius:14px;
+      padding:14px;
+      margin-bottom:16px;
+    ">
+      <div style="font-size:12px;opacity:.75;letter-spacing:1px;">
+        SEU PERFIL ISACRED
+      </div>
+
+      <div id="perfilCreditoNome" style="font-size:19px;font-weight:bold;margin-top:7px;">
+        Carregando...
+      </div>
+
+      <div id="perfilCreditoNivel" style="margin-top:7px;color:#9BE8C7;">
+        🍀 Nível Essencial
+      </div>
+
+      <div id="perfilCreditoScore" style="margin-top:5px;font-size:14px;">
+        ⭐ Score: 0
+      </div>
+
+      <div id="perfilCreditoLimite" style="margin-top:5px;font-size:14px;">
+        💳 Limite disponível: R$ 0,00
+      </div>
+    </div>
+
+    <div style="font-size:15px;font-weight:bold;margin-bottom:10px;">
+      🧾 Dados cadastrados
+    </div>
+
+    <div style="
+      background:rgba(255,255,255,.06);
+      border-radius:12px;
+      padding:13px;
+      line-height:1.8;
+      font-size:14px;
+      margin-bottom:16px;
+    ">
+      <div id="dadosCadastroNome">👤 Nome: —</div>
+      <div id="dadosCadastroEmail">📧 E-mail: —</div>
+      <div id="dadosCadastroTelefone">📱 Telefone: —</div>
+      <div id="dadosCadastroCpf">🪪 CPF: —</div>
+      <div id="dadosCadastroPix">🔑 Chave Pix: —</div>
+      <div id="dadosCadastroProfissao">💼 Profissão: —</div>
+      <div id="dadosCadastroCidade">📍 Cidade: —</div>
+      <div id="dadosCadastroEstado">🗺️ Estado: —</div>
+    </div>
+
+    <div style="
+      background:rgba(250,204,21,.10);
+      border:1px solid rgba(250,204,21,.35);
+      border-radius:12px;
+      padding:13px;
+      margin-bottom:18px;
+      font-size:14px;
+      line-height:1.6;
+    ">
+      <div style="font-weight:bold;color:#fde68a;">
+        🔒 Renda protegida
+      </div>
+
+      <div id="dadosCadastroRenda" style="margin-top:5px;">
+        Sua renda cadastrada está em análise pela IsaCred.
+      </div>
+
+      <div style="font-size:12px;opacity:.75;margin-top:6px;">
+        Para alterar renda ou pedir revisão de limite, fale com o atendimento.
+      </div>
+
+      <button id="btnSolicitarAtendimento" type="button" style="
+        width:100%;
+        margin-top:12px;
+        padding:11px;
+        border:none;
+        border-radius:9px;
+        background:#f59e0b;
+        color:white;
+        font-weight:bold;
+        cursor:pointer;
+      ">
+        💬 Solicitar atendimento
+      </button>
+    </div>
+
+    <div style="font-size:15px;font-weight:bold;margin-bottom:10px;">
+      💰 Detalhes da solicitação
+    </div>
 
     <label>Valor desejado:</label>
-<input type="number" id="valorSimulado" placeholder="Digite o valor" min="100" />
-
-<br><br>
-
-<label>Quantidade de parcelas:</label>
-<select id="parcelasSimuladas">
-  <option value="1">1x</option>
-  <option value="2">2x</option>
-  <option value="3">3x</option>
-  <option value="4">4x</option>
-</select>
+    <input type="number" id="valorSimulado" placeholder="Digite o valor" min="100" />
 
     <br><br>
 
-<label>Seu nome completo:</label>
-<input type="text" id="nomeCliente" placeholder="Digite seu nome">
+    <label>Quantidade de parcelas:</label>
+    <select id="parcelasSimuladas">
+      <option value="1">1x</option>
+      <option value="2">2x</option>
+      <option value="3">3x</option>
+      <option value="4">4x</option>
+    </select>
 
-<br><br>
+    <hr style="margin:20px 0;opacity:.2">
 
-<label>Telefone:</label>
-<input type="text" id="telefoneCliente" placeholder="Ex: 5511998765432">
+    <div style="font-size:15px;font-weight:bold;margin-bottom:10px;">
+      🤝 Avalista
+    </div>
 
-<br><br>
+    <label>Nome do avalista:</label>
+    <input type="text" id="nomeAvalista" placeholder="Nome do avalista">
 
-<label id="labelCpf">CPF:</label>
-<input type="text" id="cpfCliente" placeholder="Digite seu CPF">
+    <br><br>
 
-<br><br>
+    <label>Telefone do avalista:</label>
+    <input type="text" id="telefoneAvalista" placeholder="Ex: 5511998765432">
 
-<label id="labelPix">Chave Pix:</label>
-<input type="text" id="pixCliente" placeholder="Digite sua chave Pix">
+    <br><br>
 
-<hr style="margin:20px 0; opacity:0.2">
+    <label id="labelCpfAvalista">CPF do avalista:</label>
+    <input type="text" id="cpfAvalista" placeholder="CPF do avalista">
 
-<label>Nome do avalista:</label>
-<input type="text" id="nomeAvalista" placeholder="Nome do avalista">
+    <div style="
+      margin-top:16px;
+      font-size:12px;
+      opacity:.68;
+      text-align:center;
+      line-height:1.5;
+    ">
+      Seus dados pessoais já foram carregados do seu cadastro IsaCred.
+    </div>
 
-<br><br>
+    <button id="confirmarCredito" style="
+      width:100%;
+      margin-top:16px;
+      padding:13px;
+      border:none;
+      border-radius:10px;
+      background:#22c55e;
+      color:white;
+      font-weight:bold;
+      cursor:pointer;
+    ">
+      🚀 Continuar solicitação
+    </button>
 
-<label>Telefone do avalista:</label>
-<input type="text" id="telefoneAvalista" placeholder="Ex: 5511998765432">
+    <button id="fecharModal" style="
+      width:100%;
+      margin-top:10px;
+      padding:11px;
+      border:none;
+      border-radius:10px;
+      background:rgba(255,255,255,.12);
+      color:white;
+      cursor:pointer;
+    ">
+      Cancelar
+    </button>
 
-<br><br>
-
-<label id="labelCpfAvalista">CPF do avalista:</label>
-<input type="text" id="cpfAvalista" placeholder="CPF do avalista">
-
-    <button id="confirmarCredito">Confirmar Solicitação</button>
-    <button id="fecharModal">Cancelar</button>
   </div>
 </div>
   <div id="modalTermos" class="modal">
@@ -858,6 +975,101 @@ window.calcularNivel = calcularNivel;
  const data = userSnap.data();
 
  const paisUsuario = data.pais || "BR";
+
+const moedaPerfil = paisUsuario === "PT" ? "EUR" : "BRL";
+const localPerfil = paisUsuario === "PT" ? "pt-PT" : "pt-BR";
+
+const dadosNivelPerfil = calcularNivel(data.score || 20, paisUsuario);
+
+const nomeCadastro = data.nome || "Não informado";
+const telefoneCadastro = data.telefone || "Não informado";
+const cpfCadastro = data.cpf || "Não informado";
+const pixCadastro = data.pix || data.chavePix || "Não informado";
+const profissaoCadastro = data.profissao || "Não informado";
+const cidadeCadastro = data.cidade || "Não informado";
+const estadoCadastro = data.estado || "Não informado";
+
+const perfilCreditoNome = document.getElementById("perfilCreditoNome");
+const perfilCreditoNivel = document.getElementById("perfilCreditoNivel");
+const perfilCreditoScore = document.getElementById("perfilCreditoScore");
+const perfilCreditoLimite = document.getElementById("perfilCreditoLimite");
+
+const dadosCadastroNome = document.getElementById("dadosCadastroNome");
+const dadosCadastroEmail = document.getElementById("dadosCadastroEmail");
+const dadosCadastroTelefone = document.getElementById("dadosCadastroTelefone");
+const dadosCadastroCpf = document.getElementById("dadosCadastroCpf");
+const dadosCadastroPix = document.getElementById("dadosCadastroPix");
+const dadosCadastroProfissao = document.getElementById("dadosCadastroProfissao");
+const dadosCadastroCidade = document.getElementById("dadosCadastroCidade");
+const dadosCadastroEstado = document.getElementById("dadosCadastroEstado");
+const dadosCadastroRenda = document.getElementById("dadosCadastroRenda");
+
+if(perfilCreditoNome){
+  perfilCreditoNome.innerText = "👤 " + nomeCadastro;
+}
+
+if(perfilCreditoNivel){
+  perfilCreditoNivel.innerText =
+    dadosNivelPerfil.emoji + " Nível " + dadosNivelPerfil.nome;
+}
+
+if(perfilCreditoScore){
+  perfilCreditoScore.innerText =
+    "⭐ Score: " + (data.score || 20);
+}
+
+if(perfilCreditoLimite){
+  perfilCreditoLimite.innerText =
+    "💳 Limite disponível: " +
+    dadosNivelPerfil.max.toLocaleString(localPerfil,{
+      style:"currency",
+      currency:moedaPerfil
+    });
+}
+
+if(dadosCadastroNome){
+  dadosCadastroNome.innerText = "👤 Nome: " + nomeCadastro;
+}
+
+if(dadosCadastroEmail){
+  dadosCadastroEmail.innerText = "📧 E-mail: " + (data.email || user.email);
+}
+
+if(dadosCadastroTelefone){
+  dadosCadastroTelefone.innerText = "📱 Telefone: " + telefoneCadastro;
+}
+
+if(dadosCadastroCpf){
+  dadosCadastroCpf.innerText =
+    (paisUsuario === "PT" ? "🪪 NIF: " : "🪪 CPF: ") + cpfCadastro;
+}
+
+if(dadosCadastroPix){
+  dadosCadastroPix.innerText =
+    (paisUsuario === "PT" ? "📲 MB Way: " : "🔑 Chave Pix: ") + pixCadastro;
+}
+
+if(dadosCadastroProfissao){
+  dadosCadastroProfissao.innerText =
+    "💼 Profissão: " + profissaoCadastro;
+}
+
+if(dadosCadastroCidade){
+  dadosCadastroCidade.innerText =
+    "📍 Cidade: " + cidadeCadastro;
+}
+
+if(dadosCadastroEstado){
+  dadosCadastroEstado.innerText =
+    "🗺️ Estado: " + estadoCadastro;
+}
+
+if(dadosCadastroRenda){
+  dadosCadastroRenda.innerText =
+    "💰 Renda cadastrada: " +
+    (data.rendaMensal || "Em análise pela IsaCred");
+}
+    
 const moedaUsuario = paisUsuario === "PT" ? "EUR" : "BRL";
 const localizacaoMoeda = paisUsuario === "PT" ? "pt-PT" : "pt-BR";   
 

@@ -835,30 +835,39 @@ if(dias === 3){
 }
 
 resultado.cobrancas.totalHoje =
-resultado.cobrancas.hoje.reduce(
- (total,item)=> total + Number(item.valorAtualizado || item.valorOriginal || 0),
+(resultado.cobrancas.hoje || []).reduce(
+ (total,item) =>
+ total + Number(item.valorAtualizado || item.valorOriginal || 0),
+ 0
 );
 
 resultado.cobrancas.totalAmanha =
-resultado.cobrancas.amanha.reduce(
- (total,item)=> total + Number(item.valorAtualizado || item.valorOriginal || 0),
+(resultado.cobrancas.amanha || []).reduce(
+ (total,item) =>
+ total + Number(item.valorAtualizado || item.valorOriginal || 0),
+ 0
 );
 
 resultado.cobrancas.total2Dias =
-resultado.cobrancas.doisDias.reduce(
- (total,item)=> total + Number(item.valorAtualizado || item.valorOriginal || 0),
+(resultado.cobrancas.doisDias || []).reduce(
+ (total,item) =>
+ total + Number(item.valorAtualizado || item.valorOriginal || 0),
+ 0
 );
 
 resultado.cobrancas.total3Dias =
-resultado.cobrancas.tresDias.reduce(
- (total,item)=> total + Number(item.valorAtualizado || item.valorOriginal || 0),
+(resultado.cobrancas.tresDias || []).reduce(
+ (total,item) =>
+ total + Number(item.valorAtualizado || item.valorOriginal || 0),
+ 0
 );
 
 resultado.cobrancas.totalAtrasado =
-resultado.cobrancas.atrasados.reduce(
- (total,item)=> total + Number(item.valorAtualizado || item.valorOriginal || 0),
+(resultado.cobrancas.atrasados || []).reduce(
+ (total,item) =>
+ total + Number(item.valorAtualizado || item.valorOriginal || 0),
+ 0
 );
-
 resultado.cobrancas.quantidadeHoje =
 resultado.cobrancas.hoje.length;
 

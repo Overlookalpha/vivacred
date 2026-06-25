@@ -341,7 +341,7 @@ Digite um valor para simular
       </div>
 
       <div id="perfilCreditoLimite" style="margin-top:5px;font-size:14px;">
-        💳 Limite disponível: R$ 0,00
+        💳 Limite do seu nível: até R$ 0,00
       </div>
     </div>
 
@@ -1472,16 +1472,23 @@ console.log("CLICOU NO CONFIRMAR TERMOS");
   // AQUI vai executar o envio da solicitação
       const valorInput = document.getElementById("valorSimulado");
 const parcelasSelect = document.getElementById("parcelasSimuladas");
-      const nomeCliente = document.getElementById("nomeCliente").value;
-const telefoneCliente = document.getElementById("telefoneCliente").value;
-if(telefoneCliente.length < 12){
- alert("Digite o telefone no formato 5511998765432");
- return;
+
+const clienteSnap = await getDoc(doc(db, "usuarios", user.uid));
+
+if(!clienteSnap.exists()){
+  alert("Não foi possível carregar seu cadastro. Atualize a página e tente novamente.");
+  return;
 }
-const cpfCliente = document.getElementById("cpfCliente").value;
-const pixCliente = document.getElementById("pixCliente").value;
+
+const cliente = clienteSnap.data();
+
+const nomeCliente = cliente.nome || "";
+const telefoneCliente = cliente.telefone || "";
+const cpfCliente = cliente.cpf || "";
+const pixCliente = cliente.pix || "";
+
 if(!nomeCliente || !telefoneCliente || !cpfCliente || !pixCliente){
-  alert("Preencha todos os dados pessoais.");
+  alert("Seu cadastro está incompleto. Solicite atendimento para atualizar seus dados.");
   return;
 }
 

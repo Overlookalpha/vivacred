@@ -1291,6 +1291,12 @@ if(dados.vencimento){
   (1000 * 60 * 60 * 24)
  );
 
+const cobrancaAtual =
+calcularCobrancaParcela(
+ proximaParcela,
+ hoje
+);
+  
 if(diasRestantes === 3){
   vencemEm3Dias.push({
     ...dados,
@@ -1416,21 +1422,17 @@ ${Number(proximaParcela.valor || 0).toFixed(2)}
 
 ➕ Multa:
 ${emp.pais === "PT" ? "€" : "R$"}
-${Number(proximaParcela.multa || 0).toFixed(2)}
+${Number(cobrancaAtual.multa || 0).toFixed(2)}
 <br>
 
 ➕ Juros:
 ${emp.pais === "PT" ? "€" : "R$"}
-${Number(proximaParcela.juros || 0).toFixed(2)}
+${Number(cobrancaAtual.juros || 0).toFixed(2)}
 <br>
 
 📌 Total Atualizado:
 ${emp.pais === "PT" ? "€" : "R$"}
-${(
- Number(proximaParcela.valor || 0) +
- Number(proximaParcela.multa || 0) +
- Number(proximaParcela.juros || 0)
-).toFixed(2)}
+${Number(cobrancaAtual.totalAtualizado || 0).toFixed(2)}
 
 <br><br>
 

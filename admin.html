@@ -2445,13 +2445,13 @@ window.pagarParcela = async (emprestimoId)=>{
 window.salvarCapital = async () => {
 
  capitalBR = Number(
-  document.getElementById("capitalBRInput").value
- );
+  document.getElementById("capitalBRInput")?.value || 0
+);
 
- capitalPT = Number(
-  document.getElementById("capitalPTInput").value
- );
-
+capitalPT = Number(
+  document.getElementById("capitalPTInput")?.value || 0
+);
+  
  await setDoc(
   doc(db,"configuracoes","financeiro"),
   {

@@ -1643,9 +1643,12 @@ document.getElementById("cpfAvalista").value = "";
 aceitarTermos.checked = false;
 
       } catch (error) {
-        console.error(error);
-        alert("Erro ao enviar solicitação.");
-      }
+  console.error("ERRO COMPLETO AO ENVIAR:", error);
+  alert(
+    "Erro ao enviar solicitação:\n\n" +
+    (error.message || error)
+  );
+}
 
 });
 

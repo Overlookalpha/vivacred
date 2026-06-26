@@ -1910,7 +1910,7 @@ div.innerHTML =
 (dados.pais === "PT" ? "MB Way: " : "Pix: ") +
 (dados.pixCliente || "-") + "<br><br>" +
 
-"<b>Avalista</b><br>" +
+"<b>b><br>" +
 "Nome: " + (dados.nomeAvalista || "-") + "<br>" +
 "Telefone: " + (dados.telefoneAvalista || "-") + "<br>" +
 (dados.pais === "PT" ? "NIF: " : "CPF: ") +
@@ -2072,8 +2072,12 @@ Nome: ${dados.nomeAvalista || "-"}<br>
 Telefone: ${dados.telefoneAvalista || "-"}<br>
 ${dados.pais === "PT" ? "NIF" : "CPF"}: ${dados.cpfAvalista || "-"}<br><br>
 
+Valor Emprestado: ${dados.valor}<br>
+
 Valor Total: ${dados.valorFinal}<br>
-Parcelas: ${dados.parcelas}<br>
+
+Parcelas: ${dados.parcelasPagas || 0}/${dados.parcelas}<br>
+
 ${statusTexto}<br>
 
 <button onclick="abrirParcelas('${docSnap.id}')">

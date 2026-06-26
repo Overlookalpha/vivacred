@@ -2129,7 +2129,16 @@ width:${((dados.parcelasPagas||0)/dados.parcelas)*100}%;
 background:linear-gradient(90deg,#00e676,#00c853);">
 </div>
 
-</div><br>
+</div>
+
+<div style="
+text-align:center;
+font-weight:bold;
+color:#00e676;
+margin-top:4px;
+margin-bottom:8px;">
+${Math.round(((dados.parcelasPagas||0)/dados.parcelas)*100)}% Concluído
+</div>
 
 ${statusTexto}<br>
 

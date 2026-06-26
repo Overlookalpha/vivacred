@@ -2094,8 +2094,20 @@ ${dados.moeda || "R$"} ${(dados.valorFinal-((dados.parcelasPagas || 0)*(dados.va
 📅 <b>Data do Empréstimo:</b>
 ${new Date(dados.dataAprovacao.seconds*1000).toLocaleDateString("pt-BR")}<br>
 
+🎯 <b>Próximo Vencimento:</b>
+${new Date(dados.dataVencimento).toLocaleDateString("pt-BR")}<br>
+
+⏳ <b>Dias Restantes:</b>
+${Math.ceil((new Date(dados.dataVencimento)-new Date())/86400000)} dias<br><br>
+
 📦 <b>Parcelas:</b>
 ${dados.parcelasPagas}/${dados.parcelas}<br>
+
+<progress
+value="${dados.parcelasPagas}"
+max="${dados.parcelas}"
+style="width:100%;height:18px;margin-top:5px;margin-bottom:8px;">
+</progress><br>
 
 ${statusTexto}<br>
 

@@ -2042,7 +2042,9 @@ if (dados.status !== "ativo" || dados.arquivado === true) return;
   let statusTexto = "";
  const hoje = new Date();
 const vencimento = new Date(dados.dataVencimento);
-
+console.log("DataVencimento:", dados.dataVencimento);
+console.log("Vencimento:", vencimento);
+  
 if(dados.parcelasPagas >= dados.parcelas){
     statusTexto = "<div style='color:#4cff88;font-weight:bold;font-size:18px;'>🟢 QUITADO</div>";
 }

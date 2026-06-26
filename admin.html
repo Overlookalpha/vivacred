@@ -2127,6 +2127,12 @@ if(hoje > vencimento && dados.parcelasPagas < dados.parcelas){
 }
   div.innerHTML =
  "<strong>" + dados.email + "</strong><br>" +
+ "💵 Valor Liberado: " +
+Number(dados.valor).toLocaleString("pt-PT",{
+    style:"currency",
+    currency:(dados.pais === "PT" ? "EUR" : "BRL")
+}) +
+"<br>" +
  "Valor Total: " +
 Number(dados.valorFinal).toLocaleString("pt-PT",{
 style:"currency",

@@ -2076,6 +2076,13 @@ Valor Emprestado: ${dados.valor}<br>
 
 Valor Total: ${dados.valorFinal}<br>
 
+Data do Empréstimo:
+${
+dados.dataAprovacao
+? dados.dataAprovacao.toDate().toLocaleDateString("pt-BR")
+: "-"
+}<br>
+
 Parcelas: ${dados.parcelasPagas || 0}/${dados.parcelas}<br>
 
 ${statusTexto}<br>

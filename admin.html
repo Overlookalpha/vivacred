@@ -2059,19 +2059,22 @@ if(hoje > vencimento && dados.parcelasPagas < dados.parcelas){
  statusTexto = "<div style='color:#ff4c4c;font-weight:bold;'>ATRASADO</div>";
 }
 div.innerHTML = `
-<strong>${dados.email}</strong><br><br>
+<div style="text-align:center;padding:8px 0;">
+<h2 style="margin:0;color:#4fc3f7;">👤 ${dados.nomeCliente || "-"}</h2>
+<div style="color:#ccc;font-size:14px;">📧 ${dados.email}</div>
+</div>
 
-<b>Cliente</b><br>
-Nome: ${dados.nomeCliente || "-"}<br>
-Telefone: ${dados.telefoneCliente || "-"}<br>
-${dados.pais === "PT" ? "NIF" : "CPF"}: ${dados.cpfCliente || "-"}<br>
-${dados.pais === "PT" ? "MB Way" : "Pix"}: ${dados.pixCliente || "-"}<br><br>
+<hr>
 
-<b>Avalista</b><br>
-Nome: ${dados.nomeAvalista || "-"}<br>
-Telefone: ${dados.telefoneAvalista || "-"}<br>
-${dados.pais === "PT" ? "NIF" : "CPF"}: ${dados.cpfAvalista || "-"}<br><br>
+<b>🏅 Cliente</b><br>
+📞 ${dados.telefoneCliente || "-"}<br>
+🆔 ${dados.pais === "PT" ? "NIF" : "CPF"}: ${dados.cpfCliente || "-"}<br>
+💳 ${dados.pais === "PT" ? "MB Way" : "Pix"}: ${dados.pixCliente || "-"}<br><br>
 
+<b>🤝 Avalista</b><br>
+👤 ${dados.nomeAvalista || "-"}<br>
+📞 ${dados.telefoneAvalista || "-"}<br>
+🆔 ${dados.pais === "PT" ? "NIF" : "CPF"}: ${dados.cpfAvalista || "-"}<br><br>
 <hr>
 💰 <b>Valor Emprestado:</b>
 ${dados.moeda || "R$"} ${Number(dados.valor).toFixed(2)}<br>

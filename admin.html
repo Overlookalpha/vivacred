@@ -2072,18 +2072,30 @@ Nome: ${dados.nomeAvalista || "-"}<br>
 Telefone: ${dados.telefoneAvalista || "-"}<br>
 ${dados.pais === "PT" ? "NIF" : "CPF"}: ${dados.cpfAvalista || "-"}<br><br>
 
-Valor Emprestado: ${dados.valor}<br>
+<hr>
 
-Valor Total: ${dados.valorFinal}<br>
+💰 <b>Valor Emprestado:</b>
+${dados.moeda || "R$"} ${Number(dados.valor).toFixed(2)}<br>
 
-Data do Empréstimo:
-${
-dados.dataAprovacao
-? dados.dataAprovacao.toDate().toLocaleDateString("pt-BR")
-: "-"
-}<br>
+💵 <b>Valor Total:</b>
+${dados.moeda || "R$"} ${Number(dados.valorFinal).toFixed(2)}<br>
 
-Parcelas: ${dados.parcelasPagas || 0}/${dados.parcelas}<br>
+📈 <b>Lucro:</b>
+${dados.moeda || "R$"} ${(Number(dados.valorFinal)-Number(dados.valor)).toFixed(2)}<br>
+
+💸 <b>Recebido:</b>
+${dados.moeda || "R$"} ${((dados.parcelasPagas || 0)*(dados.valorFinal/dados.parcelas)).toFixed(2)}<br>
+
+📌 <b>Saldo Devedor:</b>
+${dados.moeda || "R$"} ${(dados.valorFinal-((dados.parcelasPagas || 0)*(dados.valorFinal/dados.parcelas))).toFixed(2)}<br>
+
+<hr>
+
+📅 <b>Data do Empréstimo:</b>
+${new Date(dados.dataAprovacao.seconds*1000).toLocaleDateString("pt-BR")}<br>
+
+📦 <b>Parcelas:</b>
+${dados.parcelasPagas}/${dados.parcelas}<br>
 
 ${statusTexto}<br>
 

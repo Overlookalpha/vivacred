@@ -214,7 +214,7 @@ Saldo:<br>
 
 <div id="telaEmprestimos" style="display:none;">
 
-<h3>Empréstimos Ativos</h3>
+<h3>ivos</h3>
 
 <div id="listaEmprestimosAtivos"></div>
 
@@ -2126,13 +2126,9 @@ if(hoje > vencimento && dados.parcelasPagas < dados.parcelas){
  statusTexto = "<div style='color:#ff4c4c;font-weight:bold;'>ATRASADO</div>";
 }
   div.innerHTML =
+"<div style='background:red;color:white;padding:20px;font-size:22px'>TESTE ISAÍAS</div>";
+  
  "<strong>" + dados.email + "</strong><br>" +
- "💵 Valor Liberado: " +
-Number(dados.valor).toLocaleString("pt-PT",{
-    style:"currency",
-    currency:(dados.pais === "PT" ? "EUR" : "BRL")
-}) +
-"<br>" +
  "Valor Total: " +
 Number(dados.valorFinal).toLocaleString("pt-PT",{
 style:"currency",

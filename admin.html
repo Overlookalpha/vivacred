@@ -2073,7 +2073,6 @@ Telefone: ${dados.telefoneAvalista || "-"}<br>
 ${dados.pais === "PT" ? "NIF" : "CPF"}: ${dados.cpfAvalista || "-"}<br><br>
 
 <hr>
-
 💰 <b>Valor Emprestado:</b>
 ${dados.moeda || "R$"} ${Number(dados.valor).toFixed(2)}<br>
 
@@ -2092,13 +2091,26 @@ ${dados.moeda || "R$"} ${(dados.valorFinal-((dados.parcelasPagas || 0)*(dados.va
 <hr>
 
 📅 <b>Data do Empréstimo:</b>
-${new Date(dados.dataAprovacao.seconds*1000).toLocaleDateString("pt-BR")}<br>
+${dados.dataAprovacao?.seconds
+ ? new Date(dados.dataAprovacao.seconds * 1000).toLocaleDateString("pt-BR")
+ : "-"}<br>
 
 🎯 <b>Próximo Vencimento:</b>
-${new Date(dados.dataVencimento).toLocaleDateString("pt-BR")}<br>
+${dados.dataVencimento?.seconds
+ ? new Date(dados.dataVencimento.seconds * 1000).toLocaleDateString("pt-BR")
+ : (dados.dataVencimento
+    ? new Date(dados.dataVencimento).toLocaleDateString("pt-BR")
+    : "-")
+}<br>
 
 ⏳ <b>Dias Restantes:</b>
-${Math.ceil((new Date(dados.dataVencimento)-new Date())/86400000)} dias<br><br>
+${
+dados.dataVencimento?.seconds
+? Math.ceil((dados.dataVencimento.seconds * 1000 - Date.now()) / 86400000)
+: (dados.dataVencimento
+   ? Math.ceil((new Date(dados.dataVencimento) - Date.now()) / 86400000)
+   : "-")
+} dias<br><br>
 
 📦 <b>Parcelas:</b>
 ${dados.parcelasPagas}/${dados.parcelas}<br>

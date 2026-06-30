@@ -1876,7 +1876,7 @@ console.log("Rejeitados:", totalRejeitados);
 const possuiEmprestimoAtivo =
 totalAtivos > 0;
   
-const clienteNovo = totalSolicitacoes <= 1;
+const  = totalSolicitacoes <= 1;
 
  if(dados.status !== "aguardando") return;
 
@@ -1916,6 +1916,67 @@ div.innerHTML =
 (dados.pais === "PT" ? "NIF: " : "CPF: ") +
 (dados.cpfAvalista || "-") + "<br><br>" +
 
+
+"<div style='background:#18212f;border:1px solid #2d8cff;border-radius:10px;padding:12px;margin:12px 0;'>" +
+
+"<b>🧠 Diagnóstico da Solicitação</b><br><br>" +
+
+"👤 Cliente: <b>" + (clienteNovo ? "🆕 Novo" : "⭐ Recorrente") + "</b><br>" +
+
+"📊 Score: <b>" + (usuarioSistema.score || 0) + "</b><br>" +
+
+"💰 Limite: <b>" +
+(
+usuarioSistema.pais === "PT"
+?
+(usuarioSistema.score <= 20 ? "€100" :
+ usuarioSistema.score <= 40 ? "€300" :
+ usuarioSistema.score <= 60 ? "€500" :
+ usuarioSistema.score <= 80 ? "€800" :
+ "€2.000")
+:
+(usuarioSistema.score <= 20 ? "R$300" :
+ usuarioSistema.score <= 40 ? "R$800" :
+ usuarioSistema.score <= 60 ? "R$1.500" :
+ usuarioSistema.score <= 80 ? "R$3.000" :
+ "R$5.000")
+)
++ "</b><br>" +
+
+"📋 Empréstimo Ativo: <b>" +
+(possuiEmprestimoAtivo ? "🔴 SIM" : "🟢 NÃO") +
+"</b><br>" +
+
+"🎯 Situação: <b>" +
+
+(
+(usuarioSistema.status === "bloqueado")
+? "🔴 BLOQUEADO"
+: (
+Number(dados.valor) >
+(
+usuarioSistema.pais === "PT"
+?
+(usuarioSistema.score <= 20 ? 100 :
+ usuarioSistema.score <= 40 ? 300 :
+ usuarioSistema.score <= 60 ? 500 :
+ usuarioSistema.score <= 80 ? 800 : 2000)
+:
+(usuarioSistema.score <= 20 ? 300 :
+ usuarioSistema.score <= 40 ? 800 :
+ usuarioSistema.score <= 60 ? 1500 :
+ usuarioSistema.score <= 80 ? 3000 : 5000)
+)
+? "🟡 ACIMA DO LIMITE"
+: "🟢 DENTRO DO LIMITE"
+)
+
+)
+
++ "</b>" +
+
+"</div>" +
+  
 "<b>💰 Empréstimo</b><br>" +
 
 "Valor Solicitado: " +
@@ -1993,6 +2054,8 @@ Number((dados.valorFinal / dados.parcelas)).toLocaleString("pt-PT",{
 
 "Cliente Novo: " +
 (clienteNovo ? "SIM" : "NÃO") +
+
+  
 "<br>" +
 
 "Solicitações Totais: " +

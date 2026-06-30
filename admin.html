@@ -1910,18 +1910,43 @@ div.innerHTML =
 (dados.pais === "PT" ? "MB Way: " : "Pix: ") +
 (dados.pixCliente || "-") + "<br><br>" +
 
-"<b>b><br>" +
+"<b>🤝 Avalista</b><br>"
 "Nome: " + (dados.nomeAvalista || "-") + "<br>" +
 "Telefone: " + (dados.telefoneAvalista || "-") + "<br>" +
 (dados.pais === "PT" ? "NIF: " : "CPF: ") +
 (dados.cpfAvalista || "-") + "<br><br>" +
 
-"Valor Total: " +
-Number(dados.valorFinal).toLocaleString("pt-PT",{
-style:"currency",
-currency:(dados.pais === "PT" ? "EUR" : "BRL")
+"<b>💰 Empréstimo</b><br>" +
+
+"Valor Solicitado: " +
+Number(dados.valor).toLocaleString("pt-PT",{
+    style:"currency",
+    currency:(dados.pais === "PT" ? "EUR" : "BRL")
 }) +
 "<br>" +
+
+"Juros: " +
+Number((dados.valorFinal || 0) - (dados.valor || 0)).toLocaleString("pt-PT",{
+    style:"currency",
+    currency:(dados.pais === "PT" ? "EUR" : "BRL")
+}) +
+"<br>" +
+
+"Valor Total: " +
+Number(dados.valorFinal).toLocaleString("pt-PT",{
+    style:"currency",
+    currency:(dados.pais === "PT" ? "EUR" : "BRL")
+}) +
+"<br>" +
+
+"Parcelas: " + dados.parcelas + "<br>" +
+
+"Valor por Parcela: " +
+Number((dados.valorFinal / dados.parcelas)).toLocaleString("pt-PT",{
+    style:"currency",
+    currency:(dados.pais === "PT" ? "EUR" : "BRL")
+}) +
+"<br><br>"
 
 "Parcelas: " + dados.parcelas + "<br><br>" +
 

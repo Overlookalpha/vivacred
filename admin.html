@@ -661,6 +661,7 @@ const parcelasSnap =
 await getDocs(collection(db,"parcelas"));
 
 const hoje = new Date();
+hoje.setHours(0,0,0,0);
 
 
 for (const docSnap of parcelasSnap.docs) {
@@ -1312,14 +1313,15 @@ parcelasSnap.forEach((docSnap)=>{
 
  const dados = docSnap.data();
 const hoje = new Date();
+hoje.setHours(0,0,0,0);
 
 if(dados.vencimento){
 
  const vencimento = dados.vencimento.toDate();
+ vencimento.setHours(0,0,0,0);
 
- const diasRestantes = Math.ceil(
-  (vencimento - hoje) /
-  (1000 * 60 * 60 * 24)
+ const diasRestantes = Math.round(
+  (vencimento.getTime() - hoje.getTime()) / 86400000
  );
   
 if(diasRestantes === 3){
@@ -1437,6 +1439,17 @@ const diasRestantes = Math.ceil(
  (1000 * 60 * 60 * 24)
 );
 
+console.log(
+  "Cliente:",
+  dados.userId,
+  "Vencimento:",
+  vencimento.toLocaleDateString("pt-BR"),
+  "Hoje:",
+  hoje.toLocaleDateString("pt-BR"),
+  "Dias:",
+  diasRestantes
+);
+   
 document.getElementById(
  "proximoVencimentoInfo"
 ).innerHTML = `

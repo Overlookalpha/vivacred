@@ -1485,7 +1485,7 @@ const cliente = clienteSnap.data();
 const nomeCliente = cliente.nome || "";
 const telefoneCliente = cliente.telefone || "";
 const cpfCliente = cliente.cpf || "";
-const pixCliente = cliente.pix || "";
+const pixCliente = cliente.pix || cliente.chavePix || "";
 
 if(!nomeCliente || !telefoneCliente || !cpfCliente || !pixCliente){
   alert("Seu cadastro está incompleto. Solicite atendimento para atualizar seus dados.");

@@ -2131,10 +2131,7 @@ if (dados.status !== "ativo" || dados.arquivado === true) return;
   div.className = "card";
   let statusTexto = "";
  const hoje = new Date();
-
-const vencimento = proximaParcela
-    ? proximaParcela.vencimento.toDate()
-    : new Date(dados.dataVencimento);
+const vencimento = new Date(dados.dataVencimento);
 console.log("DataVencimento:", dados.dataVencimento);
 console.log("Vencimento:", vencimento);
   
@@ -2182,9 +2179,11 @@ ${dados.moeda || "R$"} ${Number(dados.valorFinal).toFixed(2)}<br>
 ${dados.moeda || "R$"} ${(Number(dados.valorFinal)-Number(dados.valor)).toFixed(2)}<br>
 
 💸 <b>Recebido:</b>
-${dados.moeda || "R$"} ${totalRecebido.toFixed(2)}
+${dados.moeda || "R$"} ${((dados.parcelasPagas || 0)*(dados.valorFinal/dados.parcelas)).toFixed(2)}<br>
+
 📌 <b>Saldo Devedor:</b>
-${dados.moeda || "R$"} ${(dados.valorFinal - totalRecebido).toFixed(2)}
+${dados.moeda || "R$"} ${(dados.valorFinal-((dados.parcelasPagas || 0)*(dados.valorFinal/dados.parcelas))).toFixed(2)}<br>
+
 <hr>
 
 📅 <b>Data do Empréstimo:</b>
@@ -2193,13 +2192,21 @@ ${dados.dataAprovacao?.seconds
  : "-"}<br>
 
 🎯 <b>Próximo Vencimento:</b>
-${proximaParcela
-    ? proximaParcela.vencimento.toDate().toLocaleDateString("pt-BR")
-    : "-"}
-<br>
+${dados.dataVencimento?.seconds
+ ? new Date(dados.dataVencimento.seconds * 1000).toLocaleDateString("pt-BR")
+ : (dados.dataVencimento
+    ? new Date(dados.dataVencimento).toLocaleDateString("pt-BR")
+    : "-")
+}<br>
 
 ⏳ <b>Dias Restantes:</b>
-${Math.ceil((vencimento - hoje) / 86400000)} dias<br>
+${
+dados.dataVencimento?.seconds
+? Math.ceil((dados.dataVencimento.seconds * 1000 - Date.now()) / 86400000)
+: (dados.dataVencimento
+   ? Math.ceil((new Date(dados.dataVencimento) - Date.now()) / 86400000)
+   : "-")
+} dias<br><br>
 
 📦 <b>Parcelas:</b>
 ${dados.parcelasPagas}/${dados.parcelas}<br>
@@ -2241,8 +2248,8 @@ Gerenciar Parcelas
 `;
   containerAtivos.appendChild(div);
 });
+});
 
-// });
 
 // EMPRÉSTIMOS ATIVOS
 
@@ -2251,45 +2258,10 @@ const containerAtivos = document.getElementById("listaEmprestimosAtivos");
 
 containerAtivos.innerHTML = "";
 
-for (const docSnap of ativosSnapshot.docs) {
+ativosSnapshot.forEach((docSnap) => {
 
   const dados = docSnap.data();
 
-const parcelasRef = collection(db, "parcelas");
-
-const qParcelas = query(
-    parcelasRef,
-    where("emprestimoId", "==", docSnap.id)
-);
-
-const parcelasSnap = await getDocs(qParcelas);
-
-let parcelasPagas = 0;
-let totalRecebido = 0;
-let proximaParcela = null;
-let menorVencimento = null;
-  
-parcelasSnap.forEach((p) => {
-
-    const parcela = p.data();
-
-if (parcela.status === "pago") {
-    parcelasPagas++;
-}
-
-totalRecebido += Number(parcela.pago || 0);
-if (parcela.status !== "pago") {
-
-    const venc = parcela.vencimento.toDate();
-
-    if (!menorVencimento || venc < menorVencimento) {
-        menorVencimento = venc;
-        proximaParcela = parcela;
-    }
-
-}
-});
-  
  if (dados.status !== "ativo") return;
 
 
@@ -2300,19 +2272,19 @@ if (parcela.status !== "pago") {
 const hoje = new Date();
 const vencimento = new Date(dados.dataVencimento);
 
-if(parcelasPagas == 0){
+if(dados.parcelasPagas == 0){
  statusTexto = "<div style='color:#cccccc;font-weight:bold;'>SEM PAGAMENTO</div>";
 }
 
-if(parcelasPagas > 0 && parcelasPagas < dados.parcelas){
+if(dados.parcelasPagas > 0 && dados.parcelasPagas < dados.parcelas){
  statusTexto = "<div style='color:#ffd93d;font-weight:bold;'>PAGAMENTO PARCIAL</div>";
 }
 
-if(parcelasPagas >= dados.parcelas){
+if(dados.parcelasPagas >= dados.parcelas){
  statusTexto = "<div style='color:#4cff88;font-weight:bold;font-size:18px;'>QUITADO</div>";
 }
 
-if(hoje > vencimento && parcelasPagas < dados.parcelas){
+if(hoje > vencimento && dados.parcelasPagas < dados.parcelas){
  statusTexto = "<div style='color:#ff4c4c;font-weight:bold;'>ATRASADO</div>";
 }
   div.innerHTML =
@@ -2323,16 +2295,7 @@ style:"currency",
 currency:(dados.pais === "PT" ? "EUR" : "BRL")
 }) +
 "<br>"+
- "Parcelas: " + parcelasPagas + "/" + dados.parcelas + "<br>" +
- "Recebido: " +
-(dados.moeda || "R$") + " " +
-totalRecebido.toFixed(2) +
-"<br>" +
-
-"Saldo Devedor: " +
-(dados.moeda || "R$") + " " +
-(dados.valorFinal - totalRecebido).toFixed(2) +
-"<br>" +
+ "Parcelas: " + dados.parcelas + "<br>" +
  statusTexto +
  "<br>" +
  "<button onclick=\"abrirParcelas('" + docSnap.id + "')\">Gerenciar Parcelas</button> " +
@@ -2340,7 +2303,7 @@ totalRecebido.toFixed(2) +
   
   containerAtivos.appendChild(div);
 
-}
+});
 
   
 // ===== HISTÓRICO DE EMPRÉSTIMOS =====
@@ -3849,7 +3812,6 @@ https://overlookalpha.github.io/vivacred/
 return mensagem;
 
 }
-});
 </script>
 
 <div id="modalPerfilUsuario" style="

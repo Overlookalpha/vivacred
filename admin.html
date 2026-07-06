@@ -2251,7 +2251,7 @@ const containerAtivos = document.getElementById("listaEmprestimosAtivos");
 
 containerAtivos.innerHTML = "";
 
-ativosSnapshot.forEach((docSnap) => {
+for (const docSnap of ativosSnapshot.docs) {
 
   const dados = docSnap.data();
 
@@ -2340,7 +2340,7 @@ totalRecebido.toFixed(2) +
   
   containerAtivos.appendChild(div);
 
-});
+}
 
   
 // ===== HISTÓRICO DE EMPRÉSTIMOS =====

@@ -2317,22 +2317,39 @@ const proximaParcela =
   let statusTexto = "";
 
 const hoje = new Date();
-const vencimento = new Date(dados.dataVencimento);
 
-if(dados.parcelasPagas == 0){
- statusTexto = "<div style='color:#cccccc;font-weight:bold;'>SEM PAGAMENTO</div>";
+const totalParcelas = parcelasSnap.size;
+const parcelasPagas = totalParcelas - parcelasPendentes.length;
+
+if (parcelasPendentes.length === 0) {
+
+    statusTexto =
+    "<div style='color:#4cff88;font-weight:bold;font-size:18px;'>🟢 QUITADO</div>";
+
 }
+else if (parcelasPagas === 0) {
 
-if(dados.parcelasPagas > 0 && dados.parcelasPagas < dados.parcelas){
- statusTexto = "<div style='color:#ffd93d;font-weight:bold;'>PAGAMENTO PARCIAL</div>";
+    statusTexto =
+    "<div style='color:#cccccc;font-weight:bold;'>⚪ SEM PAGAMENTO</div>";
+
 }
+else {
 
-if(dados.parcelasPagas >= dados.parcelas){
- statusTexto = "<div style='color:#4cff88;font-weight:bold;font-size:18px;'>QUITADO</div>";
-}
+    const primeiraPendente = parcelasPendentes[0];
+    const vencimento = primeiraPendente.vencimento.toDate();
 
-if(hoje > vencimento && dados.parcelasPagas < dados.parcelas){
- statusTexto = "<div style='color:#ff4c4c;font-weight:bold;'>ATRASADO</div>";
+    if (vencimento < hoje) {
+
+        statusTexto =
+        "<div style='color:#ff4c4c;font-weight:bold;'>🔴 ATRASADO</div>";
+
+    } else {
+
+        statusTexto =
+        "<div style='color:#ffd93d;font-weight:bold;'>🟡 PAGAMENTO PARCIAL</div>";
+
+    }
+
 }
  div.innerHTML =
 "<strong>" + dados.email + "</strong><br>" +

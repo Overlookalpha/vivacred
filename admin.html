@@ -351,18 +351,20 @@ Nenhum usuário cadastrado.
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
-import { 
-  getFirestore, 
-  collection, 
-  getDocs, 
-  doc, 
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  doc,
   getDoc,
   updateDoc,
   deleteDoc,
   addDoc,
-  setDoc, 
+  setDoc,
   query,
-  where
+  where,
+  orderBy,
+  limit
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
  let capitalBR = 1000;
 let capitalPT = 1000;
@@ -2133,6 +2135,15 @@ if (dados.status !== "ativo" || dados.arquivado === true) return;
   let statusTexto = "";
  const hoje = new Date();
 const vencimento = new Date(dados.dataVencimento);
+  
+let proximaParcela = null;
+
+if (Array.isArray(dados.parcelas)) {
+    proximaParcela = dados.parcelas
+        .filter(p => !p.pago)
+        .sort((a, b) => a.vencimento.seconds - b.vencimento.seconds)[0];
+}
+  
 console.log("DataVencimento:", dados.dataVencimento);
 console.log("Vencimento:", vencimento);
   
@@ -2277,7 +2288,10 @@ parcelasSnap.forEach((p) => {
     const parcela = p.data();
 
     if (parcela.status !== "pago") {
-        parcelasPendentes.push(parcela);
+        parcelasPendentes.push({
+    ...parcela,
+    id: p.id
+});
     }
 });
 
@@ -2315,19 +2329,35 @@ if(dados.parcelasPagas >= dados.parcelas){
 if(hoje > vencimento && dados.parcelasPagas < dados.parcelas){
  statusTexto = "<div style='color:#ff4c4c;font-weight:bold;'>ATRASADO</div>";
 }
-  div.innerHTML =
- "<strong>" + dados.email + "</strong><br>" +
- "Valor Total: " +
+ div.innerHTML =
+"<strong>" + dados.email + "</strong><br>" +
+"Valor Total: " +
 Number(dados.valorFinal).toLocaleString("pt-PT",{
-style:"currency",
-currency:(dados.pais === "PT" ? "EUR" : "BRL")
+    style:"currency",
+    currency:(dados.pais === "PT" ? "EUR" : "BRL")
 }) +
-"<br>"+
- "Parcelas: " + dados.parcelas + "<br>" +
- statusTexto +
- "<br>" +
- "<button onclick=\"abrirParcelas('" + docSnap.id + "')\">Gerenciar Parcelas</button> " +
- "<button onclick=\"fecharEmprestimo('" + docSnap.id + "')\">❌</button>";
+"<br>" +
+"Parcelas: " + dados.parcelas + "<br>" +
+
+"Próxima Parcela: " +
+(proximaParcela
+    ? proximaParcela.vencimento.toDate().toLocaleDateString("pt-BR")
+    : "--") +
+"<br>" +
+
+"Valor da Parcela: " +
+(proximaParcela
+    ? Number(proximaParcela.restante).toLocaleString("pt-PT",{
+        style:"currency",
+        currency:(dados.pais === "PT" ? "EUR" : "BRL")
+    })
+    : "--") +
+"<br>" +
+
+statusTexto +
+"<br>" +
+"<button onclick=\"abrirParcelas('" + docSnap.id + "')\">Gerenciar Parcelas</button>" +
+"<button onclick=\"fecharEmprestimo('" + docSnap.id + "')\">❌</button>";
   
   containerAtivos.appendChild(div);
 

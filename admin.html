@@ -2118,237 +2118,97 @@ statusTexto +
 container.appendChild(div);
 
 });
-// ===== LISTAR EMPRÉSTIMOS AGUARDANDO =====
-
-const emprestimosSnapshot = await getDocs(collection(db, "emprestimos"));
-const containerEmprestimos = document.getElementById("listaEmprestimosAtivos");
-containerEmprestimos.innerHTML = "";
-
-emprestimosSnapshot.forEach((docSnap) => {
-
-  const dados = docSnap.data();
-
-if (dados.status !== "ativo" || dados.arquivado === true) return;
-
-  const div = document.createElement("div");
-  div.className = "card";
-  let statusTexto = "";
- const hoje = new Date();
-  
-let proximaParcela = null;
-
-if (Array.isArray(dados.parcelas)) {
-    proximaParcela = dados.parcelas
-        .filter(p => !p.pago)
-        .sort((a, b) => a.vencimento.seconds - b.vencimento.seconds)[0];
-}
-
-const vencimento = proximaParcela
-    ? proximaParcela.vencimento.toDate()
-    : null;
-  
-console.log("DataVencimento:", dados.dataVencimento);
-console.log("Vencimento:", vencimento);
-  
-if (!proximaParcela) {
-
-    statusTexto = "<div style='color:#4cff88;font-weight:bold;font-size:18px;'>🟢 QUITADO</div>";
-
-} else if (hoje > vencimento) {
-
-    statusTexto = "<div style='color:#ff4c4c;font-weight:bold;font-size:18px;'>🔴 ATRASADO</div>";
-
-} else if (dados.parcelasPagas > 0) {
-
-    statusTexto = "<div style='color:#ffd93d;font-weight:bold;'>🟡 PAGAMENTO PARCIAL</div>";
-
-} else {
-
-    statusTexto = "<div style='color:#cccccc;font-weight:bold;'>⚪ SEM PAGAMENTO</div>";
-
-}
-div.innerHTML = `
-<div style="text-align:center;padding:8px 0;">
-<h2 style="margin:0;color:#4fc3f7;">👤 ${dados.nomeCliente || "-"}</h2>
-<div style="color:#ccc;font-size:14px;">📧 ${dados.email}</div>
-</div>
-
-<hr>
-
-<b>🏅 Cliente</b><br>
-📞 ${dados.telefoneCliente || "-"}<br>
-🆔 ${dados.pais === "PT" ? "NIF" : "CPF"}: ${dados.cpfCliente || "-"}<br>
-💳 ${dados.pais === "PT" ? "MB Way" : "Pix"}: ${dados.pixCliente || "-"}<br><br>
-
-<b>🤝 Avalista</b><br>
-👤 ${dados.nomeAvalista || "-"}<br>
-📞 ${dados.telefoneAvalista || "-"}<br>
-🆔 ${dados.pais === "PT" ? "NIF" : "CPF"}: ${dados.cpfAvalista || "-"}<br><br>
-<hr>
-💰 <b>Valor Emprestado:</b>
-${dados.moeda || "R$"} ${Number(dados.valor).toFixed(2)}<br>
-
-💵 <b>Valor Total:</b>
-${dados.moeda || "R$"} ${Number(dados.valorFinal).toFixed(2)}<br>
-
-📈 <b>Lucro:</b>
-${dados.moeda || "R$"} ${(Number(dados.valorFinal)-Number(dados.valor)).toFixed(2)}<br>
-
-💸 <b>Recebido:</b>
-${dados.moeda || "R$"} ${((dados.parcelasPagas || 0)*(dados.valorFinal/dados.parcelas)).toFixed(2)}<br>
-
-📌 <b>Saldo Devedor:</b>
-${dados.moeda || "R$"} ${(dados.valorFinal-((dados.parcelasPagas || 0)*(dados.valorFinal/dados.parcelas))).toFixed(2)}<br>
-
-<hr>
-
-📅 <b>Data do Empréstimo:</b>
-${dados.dataAprovacao?.seconds
- ? new Date(dados.dataAprovacao.seconds * 1000).toLocaleDateString("pt-BR")
- : "-"}<br>
-
-🎯 <b>Próximo Vencimento:</b>
-${
-proximaParcela
-? proximaParcela.vencimento.toDate().toLocaleDateString("pt-BR")
-: "Quitado"
-}<br>
-
-⏳ <b>Dias Restantes:</b>
-${
-proximaParcela
-? Math.ceil(
-    (
-      proximaParcela.vencimento.toDate().setHours(0,0,0,0) -
-      new Date().setHours(0,0,0,0)
-    ) / 86400000
-  )
-: 0
-} dias<br><br>
-
-📦 <b>Parcelas:</b>
-${dados.parcelasPagas}/${dados.parcelas}<br>
-
-<div style="
-background:#2a2a2a;
-height:18px;
-border-radius:20px;
-overflow:hidden;
-margin-top:5px;
-margin-bottom:8px;">
-
-<div style="
-height:100%;
-width:${((dados.parcelasPagas||0)/dados.parcelas)*100}%;
-background:linear-gradient(90deg,#00e676,#00c853);">
-</div>
-
-</div>
-
-<div style="
-text-align:center;
-font-weight:bold;
-color:#00e676;
-margin-top:4px;
-margin-bottom:8px;">
-${Math.round(((dados.parcelasPagas||0)/dados.parcelas)*100)}% Concluído
-</div>
-
-${statusTexto}<br>
-
-<button onclick="abrirParcelas('${docSnap.id}')">
-Gerenciar Parcelas
-</button>
-
-<button onclick="fecharEmprestimo('${docSnap.id}')">
-❌
-</button>
-`;
-  containerAtivos.appendChild(div);
-});
-});
-
-
+// =========================
 // EMPRÉSTIMOS ATIVOS
+// =========================
 
-const ativosSnapshot = await getDocs(collection(db, "emprestimos"));
 const containerAtivos = document.getElementById("listaEmprestimosAtivos");
-
 containerAtivos.innerHTML = "";
 
-for (const docSnap of ativosSnapshot.docs) {
-  const dados = docSnap.data();
-console.log(docSnap.id, dados.parcelasPagas, dados.parcelas);
-  
-const parcelasSnap = await getDocs(
-    query(
-        collection(db, "parcelas"),
-        where("emprestimoId", "==", docSnap.id)
-    )
-);
+const emprestimosSnap = await getDocs(collection(db,"emprestimos"));
 
-const parcelasPendentes = [];
+for(const emprestimoDoc of emprestimosSnap.docs){
 
-parcelasSnap.forEach((p) => {
-    const parcela = p.data();
+    const emp = emprestimoDoc.data();
 
-    if (parcela.status !== "pago") {
-        parcelasPendentes.push({
-    ...parcela,
-    id: p.id
-});
+    if(emp.status !== "ativo" || emp.arquivado === true){
+        continue;
     }
-});
 
-parcelasPendentes.sort((a, b) =>
-    a.vencimento.toDate() - b.vencimento.toDate()
-);
+    const parcelasQuery = query(
+        collection(db,"parcelas"),
+        where("emprestimoId","==",emprestimoDoc.id)
+    );
 
-const proximaParcela =
-    parcelasPendentes.length > 0
-        ? parcelasPendentes[0]
+    const parcelasSnap = await getDocs(parcelasQuery);
+
+    const parcelas = [];
+
+    parcelasSnap.forEach(docParcela=>{
+        parcelas.push({
+            id:docParcela.id,
+            ...docParcela.data()
+        });
+    });
+
+    parcelas.sort((a,b)=>a.numero-b.numero);
+
+    const pagas = parcelas.filter(p=>p.status==="pago");
+    const pendentes = parcelas.filter(p=>p.status!=="pago");
+
+    const proximaParcela =
+        pendentes.length>0
+        ? pendentes[0]
         : null;
 
-console.log("Empréstimo:", docSnap.id);
-console.log("Parcelas encontradas:", parcelasSnap.size);
-console.log("Parcelas pendentes:", parcelasPendentes.length);
-console.log("Próxima parcela:", proximaParcela);
-  
- if (dados.status !== "ativo") continue;
+  const totalParcelas = parcelas.length;
 
+const parcelasPagas = pagas.length;
 
-  const div = document.createElement("div");
-  div.className = "card";
-  let statusTexto = "";
+const percentual =
+totalParcelas > 0
+? Math.round((parcelasPagas / totalParcelas) * 100)
+: 0;
 
-const hoje = new Date();
+const saldoDevedor =
+pendentes.reduce(
+    (total,p)=>total + Number(p.restante || p.valor || 0),
+    0
+);
 
-const totalParcelas = parcelasSnap.size;
-const parcelasPagas = totalParcelas - parcelasPendentes.length;
+let statusTexto = "";
+let diasRestantes = "--";
 
-if (parcelasPendentes.length === 0) {
+if(!proximaParcela){
 
     statusTexto =
     "<div style='color:#4cff88;font-weight:bold;font-size:18px;'>🟢 QUITADO</div>";
 
-}
-else if (parcelasPagas === 0) {
+}else{
 
-    statusTexto =
-    "<div style='color:#cccccc;font-weight:bold;'>⚪ SEM PAGAMENTO</div>";
+    const hoje = new Date();
+    hoje.setHours(0,0,0,0);
 
-}
-else {
+    const vencimento =
+    proximaParcela.vencimento.toDate();
 
-    const primeiraPendente = parcelasPendentes[0];
-    const vencimento = primeiraPendente.vencimento.toDate();
+    vencimento.setHours(0,0,0,0);
 
-    if (vencimento < hoje) {
+    diasRestantes = Math.ceil(
+        (vencimento.getTime() - hoje.getTime()) / 86400000
+    );
+
+    if(diasRestantes < 0){
 
         statusTexto =
         "<div style='color:#ff4c4c;font-weight:bold;'>🔴 ATRASADO</div>";
 
-    } else {
+    }else if(parcelasPagas === 0){
+
+        statusTexto =
+        "<div style='color:#cccccc;font-weight:bold;'>⚪ SEM PAGAMENTO</div>";
+
+    }else{
 
         statusTexto =
         "<div style='color:#ffd93d;font-weight:bold;'>🟡 PAGAMENTO PARCIAL</div>";
@@ -2356,37 +2216,82 @@ else {
     }
 
 }
- div.innerHTML =
-"<strong>" + dados.email + "</strong><br>" +
-"Valor Total: " +
-Number(dados.valorFinal).toLocaleString("pt-PT",{
-    style:"currency",
-    currency:(dados.pais === "PT" ? "EUR" : "BRL")
-}) +
-"<br>" +
-"Parcelas: " + dados.parcelas + "<br>" +
 
-"Próxima Parcela: " +
-(proximaParcela
-    ? proximaParcela.vencimento.toDate().toLocaleDateString("pt-BR")
-    : "--") +
-"<br>" +
+const div = document.createElement("div");
+div.className = "card";
 
-"Valor da Parcela: " +
-(proximaParcela
-    ? Number(proximaParcela.restante).toLocaleString("pt-PT",{
-        style:"currency",
-        currency:(dados.pais === "PT" ? "EUR" : "BRL")
-    })
-    : "--") +
-"<br>" +
+const moeda = emp.pais === "PT" ? "€" : "R$";
 
-statusTexto +
-"<br>" +
-"<button onclick=\"abrirParcelas('" + docSnap.id + "')\">Gerenciar Parcelas</button>" +
-"<button onclick=\"fecharEmprestimo('" + docSnap.id + "')\">❌</button>";
-  
-  containerAtivos.appendChild(div);
+div.innerHTML = `
+
+<div style="text-align:center;margin-bottom:15px;">
+<h2 style="margin:0;">👤 ${emp.nomeCliente || "-"}</h2>
+<div>${emp.email || ""}</div>
+</div>
+
+💰 <b>Valor Emprestado:</b> ${moeda} ${Number(emp.valor || 0).toFixed(2)}<br>
+
+💵 <b>Valor Total:</b> ${moeda} ${Number(emp.valorFinal || 0).toFixed(2)}<br>
+
+📦 <b>Parcelas:</b> ${parcelasPagas}/${totalParcelas}<br>
+
+📅 <b>Próximo Vencimento:</b>
+${
+proximaParcela
+? proximaParcela.vencimento.toDate().toLocaleDateString("pt-BR")
+: "Quitado"
+}
+<br>
+
+⏳ <b>Dias Restantes:</b> ${diasRestantes}<br>
+
+💳 <b>Próxima Parcela:</b>
+${
+proximaParcela
+? moeda + " " + Number(proximaParcela.restante || proximaParcela.valor).toFixed(2)
+: "-"
+}
+<br>
+
+📌 <b>Saldo Devedor:</b>
+${moeda} ${saldoDevedor.toFixed(2)}
+
+<div style="
+background:#2a2a2a;
+height:18px;
+border-radius:20px;
+overflow:hidden;
+margin-top:10px;">
+
+<div style="
+height:100%;
+width:${percentual}%;
+background:linear-gradient(90deg,#00e676,#00c853);">
+</div>
+
+</div>
+
+<div style="text-align:center;margin-top:6px;font-weight:bold;">
+${percentual}% Concluído
+</div>
+
+<br>
+
+${statusTexto}
+
+<br>
+
+<button onclick="abrirParcelas('${emprestimoDoc.id}')">
+Gerenciar Parcelas
+</button>
+
+<button onclick="fecharEmprestimo('${emprestimoDoc.id}')">
+❌ Arquivar
+</button>
+
+`;
+
+containerAtivos.appendChild(div);
 
 }
 

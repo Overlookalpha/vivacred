@@ -2274,7 +2274,8 @@ containerAtivos.innerHTML = "";
 
 for (const docSnap of ativosSnapshot.docs) {
   const dados = docSnap.data();
-
+console.log(docSnap.id, dados.parcelasPagas, dados.parcelas);
+  
 const parcelasSnap = await getDocs(
     query(
         collection(db, "parcelas"),

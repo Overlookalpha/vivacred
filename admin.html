@@ -1379,10 +1379,15 @@ if (diasRestantes < 0 && dados.status !== "pago") {
 
  }
 
- if(
-   dados.status !== "pendente" &&
-   dados.vencimento
- ){
+ const restante = Number(
+    dados.restante ?? (dados.valor - (dados.pago || 0))
+);
+
+if(
+    dados.vencimento &&
+    dados.status === "pendente" &&
+    restante > 0
+){
 
    const vencimento = dados.vencimento.toDate();
 

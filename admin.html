@@ -1320,57 +1320,52 @@ if(dados.vencimento){
  const vencimento = dados.vencimento.toDate();
  vencimento.setHours(0,0,0,0);
 
- const diasRestantes = Math.round(
-  (vencimento.getTime() - hoje.getTime()) / 86400000
- );
-  
-if(diasRestantes === 3){
-  vencemEm3Dias.push({
-    ...dados,
-    parcelaId: docSnap.id,
-    emprestimoId: dados.emprestimoId
-  });
+const diasRestantes = Math.round(
+    (vencimento.getTime() - hoje.getTime()) / 86400000
+);
+
+if (dados.status !== "pago" && diasRestantes === 3) {
+    vencemEm3Dias.push({
+        ...dados,
+        parcelaId: docSnap.id,
+        emprestimoId: dados.emprestimoId
+    });
 }
 
-if(diasRestantes === 2){
-  vencemEm2Dias.push({
-    ...dados,
-    parcelaId: docSnap.id,
-    emprestimoId: dados.emprestimoId
-  });
+if (dados.status !== "pago" && diasRestantes === 2) {
+    vencemEm2Dias.push({
+        ...dados,
+        parcelaId: docSnap.id,
+        emprestimoId: dados.emprestimoId
+    });
 }
 
-if(diasRestantes === 1){
-  vencemAmanha.push({
-    ...dados,
-    parcelaId: docSnap.id,
-    emprestimoId: dados.emprestimoId
-  });
+if (dados.status !== "pago" && diasRestantes === 1) {
+    vencemAmanha.push({
+        ...dados,
+        parcelaId: docSnap.id,
+        emprestimoId: dados.emprestimoId
+    });
 }
 
-if(diasRestantes === 0){
-  vencemHoje.push({
-    ...dados,
-    parcelaId: docSnap.id,
-    emprestimoId: dados.emprestimoId
-  });
+if (dados.status !== "pago" && diasRestantes === 0) {
+    vencemHoje.push({
+        ...dados,
+        parcelaId: docSnap.id,
+        emprestimoId: dados.emprestimoId
+    });
 }
 
- if(diasRestantes < 0 && dados.status !== "pago"){
-
- atrasados.push({
-  emprestimoId: dados.emprestimoId,
-  parcelaId: docSnap.id,
-
-  diasAtraso: Math.abs(diasRestantes),
-
-  valor: dados.valor,
-  restante: dados.restante || 0,
-
-  multa: dados.multa || 0,
-  juros: dados.juros || 0
-});
-
+if (diasRestantes < 0 && dados.status !== "pago") {
+    atrasados.push({
+        emprestimoId: dados.emprestimoId,
+        parcelaId: docSnap.id,
+        diasAtraso: Math.abs(diasRestantes),
+        valor: dados.valor,
+        restante: dados.restante || 0,
+        multa: dados.multa || 0,
+        juros: dados.juros || 0
+    });
 }
 
 }
@@ -2874,9 +2869,10 @@ await updateDoc(userRef,{
  const finalizado = novasPagas >= emprestimo.parcelas;
 
  await updateDoc(emprestimoRef,{
-  parcelasPagas: novasPagas,
-  finalizado: finalizado
- });
+    parcelasPagas: novasPagas,
+    finalizado: finalizado,
+    status: finalizado ? "finalizado" : "ativo"
+});
 
  alert("Parcela confirmada");
 

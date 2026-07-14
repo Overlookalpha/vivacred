@@ -2134,10 +2134,6 @@ if (dados.status !== "ativo" || dados.arquivado === true) return;
   div.className = "card";
   let statusTexto = "";
  const hoje = new Date();
-
-const vencimento = proximaParcela
-    ? proximaParcela.vencimento.toDate()
-    : null;
   
 let proximaParcela = null;
 
@@ -2146,6 +2142,10 @@ if (Array.isArray(dados.parcelas)) {
         .filter(p => !p.pago)
         .sort((a, b) => a.vencimento.seconds - b.vencimento.seconds)[0];
 }
+
+const vencimento = proximaParcela
+    ? proximaParcela.vencimento.toDate()
+    : null;
   
 console.log("DataVencimento:", dados.dataVencimento);
 console.log("Vencimento:", vencimento);

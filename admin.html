@@ -529,7 +529,7 @@ console.log(
   const idade =
   new Date().getFullYear() - ano;
 
-  const hoje = new Date();
+   = new Date();
 
   const diaHoje = hoje.getDate();
   const mesHoje = hoje.getMonth() + 1;
@@ -2134,7 +2134,10 @@ if (dados.status !== "ativo" || dados.arquivado === true) return;
   div.className = "card";
   let statusTexto = "";
  const hoje = new Date();
-const vencimento = new Date(dados.dataVencimento);
+
+const vencimento = proximaParcela
+    ? proximaParcela.vencimento.toDate()
+    : null;
   
 let proximaParcela = null;
 
@@ -2147,21 +2150,22 @@ if (Array.isArray(dados.parcelas)) {
 console.log("DataVencimento:", dados.dataVencimento);
 console.log("Vencimento:", vencimento);
   
-if(dados.parcelasPagas >= dados.parcelas){
-    statusTexto = "<div style='color:#4cff88;font-weight:bold;font-size:18px;'>🟢 QUITADO</div>";
-}
-else if(hoje > vencimento){
-    statusTexto = "<div style='color:#ff4c4c;font-weight:bold;font-size:18px;'>🔴 ATRASADO</div>";
-}
-else if(dados.parcelasPagas > 0){
-    statusTexto = "<div style='color:#ffd93d;font-weight:bold;'>🟡 PAGAMENTO PARCIAL</div>";
-}
-else{
-    statusTexto = "<div style='color:#cccccc;font-weight:bold;'>⚪ SEM PAGAMENTO</div>";
-}
+if (!proximaParcela) {
 
-if(hoje > vencimento && dados.parcelasPagas < dados.parcelas){
- statusTexto = "<div style='color:#ff4c4c;font-weight:bold;'>ATRASADO</div>";
+    statusTexto = "<div style='color:#4cff88;font-weight:bold;font-size:18px;'>🟢 QUITADO</div>";
+
+} else if (hoje > vencimento) {
+
+    statusTexto = "<div style='color:#ff4c4c;font-weight:bold;font-size:18px;'>🔴 ATRASADO</div>";
+
+} else if (dados.parcelasPagas > 0) {
+
+    statusTexto = "<div style='color:#ffd93d;font-weight:bold;'>🟡 PAGAMENTO PARCIAL</div>";
+
+} else {
+
+    statusTexto = "<div style='color:#cccccc;font-weight:bold;'>⚪ SEM PAGAMENTO</div>";
+
 }
 div.innerHTML = `
 <div style="text-align:center;padding:8px 0;">

@@ -439,6 +439,12 @@
       font-family: inherit;
     }
 
+    .opcaoLembrete.ativa {
+      background: var(--primary) !important;
+      color: white !important;
+      border-color: var(--primary) !important;
+    }
+
     /* ===== TIMELINE DE ATIVIDADE ===== */
     .timeline-item {
       display: flex;
@@ -643,6 +649,30 @@
   <div id="timelineAtividade" style="margin-top:12px;">
     <div class="skeleton" style="height:16px;width:80%;margin-bottom:8px;">.</div>
     <div class="skeleton" style="height:16px;width:60%;">.</div>
+  </div>
+</div>
+
+<div class="card" id="cardLembrete">
+  <h3>🔔 Lembrete de vencimento</h3>
+  <p style="font-size:13px;color:var(--text-soft);margin-top:6px;">
+    Com quantos dias de antecedência quer ser avisado?
+  </p>
+  <div style="display:flex;gap:8px;margin-top:12px;" id="opcoesLembrete">
+    <button class="opcaoLembrete" data-dias="1" style="
+      flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);
+      background:var(--surface);color:var(--text);font-weight:600;font-size:13px;
+      cursor:pointer;font-family:inherit;
+    ">1 dia</button>
+    <button class="opcaoLembrete" data-dias="3" style="
+      flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);
+      background:var(--surface);color:var(--text);font-weight:600;font-size:13px;
+      cursor:pointer;font-family:inherit;
+    ">3 dias</button>
+    <button class="opcaoLembrete" data-dias="7" style="
+      flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);
+      background:var(--surface);color:var(--text);font-weight:600;font-size:13px;
+      cursor:pointer;font-family:inherit;
+    ">7 dias</button>
   </div>
 </div>
 
@@ -1211,7 +1241,9 @@ async function criarNotificacao(userId, titulo, mensagem){
 // tava perto de vencer. Agora o próprio cliente recebe um aviso
 // (sino + toast) quando faltam 3 dias — só uma vez por parcela.
 // =========================================
-async function gerarLembretesVencimento(parcelasSnap){
+async function gerarLembretesVencimento(parcelasSnap, diasPreferidos){
+
+  diasPreferidos = diasPreferidos || 3;
 
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
@@ -1231,13 +1263,15 @@ async function gerarLembretesVencimento(parcelasSnap){
       (vencimento - hoje) / (1000 * 60 * 60 * 24)
     );
 
-    if(diasRestantes === 3){
+    if(diasRestantes === diasPreferidos){
+
+      const textoDias = diasPreferidos === 1 ? "1 dia" : diasPreferidos + " dias";
 
       await criarNotificacao(
         usuarioLogado.uid,
-        "📅 Parcela vencendo em 3 dias",
+        "📅 Parcela vencendo em " + textoDias,
         "Sua parcela " + dados.numero +
-        " vence em 3 dias. Fique de olho pra não atrasar!"
+        " vence em " + textoDias + ". Fique de olho pra não atrasar!"
       );
 
       await updateDoc(doc(db, "parcelas", docSnap.id), {
@@ -1245,7 +1279,7 @@ async function gerarLembretesVencimento(parcelasSnap){
       });
 
       mostrarAviso(
-        "📅 Sua parcela " + dados.numero + " vence em 3 dias.",
+        "📅 Sua parcela " + dados.numero + " vence em " + textoDias + ".",
         "info"
       );
 
@@ -1279,6 +1313,32 @@ window.aplicarMascaraMoeda = function(elemento){
 
 // Lê o valor numérico puro de um campo com máscara de moeda,
 // mesmo que a máscara ainda não tenha rodado nenhuma vez.
+// =========================================
+// COPIAR CHAVE DE PAGAMENTO (Pix/MB WAY)
+// =========================================
+window.copiarChavePagamento = async function(chave, botao){
+
+  const textoOriginal = botao.innerText;
+
+  try {
+
+    await navigator.clipboard.writeText(chave);
+    botao.innerText = "✅ Copiado!";
+    mostrarAviso("Chave copiada! Agora é só colar no seu app de pagamento.", "success");
+
+  } catch (erro) {
+
+    console.error("Erro ao copiar:", erro);
+    mostrarAviso("Não foi possível copiar automaticamente. Copie manualmente: " + chave, "error");
+
+  }
+
+  setTimeout(() => {
+    botao.innerText = textoOriginal;
+  }, 2000);
+
+};
+
 window.lerValorMascarado = function(elemento){
 
   if(!elemento) return 0;
@@ -1497,6 +1557,43 @@ if(menuWhatsappBtn){
 
   });
 }
+
+// =========================================
+// PREFERÊNCIA DE LEMBRETE
+// =========================================
+document.querySelectorAll(".opcaoLembrete").forEach((botao) => {
+
+  botao.addEventListener("click", async () => {
+
+    if(!usuarioLogado){
+      mostrarAviso("Aguarde o carregamento dos seus dados e tente novamente.", "error");
+      return;
+    }
+
+    const dias = Number(botao.dataset.dias);
+
+    try {
+
+      await updateDoc(doc(db, "usuarios", usuarioLogado.uid), {
+        diasLembrete: dias
+      });
+
+      document.querySelectorAll(".opcaoLembrete").forEach((item) => {
+        item.classList.toggle("ativa", item === botao);
+      });
+
+      mostrarAviso("Preferência salva! Você será avisado " + dias + " dia(s) antes.", "success");
+
+    } catch (erro) {
+
+      console.error("Erro ao salvar preferência de lembrete:", erro);
+      mostrarAviso("Não foi possível salvar sua preferência agora.", "error");
+
+    }
+
+  });
+
+});
 
 // =========================================
 // EXTRATO DO CLIENTE (baixável / imprimível)
@@ -2080,7 +2177,10 @@ if(gruposQuitados.length > 0){
 
 // Avisa o próprio cliente quando uma parcela está a 3 dias do
 // vencimento — antes só o admin recebia esse aviso, pelo Telegram.
-await gerarLembretesVencimento(snapshotParcelas);
+const diasLembretePreferido =
+  (userSnap.exists() && userSnap.data().diasLembrete) || 3;
+
+await gerarLembretesVencimento(snapshotParcelas, diasLembretePreferido);
 
   const listaRejeitados = snapshotRejeitado.docs.sort((a,b)=>{
   return b.data().criadoEm?.seconds - a.data().criadoEm?.seconds;
@@ -2531,6 +2631,16 @@ if (scoreValor) {
 
 atualizarTrilhaNiveis(nivelNomeGlobal, nivelCor);
 verificarConquistaNivel(nivelNomeGlobal, nivelEmoji, usuarioLogado.uid);
+
+// Marca qual opção de lembrete o cliente já escolheu (padrão: 3 dias)
+const diasLembreteAtual = data.diasLembrete || 3;
+
+document.querySelectorAll(".opcaoLembrete").forEach((botao) => {
+  botao.classList.toggle(
+    "ativa",
+    Number(botao.dataset.dias) === diasLembreteAtual
+  );
+});
 
 const nivelTexto = document.getElementById("nivelTexto");
 const limiteNivelTexto = document.getElementById("limiteNivelTexto");
@@ -3531,7 +3641,13 @@ const dadosPagamento = paisUsuarioGlobal === "PT"
         <div style="background:#f5f5f5;color:#111827;padding:14px;border-radius:12px;margin-top:14px;text-align:left;line-height:1.7;border:1px solid #d1d5db;">
             <b>🇵🇹 Pagamento por MB WAY</b><br><br>
             Envie o valor de <b>${valorFormatado}</b> para o número abaixo:<br><br>
-            <b>📱 MB WAY: 931714823</b><br>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <b>📱 MB WAY: 931714823</b>
+              <button onclick="copiarChavePagamento('931714823', this)" style="
+                background:#155EEF;color:white;border:none;padding:5px 10px;
+                border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;
+              ">📋 Copiar</button>
+            </div>
             <b>👤 Titular: Isaias Figueira Rodrigues</b>
         </div>
       `
@@ -3539,7 +3655,13 @@ const dadosPagamento = paisUsuarioGlobal === "PT"
         <div style="background:#f5f5f5;color:#111827;padding:14px;border-radius:12px;margin-top:14px;text-align:left;line-height:1.7;border:1px solid #d1d5db;">
             <b>🇧🇷 Pagamento por Pix</b><br><br>
             Pague o valor de <b>${valorFormatado}</b> usando a chave abaixo:<br><br>
-            <b>🔑 Pix: (51)99892-0455</b><br>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <b>🔑 Pix: (51)99892-0455</b>
+              <button onclick="copiarChavePagamento('51998920455', this)" style="
+                background:#155EEF;color:white;border:none;padding:5px 10px;
+                border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;
+              ">📋 Copiar</button>
+            </div>
             <b>👤 Titular: Isaias Figueira Rodrigues</b>
         </div>
       `;

@@ -381,6 +381,91 @@
       font-weight: 700;
     }
 
+    /* ===== CELEBRAÇÃO DE CONQUISTA ===== */
+    #celebracaoOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(16,24,40,0.55);
+      z-index: 999999;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    #celebracaoOverlay .celebracaoBox {
+      background: var(--surface);
+      border-radius: 20px;
+      padding: 32px 26px;
+      max-width: 340px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,.3);
+      animation: celebracaoEntrada .4s ease;
+    }
+
+    @keyframes celebracaoEntrada {
+      from { transform: scale(.85); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    #celebracaoOverlay .celebracaoEmoji {
+      font-size: 52px;
+    }
+
+    #celebracaoOverlay h3 {
+      margin: 10px 0 4px;
+      font-size: 19px;
+      color: var(--text);
+    }
+
+    #celebracaoOverlay p {
+      font-size: 14px;
+      color: var(--text-soft);
+      margin: 0 0 20px;
+      line-height: 1.5;
+    }
+
+    #celebracaoOverlay button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      background: var(--primary);
+      color: white;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    /* ===== TIMELINE DE ATIVIDADE ===== */
+    .timeline-item {
+      display: flex;
+      gap: 10px;
+      padding: 10px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .timeline-item:first-child { border-top: none; padding-top: 0; }
+
+    .timeline-icone {
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .timeline-texto {
+      font-size: 13px;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    .timeline-data {
+      font-size: 11px;
+      color: var(--text-soft);
+      margin-top: 2px;
+    }
+
     /* ===== MENU INFERIOR ===== */
     .menu-inferior {
       position: fixed;
@@ -427,6 +512,48 @@
         <button id="confirmNao">Cancelar</button>
         <button id="confirmSim" class="confirmSim">Confirmar</button>
       </div>
+    </div>
+  </div>
+
+  <div id="celebracaoOverlay">
+    <div class="celebracaoBox">
+      <div class="celebracaoEmoji" id="celebracaoEmoji">🎉</div>
+      <h3 id="celebracaoTitulo">Você subiu de nível!</h3>
+      <p id="celebracaoTexto"></p>
+      <button id="celebracaoFechar">Show de bola!</button>
+    </div>
+  </div>
+
+  <div id="negociarOverlay" class="modal">
+    <div class="modal-content" style="max-width:380px;">
+      <h3>📞 Negociar prazo</h3>
+      <p style="font-size:13px;color:var(--text-soft);margin-top:6px;">
+        Conta pra gente o motivo — isso chega direto pro atendimento.
+      </p>
+      <textarea id="negociarMotivo" rows="4" placeholder="Ex: recebo dia 10, posso pagar até lá?" style="
+        width:100%;
+        margin-top:10px;
+        padding:12px;
+        border-radius:8px;
+        border:1px solid var(--border);
+        font-family:inherit;
+        font-size:14px;
+        color:var(--text);
+        box-sizing:border-box;
+        resize:vertical;
+      "></textarea>
+      <button id="negociarEnviar" class="btn-credit">Enviar solicitação</button>
+      <button id="negociarCancelar" style="
+        width:100%;
+        margin-top:10px;
+        padding:11px;
+        border:1px solid var(--border);
+        border-radius:10px;
+        background:var(--surface);
+        color:var(--text);
+        cursor:pointer;
+        font-family:inherit;
+      ">Cancelar</button>
     </div>
   </div>
 
@@ -508,6 +635,14 @@
       </div>
     </div>
 
+  </div>
+</div>
+
+<div class="card" id="cardAtividade">
+  <h3>🕐 Atividade recente</h3>
+  <div id="timelineAtividade" style="margin-top:12px;">
+    <div class="skeleton" style="height:16px;width:80%;margin-bottom:8px;">.</div>
+    <div class="skeleton" style="height:16px;width:60%;">.</div>
   </div>
 </div>
 
@@ -1159,6 +1294,128 @@ window.lerValorMascarado = function(elemento){
 // =========================================
 // TRILHA VISUAL DE NÍVEIS
 // =========================================
+// =========================================
+// CELEBRAÇÃO AO SUBIR DE NÍVEL
+// Compara o nível atual com o último visto (guardado no
+// navegador da própria pessoa) — se subiu, mostra a telinha de
+// parabéns. Não mexe em nenhum dado de score/nível no banco.
+// =========================================
+window.verificarConquistaNivel = function(nivelAtual, emoji, uid){
+
+  const ordem = ["Essencial", "Bronze", "Prata", "Ouro", "Black"];
+  const chave = "isacred_ultimoNivel_" + uid;
+
+  const ultimoVisto = localStorage.getItem(chave);
+
+  localStorage.setItem(chave, nivelAtual);
+
+  if(!ultimoVisto){
+    // Primeira vez que a pessoa loga — nada pra celebrar ainda,
+    // só marca o nível atual como referência.
+    return;
+  }
+
+  const indiceAntigo = ordem.indexOf(ultimoVisto);
+  const indiceNovo = ordem.indexOf(nivelAtual);
+
+  if(indiceNovo > indiceAntigo){
+
+    document.getElementById("celebracaoEmoji").innerText = emoji;
+    document.getElementById("celebracaoTitulo").innerText =
+      "Você subiu de nível!";
+    document.getElementById("celebracaoTexto").innerText =
+      "Parabéns! Seu histórico de pagamentos te levou até o nível " +
+      nivelAtual + ". Continue pagando em dia pra ir ainda mais longe.";
+
+    document.getElementById("celebracaoOverlay").style.display = "flex";
+
+  }
+
+};
+
+document.getElementById("celebracaoFechar").addEventListener("click", () => {
+  document.getElementById("celebracaoOverlay").style.display = "none";
+});
+
+// =========================================
+// NEGOCIAR ATRASO
+// =========================================
+let parcelaEmNegociacao = null;
+
+window.negociarAtraso = function(parcelaId, numero){
+  parcelaEmNegociacao = { id: parcelaId, numero: numero };
+  document.getElementById("negociarMotivo").value = "";
+  document.getElementById("negociarOverlay").style.display = "flex";
+};
+
+document.getElementById("negociarCancelar").addEventListener("click", () => {
+  document.getElementById("negociarOverlay").style.display = "none";
+});
+
+document.getElementById("negociarEnviar").addEventListener("click", async () => {
+
+  const motivo = document.getElementById("negociarMotivo").value.trim();
+
+  if(!motivo){
+    mostrarAviso("Escreva o motivo antes de enviar.", "error");
+    return;
+  }
+
+  if(!parcelaEmNegociacao || !usuarioLogado){
+    mostrarAviso("Não foi possível identificar a parcela. Atualize a página.", "error");
+    return;
+  }
+
+  const botao = document.getElementById("negociarEnviar");
+  botao.disabled = true;
+  const textoOriginal = botao.innerText;
+  botao.innerText = "Enviando...";
+
+  try {
+
+    const clienteSnap = await getDoc(doc(db, "usuarios", usuarioLogado.uid));
+    const cliente = clienteSnap.exists() ? clienteSnap.data() : {};
+
+    await addDoc(collection(db, "negociacoes"), {
+      userId: usuarioLogado.uid,
+      nomeCliente: cliente.nome || usuarioLogado.email,
+      telefoneCliente: cliente.telefone || "",
+      parcelaId: parcelaEmNegociacao.id,
+      numeroParcela: parcelaEmNegociacao.numero,
+      motivo: motivo,
+      status: "pendente",
+      criadoEm: new Date()
+    });
+
+    await enviarTelegram(
+      "📞 PEDIDO DE NEGOCIAÇÃO\n\n" +
+      "👤 Cliente: " + (cliente.nome || usuarioLogado.email) + "\n" +
+      "📱 Telefone: " + (cliente.telefone || "Não informado") + "\n\n" +
+      "📄 Parcela: " + parcelaEmNegociacao.numero + "\n\n" +
+      "💬 Motivo:\n" + motivo
+    );
+
+    mostrarAviso(
+      "✅ Solicitação enviada! O atendimento vai entrar em contato.",
+      "success"
+    );
+
+    document.getElementById("negociarOverlay").style.display = "none";
+
+  } catch (erro) {
+
+    console.error("Erro ao enviar negociação:", erro);
+    mostrarAviso("Não foi possível enviar agora. Tente novamente.", "error");
+
+  } finally {
+
+    botao.disabled = false;
+    botao.innerText = textoOriginal;
+
+  }
+
+});
+
 window.atualizarTrilhaNiveis = function(nivelAtual, cor){
 
   const ordem = ["Essencial", "Bronze", "Prata", "Ouro", "Black"];
@@ -1220,6 +1477,26 @@ const menuSairBtn = document.getElementById("menuSairBtn");
 if(menuSairBtn && logoutBtn){
   menuSairBtn.addEventListener("click", () => {
     logoutBtn.click();
+  });
+}
+
+const menuWhatsappBtn = document.getElementById("menuWhatsappBtn");
+
+if(menuWhatsappBtn){
+  menuWhatsappBtn.addEventListener("click", () => {
+
+    // Mesmo número usado nas telas de pagamento (Pix/MB WAY),
+    // só que formatado como link direto de WhatsApp.
+    const numero = paisUsuarioGlobal === "PT"
+      ? "351931714823"
+      : "5551998920455";
+
+    const mensagem = encodeURIComponent(
+      "Olá! Preciso de ajuda com minha conta no IsaCred."
+    );
+
+    window.open("https://wa.me/" + numero + "?text=" + mensagem, "_blank");
+
   });
 }
 
@@ -1523,6 +1800,80 @@ if(lista){
   });
 
 }
+
+// =========================================
+// TIMELINE DE ATIVIDADE
+// Reaproveita as mesmas notificações do sino — só mostra as 5
+// mais recentes, num formato mais visual, na tela principal.
+// =========================================
+const timelineAtividade = document.getElementById("timelineAtividade");
+
+if(timelineAtividade){
+
+  const recentes = snapshotTodas.docs
+    .sort((a,b) => b.data().data?.seconds - a.data().data?.seconds)
+    .slice(0, 5);
+
+  if(recentes.length === 0){
+
+    timelineAtividade.innerHTML =
+      "<div style='font-size:13px;color:var(--text-soft);'>Nenhuma atividade ainda.</div>";
+
+  } else {
+
+    function iconePorTitulo(titulo){
+      titulo = (titulo || "").toLowerCase();
+      if(titulo.includes("vencendo") || titulo.includes("vencimento")) return "📅";
+      if(titulo.includes("pago") || titulo.includes("pagamento")) return "✅";
+      if(titulo.includes("aprovad")) return "🎉";
+      if(titulo.includes("recusad") || titulo.includes("rejeitad")) return "⚠️";
+      return "🔔";
+    }
+
+    function dataRelativa(timestamp){
+
+      if(!timestamp || !timestamp.seconds) return "";
+
+      const data = new Date(timestamp.seconds * 1000);
+      const hoje = new Date();
+
+      const diffDias = Math.floor(
+        (new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()) -
+         new Date(data.getFullYear(), data.getMonth(), data.getDate())) /
+        (1000 * 60 * 60 * 24)
+      );
+
+      if(diffDias === 0) return "Hoje";
+      if(diffDias === 1) return "Ontem";
+      if(diffDias < 7) return "Há " + diffDias + " dias";
+
+      return data.toLocaleDateString("pt-BR");
+
+    }
+
+    timelineAtividade.innerHTML = "";
+
+    recentes.forEach((docSnap) => {
+
+      const dados = docSnap.data();
+
+      const item = document.createElement("div");
+      item.className = "timeline-item";
+
+      item.innerHTML =
+        "<div class='timeline-icone'>" + iconePorTitulo(dados.titulo) + "</div>" +
+        "<div>" +
+        "<div class='timeline-texto'>" + (dados.titulo || "") + "</div>" +
+        "<div class='timeline-data'>" + dataRelativa(dados.data) + "</div>" +
+        "</div>";
+
+      timelineAtividade.appendChild(item);
+
+    });
+
+  }
+
+}
 const contador = document.getElementById("contadorNotificacao");
 
 if(!snapshotNotificacoes.empty){
@@ -1678,7 +2029,14 @@ function renderizarGrupoEmprestimo(grupo){
       (multa > 0 ? "<br>Multa: " + multa.toFixed(2) : "") +
       (juros > 0 ? "<br>Juros atraso: " + juros.toFixed(2) : "") +
       "<br><strong style='color:var(--text);'>Restante: " + restante.toFixed(2) + "</strong>" +
-      "</div>";
+      "</div>" +
+      (status === "⚠️ Atrasado"
+        ? "<button onclick=\"negociarAtraso('" + docSnap.id + "', " + dados.numero + ")\" style='" +
+          "margin-top:8px;background:var(--warning-soft);color:var(--warning);" +
+          "border:1px solid rgba(181,71,8,0.3);padding:7px 12px;border-radius:8px;" +
+          "font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;'>" +
+          "📞 Negociar prazo</button>"
+        : "");
 
   }
 
@@ -2174,6 +2532,7 @@ if (scoreValor) {
 }
 
 atualizarTrilhaNiveis(nivelNomeGlobal, nivelCor);
+verificarConquistaNivel(nivelNomeGlobal, nivelEmoji, usuarioLogado.uid);
 
 const nivelTexto = document.getElementById("nivelTexto");
 const limiteNivelTexto = document.getElementById("limiteNivelTexto");
@@ -3063,6 +3422,14 @@ ${totalPagar.toLocaleString("pt-BR",{
 style:"currency",
 currency:paisUsuarioGlobal==="PT" ? "EUR" : "BRL"
 })}
+<br>
+<span style="font-size:12px;color:var(--text-soft);">
+Juros dessa opção:
+${(totalPagar - valor).toLocaleString("pt-BR",{
+style:"currency",
+currency:paisUsuarioGlobal==="PT" ? "EUR" : "BRL"
+})}
+</span>
 </div>
 `;
 }
@@ -3095,7 +3462,11 @@ currency:paisUsuarioGlobal==="PT" ? "EUR" : "BRL"
 
 ${simulacoesHTML}
 
-<div style="margin-top:10px;color:#9BE8C7;">
+<div style="margin-top:12px;padding:10px;background:var(--success-soft);border:1px solid rgba(23,166,115,0.3);border-radius:8px;font-size:13px;color:var(--success);">
+💎 Pagar em dia (ou adiantado) aumenta seus IsaCoins e ajuda a subir de nível.
+</div>
+
+<div style="margin-top:10px;color:var(--text-soft);">
 Seu perfil ${nivelNomeGlobal}
 permite parcelamentos de 1x até
 ${parcelasMaximas}x.
@@ -3465,6 +3836,10 @@ cursor:pointer;
     <button class="menu-item" data-alvo="secaoParcelas">
       <span class="menu-icone">📅</span>
       Parcelas
+    </button>
+    <button class="menu-item" id="menuWhatsappBtn">
+      <span class="menu-icone">💬</span>
+      Ajuda
     </button>
     <button class="menu-item" id="menuSairBtn">
       <span class="menu-icone">🚪</span>

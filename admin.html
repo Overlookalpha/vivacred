@@ -1696,7 +1696,7 @@ window.emitirFatura = async function(parcelaId){
 
  const emprestimo = emprestimoSnap.data();
 
- // Dados do cliente (endereço, Izacons, score) — usados pra deixar
+ // Dados do cliente (endereço, IsaCoins, score) — usados pra deixar
  // a fatura mais completa e reforçar o incentivo a pagar em dia.
  let cliente = {};
 
@@ -1748,10 +1748,14 @@ window.emitirFatura = async function(parcelaId){
   [cliente.cidade, cliente.estado].filter(Boolean).join(" / ") || null;
 
  // Mesma taxa já usada na tela do cliente (home.html):
- // 1 Izacon = R$0,01 no Brasil, ou €0,002 em Portugal.
+ // 1 IsaCoin = R$0,01 no Brasil, ou €0,002 em Portugal.
  const valorPorIsaCoin = emprestimo.pais === "PT" ? 0.002 : 0.01;
  const isaCoinsCliente = Number(cliente.isaCoins || 0);
  const valorIsaCoinsConvertido = isaCoinsCliente * valorPorIsaCoin;
+
+ // Mesmo mínimo de saque usado no home.html do cliente (10.000 IsaCoins).
+ const minimoSaqueIsaCoin = 10000;
+ const valorSaqueMinimo = minimoSaqueIsaCoin * valorPorIsaCoin;
 
  const cobranca = calcularCobrancaParcela(parcela, hoje);
 
@@ -1804,7 +1808,7 @@ body{font-family:Arial, sans-serif; background:#f1f5f9; margin:0; padding:30px; 
   <div class="linha"><span class="label">Cliente</span><span class="valor">${emprestimo.nomeCliente || "Cliente"}</span></div>
   <div class="linha"><span class="label">Telefone</span><span class="valor">${emprestimo.telefoneCliente || "-"}</span></div>
   ${enderecoCliente ? `<div class="linha"><span class="label">Endereço</span><span class="valor">${enderecoCliente}</span></div>` : ""}
-  <div class="linha"><span class="label">Parcela</span><span class="valor">${parcela.numero || "-"}</span></div>
+  <div class="linha"><span class="label">Parcela</span><span class="valor">${parcela.numero || "-"}${emprestimo.parcelas ? " de " + emprestimo.parcelas : ""}</span></div>
   <div class="linha"><span class="label">Vencimento</span><span class="valor">${vencimento.toLocaleDateString("pt-BR")}</span></div>
   <div class="linha"><span class="label">Valor original</span><span class="valor">${moeda} ${Number(parcela.valor || 0).toFixed(2)}</span></div>
   ${cobranca.multa > 0 ? `<div class="linha"><span class="label">Multa</span><span class="valor">${moeda} ${cobranca.multa.toFixed(2)}</span></div>` : ""}
@@ -1820,10 +1824,13 @@ body{font-family:Arial, sans-serif; background:#f1f5f9; margin:0; padding:30px; 
   <div class="nivel">
    <strong>🏅 Nível ${nivelInfo.nivel} — ${nivelInfo.nome}</strong>
    Seu limite atual: ${limiteAtual}<br>
-   💎 Você tem <b>${isaCoinsCliente.toLocaleString("pt-BR")} Izacons</b>
+   💎 Você tem <b>${isaCoinsCliente.toLocaleString("pt-BR")} IsaCoins</b>
    (equivale a ${moeda} ${valorIsaCoinsConvertido.toFixed(2)})<br>
    <span style="font-size:12px;opacity:.85;">
-    Pagar em dia (ou adiantado) aumenta seus Izacons e ajuda a
+    Para sacar, é preciso alcançar um total de
+    ${minimoSaqueIsaCoin.toLocaleString("pt-BR")} IsaCoins
+    (equivale a ${moeda} ${valorSaqueMinimo.toFixed(2)}).<br><br>
+    Pagar em dia (ou adiantado) aumenta seus IsaCoins e ajuda a
     subir de nível — quanto maior o nível, maior o limite liberado.
    </span>
   </div>

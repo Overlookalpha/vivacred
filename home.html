@@ -1485,11 +1485,9 @@ const menuWhatsappBtn = document.getElementById("menuWhatsappBtn");
 if(menuWhatsappBtn){
   menuWhatsappBtn.addEventListener("click", () => {
 
-    // Mesmo número usado nas telas de pagamento (Pix/MB WAY),
-    // só que formatado como link direto de WhatsApp.
-    const numero = paisUsuarioGlobal === "PT"
-      ? "351931714823"
-      : "5551998920455";
+    // Sempre vai pro WhatsApp do admin (Isaias), não importa
+    // o país do cliente.
+    const numero = "351931714823";
 
     const mensagem = encodeURIComponent(
       "Olá! Preciso de ajuda com minha conta no IsaCred."

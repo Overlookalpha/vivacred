@@ -209,10 +209,226 @@
       70% { box-shadow: 0 0 0 18px rgba(21,94,239,0); }
       100% { box-shadow: 0 0 0 0 rgba(21,94,239,0); }
     }
+
+    /* ===== TOASTS (substituem os mostrarAviso() do navegador) ===== */
+    #toastContainer {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 92%;
+      max-width: 420px;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--primary);
+      border-radius: 10px;
+      padding: 13px 16px;
+      box-shadow: var(--shadow);
+      font-size: 14px;
+      color: var(--text);
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: opacity .25s, transform .25s;
+      pointer-events: auto;
+    }
+
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { border-left-color: var(--success); }
+    .toast.error { border-left-color: var(--danger); }
+    .toast.info { border-left-color: var(--primary); }
+
+    /* ===== CONFIRMAÇÃO (substitui o confirm() do navegador) ===== */
+    #confirmOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(16,24,40,0.45);
+      z-index: 99999;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    #confirmOverlay .confirmBox {
+      background: var(--surface);
+      border-radius: 16px;
+      padding: 22px;
+      max-width: 360px;
+      width: 100%;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+
+    #confirmOverlay p {
+      font-size: 15px;
+      color: var(--text);
+      margin: 0 0 18px;
+      line-height: 1.5;
+    }
+
+    #confirmOverlay .confirmBotoes {
+      display: flex;
+      gap: 10px;
+    }
+
+    #confirmOverlay button {
+      flex: 1;
+      padding: 11px;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    #confirmOverlay .confirmSim {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    /* ===== SKELETON LOADING ===== */
+    .skeleton {
+      background: linear-gradient(90deg, var(--border) 25%, #EEF1F5 37%, var(--border) 63%);
+      background-size: 400% 100%;
+      animation: skeletonPulse 1.4s ease infinite;
+      border-radius: 8px;
+      color: transparent !important;
+      display: inline-block;
+    }
+
+    @keyframes skeletonPulse {
+      0% { background-position: 100% 50%; }
+      100% { background-position: 0 50%; }
+    }
+
+    /* ===== TRILHA DE NÍVEIS ===== */
+    .trilha-niveis {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 18px;
+      padding: 0 4px;
+    }
+
+    .trilha-etapa {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+      position: relative;
+    }
+
+    .trilha-bolinha {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--bg);
+      border: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      z-index: 2;
+    }
+
+    .trilha-etapa.ativa .trilha-bolinha,
+    .trilha-etapa.concluida .trilha-bolinha {
+      border-color: var(--nivel-cor, var(--primary));
+      background: var(--nivel-cor, var(--primary));
+    }
+
+    .trilha-etapa::before {
+      content: "";
+      position: absolute;
+      top: 13px;
+      left: -50%;
+      width: 100%;
+      height: 2px;
+      background: var(--border);
+      z-index: 1;
+    }
+
+    .trilha-etapa:first-child::before { display: none; }
+
+    .trilha-etapa.concluida::before {
+      background: var(--nivel-cor, var(--primary));
+    }
+
+    .trilha-label {
+      font-size: 10px;
+      color: var(--text-soft);
+      text-align: center;
+    }
+
+    .trilha-etapa.ativa .trilha-label {
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    /* ===== MENU INFERIOR ===== */
+    .menu-inferior {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-around;
+      padding: 8px 4px calc(8px + env(safe-area-inset-bottom));
+      z-index: 60;
+    }
+
+    .menu-item {
+      background: none;
+      border: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      font-size: 10px;
+      color: var(--text-soft);
+      cursor: pointer;
+      font-family: inherit;
+      padding: 4px 8px;
+    }
+
+    .menu-item.ativo { color: var(--primary); font-weight: 700; }
+    .menu-item .menu-icone { font-size: 20px; }
+
+    .container { padding-bottom: 90px; }
   </style>
 </head>
 
 <body>
+
+  <div id="toastContainer"></div>
+
+  <div id="confirmOverlay">
+    <div class="confirmBox">
+      <p id="confirmMensagem"></p>
+      <div class="confirmBotoes">
+        <button id="confirmNao">Cancelar</button>
+        <button id="confirmSim" class="confirmSim">Confirmar</button>
+      </div>
+    </div>
+  </div>
 
   <div class="header">
   <div class="logo">ISACRED</div>
@@ -238,7 +454,7 @@
   </div>
 </div>
 
-  <div class="container">
+  <div class="container" id="topoApp">
 
     
     <div class="card">
@@ -247,14 +463,14 @@
 
     <div id="areaAvisoTopo"></div>
     
-  <div class="hero-score">
+  <div class="hero-score" id="secaoScore">
   <div class="hero-inner">
    <div style="margin-bottom:10px;">
   <img src="icon-192.png" style="width:60px;height:60px;border-radius:15px;">
   </div>
     <div class="hero-title">ISACRED SCORE</div>
 
-    <div class="hero-number" id="scoreValor">20</div>
+    <div class="hero-number skeleton" id="scoreValor">00</div>
 
    <div class="hero-level" id="nivelTexto"></div>
 
@@ -269,6 +485,29 @@
       Quanto melhor seu histórico, maior seu limite.
     </div>
 
+    <div class="trilha-niveis" id="trilhaNiveis">
+      <div class="trilha-etapa" data-nivel="Essencial">
+        <div class="trilha-bolinha">🍀</div>
+        <div class="trilha-label">Essencial</div>
+      </div>
+      <div class="trilha-etapa" data-nivel="Bronze">
+        <div class="trilha-bolinha">🥉</div>
+        <div class="trilha-label">Bronze</div>
+      </div>
+      <div class="trilha-etapa" data-nivel="Prata">
+        <div class="trilha-bolinha">🥈</div>
+        <div class="trilha-label">Prata</div>
+      </div>
+      <div class="trilha-etapa" data-nivel="Ouro">
+        <div class="trilha-bolinha">🥇</div>
+        <div class="trilha-label">Ouro</div>
+      </div>
+      <div class="trilha-etapa" data-nivel="Black">
+        <div class="trilha-bolinha">💎</div>
+        <div class="trilha-label">Black</div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -278,12 +517,12 @@
     🪙 ISAcoin
   </div>
 
-  <div id="isaCoinsSaldo"
+  <div id="isaCoinsSaldo" class="skeleton"
        style="font-size:32px;font-weight:bold;margin-top:10px;">
     0 ISC
   </div>
 
-  <div id="isaCoinsValor"
+  <div id="isaCoinsValor" class="skeleton"
 style="opacity:0.8;margin-top:5px;">
 R$ 0,00
 </div>
@@ -302,7 +541,8 @@ R$ 0,00
 
 <input
 id="valorSimulacao"
-type="number"
+type="text"
+inputmode="numeric"
 placeholder="Digite o valor desejado"
 style="
 width:100%;
@@ -332,9 +572,55 @@ Digite um valor para simular
 </div>
 
 </div>
+
+<div class="card" id="cardIndicacao">
+
+<h3>👨‍👩‍👧 Indique um parente</h3>
+
+<p style="font-size:13px;color:var(--text-soft);margin-top:6px;">
+  Indique alguém de confiança. Se a conta for aberta, você ganha IsaCoins.
+</p>
+
+<input
+id="indicacaoNome"
+type="text"
+placeholder="Nome do parente"
+style="
+width:100%;
+padding:12px;
+border-radius:8px;
+border:1px solid var(--border);
+margin-top:10px;
+box-sizing:border-box;
+font-size:15px;
+font-family:inherit;
+color:var(--text);
+">
+
+<input
+id="indicacaoTelefone"
+type="text"
+placeholder="Telefone (com DDD/indicativo)"
+style="
+width:100%;
+padding:12px;
+border-radius:8px;
+border:1px solid var(--border);
+margin-top:10px;
+box-sizing:border-box;
+font-size:15px;
+font-family:inherit;
+color:var(--text);
+">
+
+<button id="btnEnviarIndicacao" class="btn-credit">
+  Enviar indicação
+</button>
+
+</div>
     <div class="card">
       <div>Limite Disponível</div>
-      <div class="limit" id="limiteDisponivel">Até R$ 100,00</div>
+      <div class="limit skeleton" id="limiteDisponivel">Até R$ 100,00</div>
 
      <button id="btnSolicitar" class="btn-credit">
      Solicitar Crédito
@@ -343,13 +629,29 @@ Digite um valor para simular
      <div class="card">
     <div><>📊 Resumo dos Empréstimos</></div>
    <div id="listaEmprestimos" style="margin-top:15px; font-size:14px;">
-    Carregando...
+    <div class="skeleton" style="height:16px;width:70%;margin-bottom:8px;">.</div>
+    <div class="skeleton" style="height:16px;width:50%;">.</div>
     </div>
      </div>
 
-   <div class="card">
-   <>📅 Controle de Parcelas</>
-   <div id="minhasParcelas"></div>
+   <div class="card" id="secaoParcelas">
+   <div style="display:flex;justify-content:space-between;align-items:center;">
+     <>📅 Controle de Parcelas</>
+     <button id="btnBaixarExtrato" style="
+       background:var(--primary-soft);
+       color:var(--primary-dark);
+       border:none;
+       padding:7px 12px;
+       border-radius:8px;
+       font-size:12px;
+       font-weight:600;
+       cursor:pointer;
+       font-family:inherit;
+     ">🧾 Extrato</button>
+   </div>
+   <div id="minhasParcelas">
+   <div class="skeleton" style="height:60px;width:100%;border-radius:14px;">.</div>
+   </div>
    </div>
    <div id="modalCredito" class="modal">
   <div class="modal-content" style="max-width:430px;">
@@ -459,7 +761,7 @@ Digite um valor para simular
     </div>
 
     <label>Valor desejado:</label>
-    <input type="number" id="valorSimulado" placeholder="Digite o valor" min="100" />
+    <input type="text" inputmode="numeric" id="valorSimulado" placeholder="Digite o valor" oninput="aplicarMascaraMoeda(this)" />
 
     <br><br>
 
@@ -584,6 +886,13 @@ import {
   onAuthStateChanged,
   signOut
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+
+import {
+  getStorage,
+  ref as storageRef,
+  uploadBytes,
+  getDownloadURL
+} from "https://www.gstatic.com/firebasejs/12.10.0/firebase-storage.js";
 const firebaseConfig = {
   apiKey: "AIzaSyDJHtQp7OUxgYqtcD_2eTqzh1BRpufvKrY",
   authDomain: "vivacred-5a5b8.firebaseapp.com",
@@ -618,7 +927,7 @@ document.addEventListener("click", async (event) => {
   if (event.target.id !== "btnSolicitarAtendimento") return;
 
   if (!usuarioLogado) {
-    alert("Não foi possível identificar seu usuário. Atualize a página.");
+    mostrarAviso("Não foi possível identificar seu usuário. Atualize a página.");
     return;
   }
 
@@ -662,7 +971,7 @@ ${nivel.emoji} Nível: ${nivel.nome}
 Cliente solicitou atendimento para alteração de renda ou revisão de limite.`
     );
 
-    alert(
+    mostrarAviso(
       "✅ Solicitação enviada!\n\n" +
       "O atendimento IsaCred foi avisado e analisará seu pedido."
     );
@@ -673,7 +982,7 @@ Cliente solicitou atendimento para alteração de renda ou revisão de limite.`
 
     console.error("Erro ao solicitar atendimento:", erro);
 
-    alert(
+    mostrarAviso(
       "Não foi possível enviar sua solicitação agora. Tente novamente."
     );
 
@@ -686,6 +995,69 @@ Cliente solicitou atendimento para alteração de renda ou revisão de limite.`
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const storage = getStorage(app);
+
+// =========================================
+// TOAST — substitui os mostrarAviso() do navegador
+// =========================================
+window.mostrarAviso = function(mensagem, tipo){
+
+  tipo = tipo || "info";
+
+  const container = document.getElementById("toastContainer");
+  if(!container) return;
+
+  const icones = { success: "✅", error: "⚠️", info: "ℹ️" };
+
+  const toast = document.createElement("div");
+  toast.className = "toast " + tipo;
+  toast.innerHTML =
+    "<span>" + (icones[tipo] || "ℹ️") + "</span><span>" + mensagem + "</span>";
+
+  container.appendChild(toast);
+
+  requestAnimationFrame(() => toast.classList.add("show"));
+
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 300);
+  }, 4200);
+
+};
+
+// =========================================
+// CONFIRMAÇÃO — substitui o confirm() do navegador
+// Uso: const ok = await confirmarModal("Tem certeza?");
+// =========================================
+window.confirmarModal = function(mensagem){
+
+  return new Promise((resolve) => {
+
+    const overlay = document.getElementById("confirmOverlay");
+    const texto = document.getElementById("confirmMensagem");
+    const btnSim = document.getElementById("confirmSim");
+    const btnNao = document.getElementById("confirmNao");
+
+    texto.innerText = mensagem;
+    overlay.style.display = "flex";
+
+    function limpar(resultado){
+      overlay.style.display = "none";
+      btnSim.removeEventListener("click", aoSim);
+      btnNao.removeEventListener("click", aoNao);
+      resolve(resultado);
+    }
+
+    function aoSim(){ limpar(true); }
+    function aoNao(){ limpar(false); }
+
+    btnSim.addEventListener("click", aoSim);
+    btnNao.addEventListener("click", aoNao);
+
+  });
+
+};
+
 async function criarNotificacao(userId, titulo, mensagem){
 
   await addDoc(collection(db,"notificacoes"),{
@@ -697,6 +1069,143 @@ async function criarNotificacao(userId, titulo, mensagem){
   });
 
 }
+
+// =========================================
+// LEMBRETE DE VENCIMENTO PRO CLIENTE
+// Antes só o admin era avisado (Telegram) quando uma parcela
+// tava perto de vencer. Agora o próprio cliente recebe um aviso
+// (sino + toast) quando faltam 3 dias — só uma vez por parcela.
+// =========================================
+async function gerarLembretesVencimento(parcelasSnap){
+
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+
+  for(const docSnap of parcelasSnap.docs){
+
+    const dados = docSnap.data();
+
+    if(!dados.vencimento) continue;
+    if((dados.valor - dados.pago) <= 0) continue;
+    if(dados.lembreteEnviado) continue;
+
+    const vencimento = dados.vencimento.toDate();
+    vencimento.setHours(0, 0, 0, 0);
+
+    const diasRestantes = Math.round(
+      (vencimento - hoje) / (1000 * 60 * 60 * 24)
+    );
+
+    if(diasRestantes === 3){
+
+      await criarNotificacao(
+        usuarioLogado.uid,
+        "📅 Parcela vencendo em 3 dias",
+        "Sua parcela " + dados.numero +
+        " vence em 3 dias. Fique de olho pra não atrasar!"
+      );
+
+      await updateDoc(doc(db, "parcelas", docSnap.id), {
+        lembreteEnviado: true
+      });
+
+      mostrarAviso(
+        "📅 Sua parcela " + dados.numero + " vence em 3 dias.",
+        "info"
+      );
+
+    }
+
+  }
+
+}
+
+// =========================================
+// MÁSCARA DE VALOR EM DINHEIRO
+// Formata o campo enquanto a pessoa digita (ex: 1.500) e
+// disponibiliza o valor numérico puro em elemento.dataset.valorNumerico.
+// =========================================
+window.aplicarMascaraMoeda = function(elemento){
+
+  const digitos = elemento.value.replace(/\D/g, "");
+
+  if(!digitos){
+    elemento.value = "";
+    elemento.dataset.valorNumerico = "0";
+    return;
+  }
+
+  const numero = Number(digitos);
+
+  elemento.value = numero.toLocaleString("pt-BR");
+  elemento.dataset.valorNumerico = String(numero);
+
+};
+
+// Lê o valor numérico puro de um campo com máscara de moeda,
+// mesmo que a máscara ainda não tenha rodado nenhuma vez.
+window.lerValorMascarado = function(elemento){
+
+  if(!elemento) return 0;
+
+  if(elemento.dataset && elemento.dataset.valorNumerico !== undefined){
+    return Number(elemento.dataset.valorNumerico) || 0;
+  }
+
+  return Number((elemento.value || "0").replace(/\D/g, "")) || 0;
+
+};
+
+// =========================================
+// TRILHA VISUAL DE NÍVEIS
+// =========================================
+window.atualizarTrilhaNiveis = function(nivelAtual, cor){
+
+  const ordem = ["Essencial", "Bronze", "Prata", "Ouro", "Black"];
+  const indiceAtual = ordem.indexOf(nivelAtual);
+
+  const trilha = document.getElementById("trilhaNiveis");
+  if(!trilha) return;
+
+  trilha.style.setProperty("--nivel-cor", cor);
+
+  const etapas = trilha.querySelectorAll(".trilha-etapa");
+
+  etapas.forEach((etapa, indice) => {
+
+    etapa.classList.remove("ativa", "concluida");
+
+    if(indice < indiceAtual){
+      etapa.classList.add("concluida");
+    } else if(indice === indiceAtual){
+      etapa.classList.add("ativa");
+    }
+
+  });
+
+};
+
+// =========================================
+// MENU INFERIOR
+// =========================================
+document.querySelectorAll(".menu-item[data-alvo]").forEach((botao) => {
+
+  botao.addEventListener("click", () => {
+
+    const alvo = document.getElementById(botao.dataset.alvo);
+    if(!alvo) return;
+
+    alvo.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    document.querySelectorAll(".menu-item[data-alvo]").forEach((item) => {
+      item.classList.remove("ativo");
+    });
+
+    botao.classList.add("ativo");
+
+  });
+
+});
 const logoutBtn = document.getElementById("logoutBtn");
 
 if (logoutBtn) {
@@ -704,6 +1213,212 @@ if (logoutBtn) {
     await signOut(auth);
     window.location.replace("login.html");
   });
+}
+
+const menuSairBtn = document.getElementById("menuSairBtn");
+
+if(menuSairBtn && logoutBtn){
+  menuSairBtn.addEventListener("click", () => {
+    logoutBtn.click();
+  });
+}
+
+// =========================================
+// EXTRATO DO CLIENTE (baixável / imprimível)
+// =========================================
+const btnBaixarExtrato = document.getElementById("btnBaixarExtrato");
+
+if(btnBaixarExtrato){
+
+  btnBaixarExtrato.addEventListener("click", async () => {
+
+    if(!usuarioLogado){
+      mostrarAviso("Aguarde o carregamento dos seus dados e tente novamente.", "error");
+      return;
+    }
+
+    if(!dadosExtratoGlobal || dadosExtratoGlobal.length === 0){
+      mostrarAviso("Você ainda não possui parcelas para gerar um extrato.", "info");
+      return;
+    }
+
+    // Abre a aba já no clique (antes de qualquer await), pra não
+    // ser bloqueado como pop-up pelo navegador.
+    const janela = window.open("", "_blank");
+
+    if(!janela){
+      mostrarAviso("Não foi possível abrir o extrato. Verifique o bloqueio de pop-ups.", "error");
+      return;
+    }
+
+    janela.document.write("<p style='font-family:Arial;padding:30px;'>Gerando extrato...</p>");
+
+    const clienteSnap = await getDoc(doc(db, "usuarios", usuarioLogado.uid));
+    const cliente = clienteSnap.exists() ? clienteSnap.data() : {};
+
+    const moeda = paisUsuarioGlobal === "PT" ? "€" : "R$";
+
+    function moedaFmt(valor){
+      return moeda + " " + Number(valor || 0).toFixed(2);
+    }
+
+    let linhasHTML = "";
+
+    dadosExtratoGlobal.forEach((grupo) => {
+
+      linhasHTML += `
+        <div style="margin-top:18px;padding-bottom:6px;border-bottom:2px solid #101828;font-weight:bold;">
+          ${grupo.quitado ? "🟢 Empréstimo quitado" : "🔴 Empréstimo em aberto"}
+          — ${grupo.parcelasPagas}/${grupo.totalParcelas} parcelas pagas
+        </div>
+        <table style="width:100%;border-collapse:collapse;margin-top:8px;font-size:13px;">
+          <thead>
+            <tr style="text-align:left;color:#667085;">
+              <th style="padding:6px 4px;">Parcela</th>
+              <th style="padding:6px 4px;">Vencimento</th>
+              <th style="padding:6px 4px;">Valor</th>
+              <th style="padding:6px 4px;">Pago</th>
+              <th style="padding:6px 4px;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      grupo.parcelas.forEach((docSnap) => {
+
+        const p = docSnap.data();
+        const pago = (p.valor - p.pago) <= 0;
+        const vencimento = p.vencimento ? p.vencimento.toDate().toLocaleDateString("pt-BR") : "-";
+
+        linhasHTML += `
+          <tr style="border-top:1px solid #E3E8EF;">
+            <td style="padding:6px 4px;">${p.numero}</td>
+            <td style="padding:6px 4px;">${vencimento}</td>
+            <td style="padding:6px 4px;">${moedaFmt(p.valor)}</td>
+            <td style="padding:6px 4px;">${moedaFmt(p.pago)}</td>
+            <td style="padding:6px 4px;">${pago ? "🟢 Pago" : "🔴 Em aberto"}</td>
+          </tr>
+        `;
+
+      });
+
+      linhasHTML += "</tbody></table>";
+
+    });
+
+    const htmlExtrato = `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Extrato - ${cliente.nome || usuarioLogado.email}</title>
+<style>
+body{font-family:Arial,sans-serif;background:#F5F7FA;margin:0;padding:24px;color:#101828;}
+.folha{max-width:640px;margin:0 auto;background:white;border-radius:14px;padding:26px;box-shadow:0 4px 20px rgba(0,0,0,.1);}
+.cabecalho{text-align:center;border-bottom:1px solid #E3E8EF;padding-bottom:16px;margin-bottom:16px;}
+.cabecalho h1{margin:0;font-size:20px;}
+.cabecalho span{font-size:13px;color:#667085;}
+.btnImprimir{display:block;width:100%;padding:12px;margin-top:22px;background:#155EEF;color:white;border:none;border-radius:8px;font-weight:bold;cursor:pointer;font-size:15px;}
+@media print{ .btnImprimir{display:none;} body{background:white;padding:0;} .folha{box-shadow:none;} }
+</style>
+</head>
+<body>
+<div class="folha">
+  <div class="cabecalho">
+    <h1>💰 IsaCred</h1>
+    <span>Extrato de ${cliente.nome || usuarioLogado.email}</span>
+  </div>
+  ${linhasHTML}
+  <div style="margin-top:20px;font-size:11px;color:#98A2B3;text-align:center;">
+    Gerado em ${new Date().toLocaleDateString("pt-BR")}
+  </div>
+</div>
+<button class="btnImprimir" onclick="window.print()">🖨️ Imprimir / Salvar como PDF</button>
+</body>
+</html>
+`;
+
+    janela.document.open();
+    janela.document.write(htmlExtrato);
+    janela.document.close();
+
+  });
+
+}
+
+// =========================================
+// INDICAÇÃO DE PARENTE
+// Como as contas são criadas manualmente por você, isso não abre
+// conta sozinho — só te avisa (Telegram + registro no sistema)
+// pra você decidir se cria a conta e credita os IsaCoins, do
+// mesmo jeito que já faz hoje.
+// =========================================
+const btnEnviarIndicacao = document.getElementById("btnEnviarIndicacao");
+
+if(btnEnviarIndicacao){
+
+  btnEnviarIndicacao.addEventListener("click", async () => {
+
+    const nomeIndicado = document.getElementById("indicacaoNome").value.trim();
+    const telefoneIndicado = document.getElementById("indicacaoTelefone").value.trim();
+
+    if(!nomeIndicado || !telefoneIndicado){
+      mostrarAviso("Preencha o nome e o telefone do parente.", "error");
+      return;
+    }
+
+    if(!usuarioLogado){
+      mostrarAviso("Não foi possível identificar seu usuário. Atualize a página.", "error");
+      return;
+    }
+
+    btnEnviarIndicacao.disabled = true;
+    const textoOriginal = btnEnviarIndicacao.innerText;
+    btnEnviarIndicacao.innerText = "Enviando...";
+
+    try {
+
+      const clienteSnap = await getDoc(doc(db, "usuarios", usuarioLogado.uid));
+      const cliente = clienteSnap.exists() ? clienteSnap.data() : {};
+
+      await addDoc(collection(db, "indicacoes"), {
+        indicadoPor: usuarioLogado.uid,
+        nomeIndicador: cliente.nome || usuarioLogado.email,
+        nomeIndicado: nomeIndicado,
+        telefoneIndicado: telefoneIndicado,
+        status: "pendente",
+        criadoEm: new Date()
+      });
+
+      await enviarTelegram(
+        "👨‍👩‍👧 NOVA INDICAÇÃO\n\n" +
+        "Indicado por: " + (cliente.nome || usuarioLogado.email) + "\n\n" +
+        "👤 Nome do parente: " + nomeIndicado + "\n" +
+        "📱 Telefone: " + telefoneIndicado
+      );
+
+      mostrarAviso(
+        "✅ Indicação enviada! Se a conta for aberta, você ganha IsaCoins.",
+        "success"
+      );
+
+      document.getElementById("indicacaoNome").value = "";
+      document.getElementById("indicacaoTelefone").value = "";
+
+    } catch (erro) {
+
+      console.error("Erro ao enviar indicação:", erro);
+      mostrarAviso("Não foi possível enviar a indicação agora. Tente novamente.", "error");
+
+    } finally {
+
+      btnEnviarIndicacao.disabled = false;
+      btnEnviarIndicacao.innerText = textoOriginal;
+
+    }
+
+  });
+
 }
   const btnAtualizar = document.getElementById("btnAtualizar");
 
@@ -716,6 +1431,7 @@ let nivelNomeGlobal = null;
 let paisUsuarioGlobal = "BR";
 let usuarioLogado = null;
 let isaCoinsGlobal = 0;
+let dadosExtratoGlobal = null;
 onAuthStateChanged(auth, async (user) => {
   
 
@@ -862,6 +1578,10 @@ const gruposEmprestimos = Object.keys(emprestimosMap).map((idEmprestimo) => {
 const gruposEmAberto = gruposEmprestimos.filter(g => !g.quitado);
 const gruposQuitados = gruposEmprestimos.filter(g => g.quitado);
 
+// Guarda pra o botão "Extrato" poder montar o PDF sem precisar
+// buscar tudo de novo no banco.
+dadosExtratoGlobal = gruposEmprestimos;
+
 function renderizarGrupoEmprestimo(grupo){
 
   const card = document.createElement("div");
@@ -1001,6 +1721,11 @@ if(gruposQuitados.length > 0){
   gruposQuitados.forEach(renderizarGrupoEmprestimo);
 
 }
+
+// Avisa o próprio cliente quando uma parcela está a 3 dias do
+// vencimento — antes só o admin recebia esse aviso, pelo Telegram.
+await gerarLembretesVencimento(snapshotParcelas);
+
   const listaRejeitados = snapshotRejeitado.docs.sort((a,b)=>{
   return b.data().criadoEm?.seconds - a.data().criadoEm?.seconds;
   });
@@ -1309,6 +2034,7 @@ const valorModalIsaCoin =
 document.getElementById("valorModalIsaCoin");
 
 if(saldoIsaCoin){
+saldoIsaCoin.classList.remove("skeleton");
 saldoIsaCoin.innerText =
 isaCoins.toLocaleString("pt-BR") + " ISC";
 }
@@ -1320,6 +2046,7 @@ if(valorIsaCoin){
 
  const valorConvertido = isaCoins * 0.01;
 
+ valorIsaCoin.classList.remove("skeleton");
  valorIsaCoin.innerHTML =
  "💵 " +
  valorConvertido.toLocaleString(localizacaoMoeda,{
@@ -1412,6 +2139,7 @@ document.getElementById("valorPadraoTexto").innerHTML =
  const scoreValor = document.getElementById("scoreValor");
 
 if (scoreValor) {
+  scoreValor.classList.remove("skeleton");
   scoreValor.innerText = data.score;
 }
 
@@ -1444,6 +2172,8 @@ const limiteMaximoNivel = dadosNivel.max;
 if (scoreValor) {
   scoreValor.style.color = nivelCor;
 }
+
+atualizarTrilhaNiveis(nivelNomeGlobal, nivelCor);
 
 const nivelTexto = document.getElementById("nivelTexto");
 const limiteNivelTexto = document.getElementById("limiteNivelTexto");
@@ -1536,6 +2266,7 @@ if (limiteNivelTexto) {
 const limiteElemento = document.getElementById("limiteDisponivel");
 
 if (limiteElemento && data.limiteBase) {
+  limiteElemento.classList.remove("skeleton");
   limiteElemento.innerText =
   "Até " + limiteMaximoNivel.toLocaleString("pt-BR", {
   style: "currency",
@@ -1621,7 +2352,7 @@ modal.style.display = "none";
 document.getElementById("confirmarTermos").addEventListener("click", async () => {
 console.log("CLICOU NO CONFIRMAR TERMOS");
   if (!aceitarTermos.checked) {
-    alert("Você precisa aceitar os termos para continuar.");
+    mostrarAviso("Você precisa aceitar os termos para continuar.");
     return;
   }
 
@@ -1634,7 +2365,7 @@ const parcelasSelect = document.getElementById("parcelasSimuladas");
 const clienteSnap = await getDoc(doc(db, "usuarios", user.uid));
 
 if(!clienteSnap.exists()){
-  alert("Não foi possível carregar seu cadastro. Atualize a página e tente novamente.");
+  mostrarAviso("Não foi possível carregar seu cadastro. Atualize a página e tente novamente.");
   return;
 }
 
@@ -1646,19 +2377,19 @@ const cpfCliente = cliente.cpf || "";
 const pixCliente = cliente.pix || cliente.chavePix || "";
 
 if(!nomeCliente || !telefoneCliente || !cpfCliente || !pixCliente){
-  alert("Seu cadastro está incompleto. Solicite atendimento para atualizar seus dados.");
+  mostrarAviso("Seu cadastro está incompleto. Solicite atendimento para atualizar seus dados.");
   return;
 }
 
 const nomeAvalista = document.getElementById("nomeAvalista").value;
 const telefoneAvalista = document.getElementById("telefoneAvalista").value;
 if(telefoneAvalista.length < 12){
- alert("Telefone do avalista deve estar no formato 5511998765432");
+ mostrarAviso("Telefone do avalista deve estar no formato 5511998765432");
  return;
 }
 const cpfAvalista = document.getElementById("cpfAvalista").value;
 
-const valorFinal = parseInt(valorInput.value || 0);
+const valorFinal = lerValorMascarado(valorInput);
 const parcelasFinal = parseInt(parcelasSelect.value);
 const userRef = doc(db, "usuarios", user.uid);
 
@@ -1672,7 +2403,7 @@ const valorMinimo = paisUsuarioGlobal === "PT" ? 30 : 100;
 
 if (!valorFinal || valorFinal < valorMinimo) {
 
-  alert(
+  mostrarAviso(
     paisUsuario === "PT"
       ? "Valor mínimo é €30."
       : "Valor mínimo é R$100."
@@ -1686,14 +2417,14 @@ if (!valorFinal || valorFinal < valorMinimo) {
 const regras = obterRegrasPorNivel(nivelNomeGlobal);
 
 if (parcelasFinal > regras.maxParcelas) {
-  alert("Seu perfil não permite essa quantidade de parcelas.");
+  mostrarAviso("Seu perfil não permite essa quantidade de parcelas.");
   return;
 }
 
 const taxa = regras.juros[parcelasFinal];
 
 if (!taxa) {
-  alert("Parcelamento inválido para seu perfil.");
+  mostrarAviso("Parcelamento inválido para seu perfil.");
   return;
 }
 
@@ -1790,6 +2521,7 @@ setTimeout(() => {
 }, 15000);
  modal.style.display = "none";
  valorInput.value = "";
+ valorInput.dataset.valorNumerico = "0";
 parcelasSelect.value = "1";
 const camposParaLimpar = [
   "nomeCliente",
@@ -1815,7 +2547,7 @@ if (aceitarTermos) {
 
       } catch (error) {
   console.error("ERRO COMPLETO AO ENVIAR:", error);
-  alert(
+  mostrarAviso(
     "Erro ao enviar solicitação:\n\n" +
     (error.message || error)
   );
@@ -2204,7 +2936,7 @@ if(btnSacarIsaCoin){
 
     if(faltamParaSaque > 0){
 
-      alert(
+      mostrarAviso(
         "Você ainda não pode solicitar o saque.\n\n" +
         "Para sacar " + valorSaqueFormatado +
         ", você precisa alcançar o total de 10.000 ISAcoins.\n\n" +
@@ -2216,7 +2948,7 @@ if(btnSacarIsaCoin){
       return;
     }
 
-    alert(
+    mostrarAviso(
       "🎉 Você atingiu o mínimo para saque!\n\n" +
       "Você poderá solicitar o saque de " +
       valorSaqueFormatado +
@@ -2233,7 +2965,7 @@ function gerarBotaoPagamento(parcelaId, valor){
   
 window.pagarParcela = function(parcelaId){
 
-alert("Parcela: " + parcelaId);
+mostrarAviso("Parcela: " + parcelaId);
 
 }
 const campoSimulacao =
@@ -2246,8 +2978,10 @@ if(campoSimulacao){
 
 campoSimulacao.addEventListener("input", ()=>{
 
+aplicarMascaraMoeda(campoSimulacao);
+
 const valor =
-Number(campoSimulacao.value || 0);
+lerValorMascarado(campoSimulacao);
 
 if(valor <= 0){
 
@@ -2377,7 +3111,7 @@ window.gerarPagamentoParcela = async function(parcelaId){
   const parcelaSnap = await getDoc(parcelaRef);
 
   if(!parcelaSnap.exists()){
-    alert("Parcela não encontrada.");
+    mostrarAviso("Parcela não encontrada.");
     return;
   }
 
@@ -2463,7 +3197,20 @@ modalPagamento.innerHTML = `
         ${dadosPagamento}
 
         <div style="margin-top:18px;font-size:14px;color:#555;">
-            Após realizar o pagamento, clique no botão abaixo para enviar sua confirmação.
+            Após realizar o pagamento, anexe o comprovante (opcional) e clique no botão abaixo para enviar sua confirmação.
+        </div>
+
+        <div style="margin-top:14px;text-align:left;">
+            <label style="font-size:13px;color:#555;">📎 Comprovante de pagamento (opcional)</label>
+            <input type="file" id="comprovantePagamento" accept="image/*,.pdf" style="
+                width:100%;
+                margin-top:6px;
+                padding:8px;
+                border:1px solid #d1d5db;
+                border-radius:8px;
+                font-size:13px;
+                box-sizing:border-box;
+            ">
         </div>
 
         <button id="btnConfirmarPagamentoParcela" style="
@@ -2505,7 +3252,7 @@ document.getElementById("btnFecharPagamentoParcela").onclick = function(){
 
 document.getElementById("btnConfirmarPagamentoParcela").onclick = async function(){
 
-    const confirmou = confirm(
+    const confirmou = await confirmarModal(
         "Confirma que você já realizou o pagamento da parcela " +
         dados.numero +
         " no valor de " +
@@ -2515,23 +3262,71 @@ document.getElementById("btnConfirmarPagamentoParcela").onclick = async function
 
     if(!confirmou) return;
 
-    await enviarTelegram(
-        "✅ CLIENTE CONFIRMOU PAGAMENTO\n\n" +
-        "👤 Cliente: " + (cliente.nome || usuarioLogado.email) + "\n" +
-        "📱 Telefone: " + (cliente.telefone || "Não informado") + "\n\n" +
-        "📄 Parcela: " + dados.numero + "\n" +
-        "💰 Valor: " + valorFormatado + "\n" +
-        "🌍 País: " + paisUsuarioGlobal + "\n\n" +
-        "⏳ Status: cliente informou que realizou o pagamento. Aguardando conferência."
-    );
+    const botaoConfirmar = this;
+    botaoConfirmar.disabled = true;
+    const textoOriginalBotao = botaoConfirmar.innerText;
 
-    alert(
-        "✅ Confirmação recebida!\n\n" +
-        "Seu pagamento será conferido e atualizado em até 24 horas.\n\n" +
-        "Enquanto isso, a parcela continuará aparecendo como pendente até a confirmação do banco."
-    );
+    let comprovanteUrl = "";
 
-    modalPagamento.remove();
+    try {
+
+        const arquivoInput = document.getElementById("comprovantePagamento");
+        const arquivo = arquivoInput && arquivoInput.files[0];
+
+        if(arquivo){
+
+            botaoConfirmar.innerText = "⏳ Enviando comprovante...";
+
+            const caminho =
+                "comprovantes/" + usuarioLogado.uid + "/" +
+                parcelaId + "_" + Date.now() + "_" + arquivo.name;
+
+            const referenciaArquivo = storageRef(storage, caminho);
+
+            await uploadBytes(referenciaArquivo, arquivo);
+            comprovanteUrl = await getDownloadURL(referenciaArquivo);
+
+            await updateDoc(doc(db, "parcelas", parcelaId), {
+                comprovanteUrl: comprovanteUrl,
+                comprovanteEnviadoEm: new Date()
+            });
+
+        }
+
+        botaoConfirmar.innerText = "⏳ Enviando confirmação...";
+
+        await enviarTelegram(
+            "✅ CLIENTE CONFIRMOU PAGAMENTO\n\n" +
+            "👤 Cliente: " + (cliente.nome || usuarioLogado.email) + "\n" +
+            "📱 Telefone: " + (cliente.telefone || "Não informado") + "\n\n" +
+            "📄 Parcela: " + dados.numero + "\n" +
+            "💰 Valor: " + valorFormatado + "\n" +
+            "🌍 País: " + paisUsuarioGlobal + "\n\n" +
+            (comprovanteUrl
+                ? "📎 Comprovante: " + comprovanteUrl + "\n\n"
+                : "📎 Comprovante: não anexado\n\n") +
+            "⏳ Status: cliente informou que realizou o pagamento. Aguardando conferência."
+        );
+
+        mostrarAviso(
+            "✅ Confirmação recebida! Seu pagamento será conferido e atualizado em até 24 horas.",
+            "success"
+        );
+
+        modalPagamento.remove();
+
+    } catch (erro) {
+
+        console.error("Erro ao confirmar pagamento:", erro);
+        mostrarAviso(
+            "Não foi possível enviar sua confirmação agora. Tente novamente.",
+            "error"
+        );
+        botaoConfirmar.disabled = false;
+        botaoConfirmar.innerText = textoOriginalBotao;
+
+    }
+
 };
 
 }
@@ -2658,5 +3453,24 @@ cursor:pointer;
 
   </div>
 </div>
+  <div class="menu-inferior">
+    <button class="menu-item ativo" data-alvo="topoApp">
+      <span class="menu-icone">🏠</span>
+      Início
+    </button>
+    <button class="menu-item" data-alvo="secaoScore">
+      <span class="menu-icone">⭐</span>
+      Score
+    </button>
+    <button class="menu-item" data-alvo="secaoParcelas">
+      <span class="menu-icone">📅</span>
+      Parcelas
+    </button>
+    <button class="menu-item" id="menuSairBtn">
+      <span class="menu-icone">🚪</span>
+      Sair
+    </button>
+  </div>
+
 </body>
 </html>

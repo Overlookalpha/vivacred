@@ -835,83 +835,170 @@ snapshotParcelas.docs.forEach((docSnap)=>{
 
 });
 
-for(const emprestimoId in emprestimosMap){
+// Resume cada empréstimo (quitado ou não) antes de desenhar na
+// tela, só pra poder separar em dois grupos — não muda nenhum
+// valor calculado.
+const gruposEmprestimos = Object.keys(emprestimosMap).map((idEmprestimo) => {
 
-  const titulo = document.createElement("h3");
-  titulo.innerHTML = "📄 Empréstimo";
-  titulo.style.marginTop = "25px";
-  containerParcelas.appendChild(titulo);
-
-  const listaOrdenada = emprestimosMap[emprestimoId].sort((a,b)=>{
+  const parcelas = emprestimosMap[idEmprestimo].sort((a,b)=>{
     return a.data().numero - b.data().numero;
   });
 
-  listaOrdenada.forEach((docSnap)=>{
+  const totalParcelas = parcelas.length;
+
+  const parcelasPagas = parcelas.filter(
+    p => (p.data().valor - p.data().pago) <= 0
+  ).length;
+
+  return {
+    parcelas,
+    totalParcelas,
+    parcelasPagas,
+    quitado: parcelasPagas === totalParcelas
+  };
+
+});
+
+const gruposEmAberto = gruposEmprestimos.filter(g => !g.quitado);
+const gruposQuitados = gruposEmprestimos.filter(g => g.quitado);
+
+function renderizarGrupoEmprestimo(grupo){
+
+  const card = document.createElement("div");
+  card.style.marginBottom = "16px";
+  card.style.padding = "16px";
+  card.style.background = "var(--surface)";
+  card.style.border = "1px solid var(--border)";
+  card.style.borderRadius = "14px";
+
+  const cabecalho = document.createElement("div");
+  cabecalho.style.display = "flex";
+  cabecalho.style.justifyContent = "space-between";
+  cabecalho.style.alignItems = "center";
+  cabecalho.style.marginBottom = "10px";
+
+  cabecalho.innerHTML =
+    "<div style='font-weight:700;font-size:14px;'>" +
+    (grupo.quitado ? "🟢 Empréstimo quitado" : "🔴 Empréstimo em aberto") +
+    "</div>" +
+    "<div style='font-size:12px;color:var(--text-soft);'>" +
+    grupo.parcelasPagas + "/" + grupo.totalParcelas + " pagas" +
+    "</div>";
+
+  card.appendChild(cabecalho);
+
+  grupo.parcelas.forEach((docSnap) => {
 
   const dados = docSnap.data();
 
-  const parcelaId = docSnap.id;
+  let restante = dados.valor - dados.pago;
+  let status = "🔴 Pendente";
 
-  const div = document.createElement("div");
-  div.style.marginBottom = "18px";
-div.style.padding = "16px";
-div.style.background = "var(--bg)";
-div.style.border = "1px solid var(--border)";
-div.style.borderRadius = "12px";
-div.style.lineHeight = "1.6";
-let restante = dados.valor - dados.pago;
-let status = "🔴 Pendente";
+  const hoje = new Date();
+  const vencimento = dados.vencimento.toDate();
 
-const hoje = new Date();
-const vencimento = dados.vencimento.toDate();
-    
-let multa = 0;
-let juros = 0;
+  let multa = 0;
+  let juros = 0;
 
-if(restante === 0){
-    status = "🟢 PAGO";
+  if(restante === 0){
+      status = "🟢 Pago";
+  }
+
+  else if(hoje > vencimento && restante > 0){
+
+  const diasAtraso = Math.floor(
+  (hoje - vencimento) / (1000 * 60 * 60 * 24)
+  );
+
+  multa = dados.valor * 0.05;
+  juros = dados.valor * 0.01 * diasAtraso;
+
+  restante = dados.valor + multa + juros - dados.pago;
+
+  updateDoc(doc(db,"parcelas",docSnap.id),{
+  multa: multa,
+  juros: juros,
+  diasAtraso: diasAtraso,
+  restante: restante
+  });
+
+  status = "⚠️ Atrasado";
+
+  }
+  else if(dados.pago > 0){
+      status = "🟡 Parcial";
+  }
+
+  const linha = document.createElement("div");
+  linha.style.padding = "9px 0";
+  linha.style.borderTop = "1px solid var(--border)";
+
+  if(restante === 0){
+
+    // Parcela já paga: uma linha só, sem repetir multa/juros
+    // zerados — é isso que estava deixando a lista poluída.
+    linha.innerHTML =
+      "<div style='display:flex;justify-content:space-between;font-size:13px;'>" +
+      "<span style='color:var(--text-soft);'>Parcela " + dados.numero + "</span>" +
+      "<span style='color:var(--success);font-weight:600;'>🟢 Pago · " +
+      Number(dados.valor).toFixed(2) + "</span>" +
+      "</div>";
+
+  } else {
+
+    // Parcela ainda em aberto: mantém o detalhe completo, que é
+    // o que a pessoa precisa pra saber quanto falta e como pagar.
+    linha.innerHTML =
+      "<div style='font-size:14px;font-weight:600;margin-bottom:5px;'>" +
+      "Parcela " + dados.numero + " — " + status +
+      "</div>" +
+      "<div style='font-size:13px;color:var(--text-soft);line-height:1.6;'>" +
+      "Valor: " + Number(dados.valor).toFixed(2) + "<br>" +
+      "Pago: " + Number(dados.pago).toFixed(2) +
+      (multa > 0 ? "<br>Multa: " + multa.toFixed(2) : "") +
+      (juros > 0 ? "<br>Juros atraso: " + juros.toFixed(2) : "") +
+      "<br><strong style='color:var(--text);'>Restante: " + restante.toFixed(2) + "</strong>" +
+      "</div>";
+
+  }
+
+  card.appendChild(linha);
+
+  });
+
+  containerParcelas.appendChild(card);
+
 }
 
-else if(hoje > vencimento && restante > 0){
+if(gruposEmprestimos.length === 0){
 
-const diasAtraso = Math.floor(
-(hoje - vencimento) / (1000 * 60 * 60 * 24)
-);
-
-multa = dados.valor * 0.05;
-juros = dados.valor * 0.01 * diasAtraso;
-
-restante = dados.valor + multa + juros - dados.pago;
-
-updateDoc(doc(db,"parcelas",docSnap.id),{
-multa: multa,
-juros: juros,
-diasAtraso: diasAtraso,
-restante: restante
-});
-
-status = "⚠ ATRASADO";
+  containerParcelas.innerHTML =
+    "<div style='color:var(--text-soft);font-size:14px;'>Nenhuma parcela encontrada.</div>";
 
 }
-else if(dados.pago > 0){
-    status = "🟡 Parcial";
+
+if(gruposEmAberto.length > 0){
+
+  const tituloAberto = document.createElement("h3");
+  tituloAberto.innerHTML = "🔴 Em aberto";
+  tituloAberto.style.marginTop = "20px";
+  tituloAberto.style.marginBottom = "10px";
+  containerParcelas.appendChild(tituloAberto);
+
+  gruposEmAberto.forEach(renderizarGrupoEmprestimo);
+
 }
-  
-div.innerHTML =
-"<>Parcela " + dados.numero + "</> - " + status + "<br><br>" +
 
-"<>Valor:</> " + dados.valor + "<br>" +
-"<strong>Pago:</strong> " + dados.pago + "<br>" +
-"<strong>Multa:</strong> " + multa.toFixed(2) + "<br>" +
-"<strong>Juros atraso:</strong> " + juros.toFixed(2) + "<br>" +
-"<strong>Restante:</strong> " + restante.toFixed(2) +
+if(gruposQuitados.length > 0){
 
-(restante > 0
- ? ""
- : "");
-containerParcelas.appendChild(div);
+  const tituloQuitado = document.createElement("h3");
+  tituloQuitado.innerHTML = "🟢 Quitados";
+  tituloQuitado.style.marginTop = "20px";
+  tituloQuitado.style.marginBottom = "10px";
+  tituloQuitado.style.color = "var(--text-soft)";
+  containerParcelas.appendChild(tituloQuitado);
 
-});
+  gruposQuitados.forEach(renderizarGrupoEmprestimo);
 
 }
   const listaRejeitados = snapshotRejeitado.docs.sort((a,b)=>{

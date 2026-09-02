@@ -1,168 +1,214 @@
-
 <!DOCTYPE html>
 <html> 
 <head>
   <title>IsaCred - Painel</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <style>
+    :root{
+      --bg:#F5F7FA;
+      --surface:#FFFFFF;
+      --border:#E3E8EF;
+      --text:#101828;
+      --text-soft:#667085;
+      --primary:#155EEF;
+      --primary-dark:#0B3FA0;
+      --primary-soft:#EEF4FF;
+      --danger:#D92D20;
+      --danger-soft:#FEF3F2;
+      --success:#17A673;
+      --success-soft:#ECFDF5;
+      --warning:#B54708;
+      --warning-soft:#FFFAEB;
+      --shadow:0 1px 2px rgba(16,24,40,.06), 0 4px 16px rgba(16,24,40,.06);
+    }
+
+    * { box-sizing: border-box; }
+
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #0f172a, #1e293b);
-      color: white;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
     }
 
     .header {
-      padding: 20px;
+      padding: 16px 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
     }
 
     .logo {
-      font-size: 18px;
-      letter-spacing: 2px;
-      opacity: 0.7;
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: var(--primary-dark);
     }
 
     .logout {
-      background: #ef4444;
-      border: none;
-      padding: 8px 15px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 9px 16px;
       border-radius: 8px;
-      color: white;
+      color: var(--text);
+      font-weight: 600;
+      font-size: 13px;
       cursor: pointer;
     }
 
+    .logout:hover { background: var(--bg); }
+
+    #logoutBtn { color: var(--danger); }
+
     .container {
-      padding: 30px;
-      max-width: 500px;
+      padding: 22px 16px 60px;
+      max-width: 480px;
       margin: auto;
     }
 
     .card {
-      background: rgba(255,255,255,0.05);
-      padding: 25px;
+      background: var(--surface);
+      padding: 22px;
       border-radius: 16px;
-      margin-bottom: 20px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
     }
 
     .score-value {
       font-size: 40px;
-      font-weight: bold;
+      font-weight: 800;
     }
 
     .limit {
-      font-size: 24px;
-      margin-top: 10px;
+      font-size: 22px;
+      font-weight: 700;
+      margin-top: 8px;
+      color: var(--primary-dark);
     }
 
     .btn-credit {
       width: 100%;
-      padding: 12px;
-      border-radius: 8px;
+      padding: 14px;
+      border-radius: 10px;
       border: none;
-      background: #22c55e;
+      background: var(--primary);
       color: white;
-      font-weight: bold;
+      font-weight: 700;
+      font-size: 15px;
       cursor: pointer;
       margin-top: 15px;
     }
 
+    .btn-credit:hover { background: var(--primary-dark); }
+
     .email {
-      opacity: 0.7;
-      font-size: 14px;
+      color: var(--text-soft);
+      font-size: 13px;
     }
+
     .modal {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  justify-content: center;
-  align-items: center;
-  z-index: 999;
-}
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(16,24,40,0.45);
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+    }
 
-.modal-content {
-  background: #1e1e1e;
-  padding: 20px;
-  border-radius: 10px;
-  width: 90%;
-  max-width: 400px;
-  color: white;
+    .modal-content {
+      background: var(--surface);
+      padding: 22px;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 400px;
+      color: var(--text);
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow);
+    }
 
-  max-height: 80vh;
-  overflow-y: auto;
-}
+    .modal-content {
+      display: block;
+      margin-bottom: 10px;
+    }
 
-.modal-content  {
-  display: block;
-  margin-bottom: 10px;
-}
-.hero-score {
-  margin-top: 30px;
-  padding: 40px 20px;
-  border-radius: 20px;
-  background: radial-gradient(circle at top left, #0f2027, #0a0f1c 70%);
-  box-shadow: 0 20px 60px rgba(0, 255, 200, 0.15);
-  text-align: center;
-}
+    .hero-score {
+      margin-top: 22px;
+      padding: 30px 20px;
+      border-radius: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
 
-.hero-title {
-  font-size: 12px;
-  letter-spacing: 3px;
-  opacity: 0.6;
-}
+    .hero-title {
+      font-size: 12px;
+      letter-spacing: 2px;
+      color: var(--text-soft);
+      font-weight: 600;
+    }
 
-.hero-number {
-  font-size: 72px;
-  font-weight: 800;
-  margin-top: 10px;
-  background: linear-gradient(90deg, #00ffc3, #00c853);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
+    .hero-number {
+      font-size: 64px;
+      font-weight: 800;
+      margin-top: 8px;
+      color: var(--text);
+    }
 
-.hero-level {
-  margin-top: 10px;
-  font-size: 16px;
-  opacity: 0.8;
-}
+    .hero-level {
+      margin-top: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-soft);
+    }
 
-.hero-progress {
-  margin: 25px auto 10px auto;
-  height: 10px;
-  width: 80%;
-  background: rgba(255,255,255,0.08);
-  border-radius: 10px;
-  overflow: hidden;
-}
+    .hero-progress {
+      margin: 22px auto 10px auto;
+      height: 8px;
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
 
-.hero-progress-fill {
-  height: 10px;
-  width: 20%;
-  background: linear-gradient(90deg, #00ffc3, #00c853);
-  transition: 0.4s;
-}
+    .hero-progress-fill {
+      height: 100%;
+      width: 20%;
+      background: var(--primary);
+      transition: 0.4s;
+      border-radius: 10px;
+    }
 
-.hero-text {
-  font-size: 13px;
-  opacity: 0.6;
-  margin-top: 15px;
-}
-   .guiaScore{
-outline:3px solid #22c55e;
-border-radius:15px;
-animation:pulsarScore 1.2s infinite;
-}
+    .hero-text {
+      font-size: 13px;
+      color: var(--text-soft);
+      margin-top: 14px;
+    }
 
-@keyframes pulsarScore{
-0%{box-shadow:0 0 0 0 rgba(34,197,94,0.8);}
-70%{box-shadow:0 0 0 18px rgba(34,197,94,0);}
-100%{box-shadow:0 0 0 0 rgba(34,197,94,0);}
-}
+    .guiaScore {
+      outline: 3px solid var(--primary);
+      border-radius: 15px;
+      animation: pulsarScore 1.2s infinite;
+    }
+
+    @keyframes pulsarScore {
+      0% { box-shadow: 0 0 0 0 rgba(21,94,239,0.35); }
+      70% { box-shadow: 0 0 0 18px rgba(21,94,239,0); }
+      100% { box-shadow: 0 0 0 0 rgba(21,94,239,0); }
+    }
   </style>
 </head>
 
@@ -217,8 +263,8 @@ animation:pulsarScore 1.2s infinite;
     <div class="hero-progress">
       <div class="hero-progress-fill" id="scoreBar"></div>
     </div>
-     <p id="progressoNivelTexto" style="color: white; margin-top: 10px;"></p>
-     <p id="faltamPontosTexto" style="color: #9BE8C7; font-size: 14px;"></p>
+     <p id="progressoNivelTexto" style="color: var(--text-soft); margin-top: 10px; font-size: 13px;"></p>
+     <p id="faltamPontosTexto" style="color: var(--success); font-size: 14px; font-weight:600;"></p>
     <div class="hero-text">
       Quanto melhor seu histórico, maior seu limite.
     </div>
@@ -262,9 +308,12 @@ style="
 width:100%;
 padding:12px;
 border-radius:8px;
-border:none;
+border:1px solid var(--border);
 margin-top:10px;
 box-sizing:border-box;
+font-size:15px;
+font-family:inherit;
+color:var(--text);
 ">
 
 <br><br>
@@ -273,7 +322,8 @@ box-sizing:border-box;
 margin-top:15px;
 line-height:1.8;
 font-size:15px;
-background:rgba(255,255,255,0.05);
+background:var(--bg);
+border:1px solid var(--border);
 padding:12px;
 border-radius:10px;
 min-height:80px;
@@ -307,7 +357,7 @@ Digite um valor para simular
     <div style="
       text-align:center;
       padding:8px 0 18px;
-      border-bottom:1px solid rgba(255,255,255,0.12);
+      border-bottom:1px solid var(--border);
       margin-bottom:18px;
     ">
       <div style="font-size:32px;">🚀</div>
@@ -332,7 +382,7 @@ Digite um valor para simular
         Carregando...
       </div>
 
-      <div id="perfilCreditoNivel" style="margin-top:7px;color:#9BE8C7;">
+      <div id="perfilCreditoNivel" style="margin-top:7px;color:var(--success);font-weight:600;">
         🍀 Nível Essencial
       </div>
 
@@ -350,7 +400,8 @@ Digite um valor para simular
     </div>
 
     <div style="
-      background:rgba(255,255,255,.06);
+      background:var(--bg);
+      border:1px solid var(--border);
       border-radius:12px;
       padding:13px;
       line-height:1.8;
@@ -376,7 +427,7 @@ Digite um valor para simular
       font-size:14px;
       line-height:1.6;
     ">
-      <div style="font-weight:bold;color:#fde68a;">
+      <div style="font-weight:bold;color:var(--warning);">
         🔒 Renda protegida
       </div>
 
@@ -467,10 +518,10 @@ Digite um valor para simular
       width:100%;
       margin-top:10px;
       padding:11px;
-      border:none;
+      border:1px solid var(--border);
       border-radius:10px;
-      background:rgba(255,255,255,.12);
-      color:white;
+      background:var(--surface);
+      color:var(--text);
       cursor:pointer;
     ">
       Cancelar
@@ -690,7 +741,40 @@ const qTodasNotificacoes = query(
   where("userId","==",usuarioLogado.uid)
 );
 
-const snapshotTodas = await getDocs(qTodasNotificacoes);
+const parcelasRef = collection(db, "parcelas");
+const q = query(parcelasRef, where("userId", "==", user.uid));
+
+const userRef = doc(db, "usuarios", user.uid);
+const adminRef = doc(db, "admins", user.uid);
+
+// VERIFICAR SOLICITAÇÃO REJEITADA
+const qRejeitado = query(
+collection(db, "emprestimos"),
+where("userId", "==", user.uid),
+where("status", "==", "rejeitado"),
+where("statusAviso", "!=", "visto")
+);
+
+// Antes, cada uma dessas 6 consultas esperava a anterior terminar
+// pra começar — e os dados do usuário (nome, score) só chegavam
+// por último, por isso a tela ficava travada em "20" até tudo
+// carregar. Nenhuma delas depende da outra, então agora disparam
+// todas ao mesmo tempo.
+const [
+  snapshotTodas,
+  snapshotNotificacoes,
+  snapshotParcelas,
+  adminSnap,
+  snapshotRejeitado,
+  userSnap
+] = await Promise.all([
+  getDocs(qTodasNotificacoes),
+  getDocs(qNotificacoes),
+  getDocs(q),
+  getDoc(adminRef),
+  getDocs(qRejeitado),
+  getDoc(userRef)
+]);
 
 const lista = document.getElementById("listaNotificacoes");
 
@@ -710,7 +794,8 @@ if(lista){
 
     div.style.padding = "10px";
     div.style.marginBottom = "10px";
-    div.style.background = "rgba(255,255,255,0.05)";
+    div.style.background = "var(--bg)";
+    div.style.border = "1px solid var(--border)";
     div.style.borderRadius = "8px";
 
     div.innerHTML =
@@ -722,8 +807,6 @@ if(lista){
   });
 
 }
-const snapshotNotificacoes = await getDocs(qNotificacoes);
-
 const contador = document.getElementById("contadorNotificacao");
 
 if(!snapshotNotificacoes.empty){
@@ -732,12 +815,7 @@ if(!snapshotNotificacoes.empty){
   contador.innerText = snapshotNotificacoes.size;
 
 }
-  const parcelasRef = collection(db, "parcelas");
-const q = query(parcelasRef, where("userId", "==", user.uid));
-
-const snapshotParcelas = await getDocs(q);
-
-const containerParcelas = document.getElementById("minhasParcelas");
+  const containerParcelas = document.getElementById("minhasParcelas");
 
 containerParcelas.innerHTML = "";
 
@@ -777,7 +855,8 @@ for(const emprestimoId in emprestimosMap){
   const div = document.createElement("div");
   div.style.marginBottom = "18px";
 div.style.padding = "16px";
-div.style.background = "rgba(255,255,255,0.06)";
+div.style.background = "var(--bg)";
+div.style.border = "1px solid var(--border)";
 div.style.borderRadius = "12px";
 div.style.lineHeight = "1.6";
 let restante = dados.valor - dados.pago;
@@ -835,19 +914,6 @@ containerParcelas.appendChild(div);
 });
 
 }
-const userRef = doc(db, "usuarios", user.uid);
-  const adminRef = doc(db, "admins", user.uid);
-  const adminSnap = await getDoc(adminRef);
-  // VERIFICAR SOLICITAÇÃO REJEITADA
-
-const qRejeitado = query(
-collection(db, "emprestimos"),
-where("userId", "==", user.uid),
-where("status", "==", "rejeitado"),
-where("statusAviso", "!=", "visto")
-);
-
-const snapshotRejeitado = await getDocs(qRejeitado);
   const listaRejeitados = snapshotRejeitado.docs.sort((a,b)=>{
   return b.data().criadoEm?.seconds - a.data().criadoEm?.seconds;
   });
@@ -857,8 +923,6 @@ const snapshotRejeitado = await getDocs(qRejeitado);
     document.body.style.border = "4px solid red";
   }
 
-  const userSnap = await getDoc(userRef);
-  // MOSTRAR AVISO DE SOLICITAÇÃO REJEITADA
 
 if (!snapshotRejeitado.empty) {
 
@@ -888,9 +952,10 @@ else if (dados.motivoRecusa === "Já possui empréstimo ativo") {
   const aviso = document.createElement("div");
   aviso.style.marginTop = "20px";
   aviso.style.padding = "15px";
-  aviso.style.background = "#3b1d1d";
+  aviso.style.background = "var(--danger-soft)";
+  aviso.style.border = "1px solid rgba(217,45,32,0.25)";
   aviso.style.borderRadius = "10px";
-  aviso.style.color = "white";
+  aviso.style.color = "var(--text)";
 
   aviso.innerHTML = `
 <strong>📄 Solicitação analisada</strong><br><br>
@@ -937,7 +1002,7 @@ setTimeout(function(){
       nome: "Essencial",
       emoji: "🍀",
       max: limites.Essencial,
-      cor: "#7ED957"
+      cor: "#3F9142"
     };
   }
   else if (score <= 40) {
@@ -945,7 +1010,7 @@ setTimeout(function(){
       nome: "Bronze",
       emoji: "🥉",
       max: limites.Bronze,
-      cor: "#CD7F32"
+      cor: "#A5652A"
     };
   }
   else if (score <= 60) {
@@ -953,7 +1018,7 @@ setTimeout(function(){
       nome: "Prata",
       emoji: "🥈",
       max: limites.Prata,
-      cor: "#C0C0C0"
+      cor: "#6B7280"
     };
   }
   else if (score <= 80) {
@@ -961,7 +1026,7 @@ setTimeout(function(){
       nome: "Ouro",
       emoji: "🥇",
       max: limites.Ouro,
-      cor: "#FFD700"
+      cor: "#B7791F"
     };
   }
   else {
@@ -969,7 +1034,7 @@ setTimeout(function(){
       nome: "Black",
       emoji: "💎",
       max: limites.Black,
-      cor: "#6A0DAD"
+      cor: "#5B21B6"
     };
   }
 
@@ -1286,6 +1351,12 @@ if (selectParcelas) {
 const nivelEmoji = dadosNivel.emoji;
 const nivelCor = dadosNivel.cor;
 const limiteMaximoNivel = dadosNivel.max;
+
+// O número do Score agora usa a mesma cor do nível da pessoa,
+// igual à barra de progresso logo abaixo.
+if (scoreValor) {
+  scoreValor.style.color = nivelCor;
+}
 
 const nivelTexto = document.getElementById("nivelTexto");
 const limiteNivelTexto = document.getElementById("limiteNivelTexto");
@@ -1758,7 +1829,8 @@ parcelasOrdenadas.forEach((p) => {
     const item = document.createElement("div");
     item.style.marginBottom = "15px";
     item.style.padding = "12px";
-    item.style.background = "rgba(255,255,255,0.05)";
+    item.style.background = "var(--bg)";
+    item.style.border = "1px solid var(--border)";
     item.style.borderRadius = "10px";
     let statusEmprestimo = "🟢 Quitado";
 
@@ -1775,7 +1847,7 @@ const totalParcelas = parcelasOrdenadas.length;
 if(possuiPendente){
     statusEmprestimo =
         "🔴 Em Aberto" +
-        "<br><button onclick=\"gerarPagamentoParcela('" + primeiraParcelaPendente.id + "')\" style='margin-top:10px;'>💳 Pagar Parcela</button>";
+        "<br><button onclick=\"gerarPagamentoParcela('" + primeiraParcelaPendente.id + "')\" style='margin-top:10px;background:var(--primary);color:white;border:none;padding:9px 14px;border-radius:8px;font-weight:600;cursor:pointer;font-family:inherit;'>💳 Pagar Parcela</button>";
 }
     item.innerHTML =
 
@@ -2112,7 +2184,7 @@ if(valor > limiteMaximo){
 
 resultadoSimulacao.innerHTML =
 `
-<div style="color:#ff6b6b;font-weight:bold;">
+<div style="color:var(--danger);font-weight:bold;">
 ⚠️ Valor acima do seu limite disponível
 </div>
 
@@ -2153,7 +2225,8 @@ simulacoesHTML +=
 <div style="
 margin-top:10px;
 padding:10px;
-background:rgba(255,255,255,0.04);
+background:var(--surface);
+border:1px solid var(--border);
 border-radius:8px;
 ">
 <strong>${parcela}x</strong> de
@@ -2175,7 +2248,7 @@ currency:paisUsuarioGlobal==="PT" ? "EUR" : "BRL"
 
 resultadoSimulacao.innerHTML =
 `
-<div style="color:#4cff88;font-weight:bold;">
+<div style="color:var(--success);font-weight:bold;">
 ✅ Simulação aprovada
 </div>
 

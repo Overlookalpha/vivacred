@@ -1622,6 +1622,17 @@ async function montarListaVencimentos(lista,titulo){
 
    const emp = emprestimoSnap.data();
 
+   // Preferência de lembrete que o próprio cliente escolheu
+   // (1, 3 ou 7 dias) — padrão 3 se ele nunca escolheu.
+   let diasLembreteCliente = 3;
+
+   if(parcela.userId){
+     const clienteSnap = await getDoc(doc(db,"usuarios",parcela.userId));
+     if(clienteSnap.exists()){
+       diasLembreteCliente = clienteSnap.data().diasLembrete || 3;
+     }
+   }
+
    html +=
    "<br><br>" +
 
@@ -1638,6 +1649,11 @@ async function montarListaVencimentos(lista,titulo){
 
    "📅 " +
    parcela.vencimento.toDate().toLocaleDateString("pt-BR") +
+   "<br>" +
+
+   "🔔 Cliente pediu aviso com " +
+   diasLembreteCliente + (diasLembreteCliente === 1 ? " dia" : " dias") +
+   " de antecedência" +
    "<br>" +
 
    "<button onclick=\"emitirFatura('" + parcela.parcelaId + "')\" style=\"" +

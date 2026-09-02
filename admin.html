@@ -3,48 +3,87 @@
 <meta charset="UTF-8">
 <title>VivaCred Admin</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 
+:root{
+  --bg:#F5F7FA;
+  --surface:#FFFFFF;
+  --border:#E3E8EF;
+  --text:#101828;
+  --text-soft:#667085;
+  --primary:#155EEF;
+  --primary-dark:#0B3FA0;
+  --primary-soft:#EEF4FF;
+  --danger:#D92D20;
+  --danger-soft:#FEF3F2;
+  --success:#17A673;
+  --success-soft:#ECFDF5;
+  --warning:#B54708;
+  --warning-soft:#FFFAEB;
+  --shadow:0 1px 2px rgba(16,24,40,.06), 0 4px 16px rgba(16,24,40,.06);
+}
+
+*{ box-sizing:border-box; }
+
 body{
-font-family: Arial; 
-background:#111;
-color:white;
+font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+background:var(--bg);
+color:var(--text);
 margin:0;
 }
 
 .card{
-background:#1c1c1c;
+background:var(--surface);
+border:1px solid var(--border);
 padding:15px;
 margin-bottom:15px;
 border-radius:10px;
+box-shadow:var(--shadow);
 }
 
 button{
-padding:6px 12px;
-border:none;
-border-radius:6px;
+padding:8px 14px;
+border:1px solid var(--border);
+border-radius:8px;
 cursor:pointer;
 margin-right:5px;
+background:var(--surface);
+color:var(--text);
+font-family:inherit;
+font-weight:600;
+font-size:13px;
+}
+
+button:hover{
+background:var(--bg);
 }
 
 .aprovar{
-background:#00c853;
+background:var(--success);
 color:white;
+border-color:var(--success);
 }
 
 .menuItem{
-margin-top:15px;
+margin-top:8px;
 cursor:pointer;
-padding:8px 10px;
-border-radius:6px;
+padding:10px 12px;
+border-radius:8px;
+color:var(--text-soft);
+font-weight:600;
+font-size:14px;
 }
 
 .menuItem:hover{
-background:#2a2a2a;
+background:var(--bg);
 }
 
 .menuAtivo{
-background:#3a3a3a;
+background:var(--primary-soft);
+color:var(--primary-dark);
 }
 
 </style>
@@ -58,13 +97,14 @@ background:#3a3a3a;
 
 <div style="
 width:200px;
-background:#1e293b;
+background:var(--surface);
+border-right:1px solid var(--border);
 min-height:100vh;
 padding:20px;
-color:white;
+color:var(--text);
 ">
 
-<h3>VivaCred</h3>
+<h3 style="color:var(--primary-dark);">💰 VivaCred</h3>
 
 <div class="menuItem" onclick="abrirTela('dashboard')">🏠 Dashboard</div>
 
@@ -368,6 +408,10 @@ import {
  let capitalBR = 1000;
 let capitalPT = 1000;
 
+// ================================================
+// 🧮 UTILITÁRIOS COMPARTILHADOS (multa, juros, cálculo de parcela)
+// Usado por várias telas — dashboard, empréstimos, fatura.
+// ================================================
 function calcularCobrancaParcela(parcela, hojeReferencia = new Date()){
 
  if(!parcela){
@@ -454,6 +498,11 @@ function calcularCobrancaParcela(parcela, hojeReferencia = new Date()){
  };
 }
 
+// ================================================
+// 🏠 ABA: DASHBOARD — Diagnóstico geral do sistema
+// (aniversários, cobranças por vencer, ranking, etc — o que
+// alimenta o resumo enviado pro Telegram no login)
+// ================================================
 async function gerarDiagnosticoSistema(){
 
  const resultado = {
@@ -927,6 +976,9 @@ Math.max(
 
 }
 
+// ================================================
+// 📲 TELEGRAM — Montagem das mensagens enviadas no login
+// ================================================
 function gerarResumoTelegram(d){
 
 return `
@@ -1009,6 +1061,9 @@ a.idade +
 : ""}
 `;
 }
+ // ================================================
+ // 📲 TELEGRAM — Alertas específicos (aniversário, atraso, etc)
+ // ================================================
  function gerarAlertasTelegram(d){
 
  let texto = "";
@@ -1270,6 +1325,11 @@ if(d.aniversarios.proximos7Dias.length > 0){
 
 }
   
+// ================================================
+// 🏠 ABA: DASHBOARD — Cálculo financeiro
+// (Caixa, Na Rua, Esta Semana, Em Atraso, Próximo Vencimento,
+// Central de Vencimentos)
+// ================================================
 async function calcularFinanceiro(){
 
  let totalEmprestadoBR = 0;
@@ -1606,6 +1666,10 @@ document.getElementById("clientesAtraso").innerHTML =
 emprestimosAtrasadosSet.size +
 (emprestimosAtrasadosSet.size === 1 ? " cliente" : " clientes");
 
+// ================================================
+// 🏠 ABA: DASHBOARD — Renderização das listas de vencimento
+// (vence em 3/2/1 dia, hoje) — usada pela Central de Vencimentos
+// ================================================
 async function montarListaVencimentos(lista,titulo){
 
  let html = titulo;
@@ -1672,6 +1736,10 @@ async function montarListaVencimentos(lista,titulo){
 // Pega os dados da parcela + do empréstimo (mesmos dados que já
 // aparecem no dashboard) e monta uma fatura pronta, sem precisar
 // montar nada manualmente.
+// ================================================
+// 🧾 FATURA — Gera e abre a fatura pronta pro cliente
+// (chamada pelo botão "Emitir Fatura" na Central de Vencimentos)
+// ================================================
 window.emitirFatura = async function(parcelaId){
 
  // A aba precisa abrir AGORA, ainda dentro do clique do usuário —
@@ -1976,6 +2044,9 @@ const firebaseConfig = {
   authDomain: "vivacred-5a5b8.firebaseapp.com",
   projectId: "vivacred-5a5b8",
 };
+// ================================================
+// 📲 TELEGRAM — Envio de fato (usada por todas as telas)
+// ================================================
 async function enviarTelegram(texto){
 
  try{
@@ -2019,6 +2090,12 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 let emprestimoRecusaId = null;
 
+// ================================================
+// 🔐 LOGIN / INICIALIZAÇÃO
+// Roda assim que o admin loga: confere permissão, dispara o
+// diagnóstico + Telegram, carrega o dashboard e a lista de
+// solicitações de crédito.
+// ================================================
 onAuthStateChanged(auth, async (user) => {
 
  if (!user) {
@@ -2167,15 +2244,15 @@ if(dados.finalizado === true){
 let statusTexto = "";
 
 if(dados.parcelasPagas == 0){
- statusTexto = "<div style='color:#cccccc;font-weight:bold;'>SEM PAGAMENTO</div>";
+ statusTexto = "<div style='color:#667085;font-weight:bold;'>SEM PAGAMENTO</div>";
 }
 
 if(dados.parcelasPagas > 0 && dados.parcelasPagas < dados.parcelas){
- statusTexto = "<div style='color:#ffd93d;font-weight:bold;'>PAGAMENTO PARCIAL</div>";
+ statusTexto = "<div style='color:#B54708;font-weight:bold;'>PAGAMENTO PARCIAL</div>";
 }
 
 if(dados.parcelasPagas >= dados.parcelas){
- statusTexto = "<div style='color:#4cff88;font-weight:bold;font-size:18px;'>QUITADO</div>";
+ statusTexto = "<div style='color:#17A673;font-weight:bold;font-size:18px;'>QUITADO</div>";
 }
 div.innerHTML =
 "<strong>" + dados.email + "</strong><br><br>" +
@@ -2195,7 +2272,7 @@ div.innerHTML =
 (dados.cpfAvalista || "-") + "<br><br>" +
 
 
-"<div style='background:#18212f;border:1px solid #2d8cff;border-radius:10px;padding:12px;margin:12px 0;'>" +
+"<div style='background:#EEF4FF;border:1px solid #155EEF;border-radius:10px;padding:12px;margin:12px 0;'>" +
 
 "<b>🧠 Diagnóstico da Solicitação</b><br><br>" +
 
@@ -2456,7 +2533,7 @@ let diasRestantes = "--";
 if(!proximaParcela){
 
     statusTexto =
-    "<div style='color:#4cff88;font-weight:bold;font-size:18px;'>🟢 QUITADO</div>";
+    "<div style='color:#17A673;font-weight:bold;font-size:18px;'>🟢 QUITADO</div>";
 
 }else{
 
@@ -2475,17 +2552,17 @@ if(!proximaParcela){
     if(diasRestantes < 0){
 
         statusTexto =
-        "<div style='color:#ff4c4c;font-weight:bold;'>🔴 ATRASADO</div>";
+        "<div style='color:#D92D20;font-weight:bold;'>🔴 ATRASADO</div>";
 
     }else if(parcelasPagas === 0){
 
         statusTexto =
-        "<div style='color:#cccccc;font-weight:bold;'>⚪ SEM PAGAMENTO</div>";
+        "<div style='color:#667085;font-weight:bold;'>⚪ SEM PAGAMENTO</div>";
 
     }else{
 
         statusTexto =
-        "<div style='color:#ffd93d;font-weight:bold;'>🟡 PAGAMENTO PARCIAL</div>";
+        "<div style='color:#B54708;font-weight:bold;'>🟡 PAGAMENTO PARCIAL</div>";
 
     }
 
@@ -2531,7 +2608,8 @@ proximaParcela
 ${moeda} ${saldoDevedor.toFixed(2)}
 
 <div style="
-background:#2a2a2a;
+background:var(--bg);
+border:1px solid var(--border);
 height:18px;
 border-radius:20px;
 overflow:hidden;
@@ -2607,6 +2685,9 @@ historicoSnapshot.forEach((docSnap) => {
 
 });
   
+// ================================================
+// 📥 ABA: SOLICITAÇÕES — Aprovar / rejeitar pedidos de crédito
+// ================================================
 window.aprovar = async (id) => {
 
   const userRef = doc(db, "usuarios", id);
@@ -2727,7 +2808,10 @@ for (let i = 1; i <= dados.parcelas; i++) {
  alert("Empréstimo aprovado!");
  location.reload();
 };
- window.fecharEmprestimo = async (id) => {
+// ================================================
+// 💰 ABA: EMPRÉSTIMOS — Gestão dos empréstimos ativos/quitados
+// ================================================
+window.fecharEmprestimo = async (id) => {
 
  const ref = doc(db,"emprestimos",id);
 
@@ -2786,7 +2870,7 @@ let botoes = "";
 if(parcela.pago >= parcela.valor){
 
   botoes =
-  "<div style='color:#4cff88;font-weight:bold;font-size:16px;'>🟢 PAGO</div>";
+  "<div style='color:#17A673;font-weight:bold;font-size:16px;'>🟢 PAGO</div>";
 
 }else{
 
@@ -2850,6 +2934,9 @@ window.pagarParcela = async (emprestimoId)=>{
 
 };
   
+// ================================================
+// ⚙️ ABA: CONFIG — Capital Brasil/Portugal
+// ================================================
 window.salvarCapital = async () => {
 
  capitalBR = Number(
@@ -2873,7 +2960,10 @@ capitalPT = Number(
  alert("Capital salvo com sucesso");
 
 };
-  window.toggleHistorico = () => {
+  // ================================================
+// 📊 ABA: HISTÓRICO
+// ================================================
+window.toggleHistorico = () => {
 
  const historico = document.getElementById("caixaHistorico");
 
@@ -2884,6 +2974,9 @@ capitalPT = Number(
  }
 
 };
+// ================================================
+// 🧭 NAVEGAÇÃO — Troca de aba do menu lateral
+// ================================================
 window.abrirTela = function(tela){
 document.getElementById("telaDashboard").style.display = "none";
 document.getElementById("telaSolicitacoes").style.display = "none";
@@ -2925,7 +3018,10 @@ document.getElementById("telaUsuarios").style.display = "block";
 window.scrollTo(0,0);
 
 }
-  window.abrirModalRecusa = function(id){
+  // ================================================
+// 📥 ABA: SOLICITAÇÕES — Fluxo de recusa
+// ================================================
+window.abrirModalRecusa = function(id){
 
  emprestimoRecusaId = id;
 
@@ -2951,7 +3047,10 @@ window.scrollTo(0,0);
  location.reload();
 
 }
-  window.editarEmprestimo = async (id)=>{
+  // ================================================
+// 💰 ABA: EMPRÉSTIMOS — Editar e gerenciar parcelas
+// ================================================
+window.editarEmprestimo = async (id)=>{
 
  const ref = doc(db,"emprestimos",id);
  const snap = await getDoc(ref);
@@ -3147,7 +3246,10 @@ await updateDoc(userRef,{
  location.reload();
 
 }
-  window.confirmarRecusa = async function(){
+  // ================================================
+// 📥 ABA: SOLICITAÇÕES — Confirmação da recusa
+// ================================================
+window.confirmarRecusa = async function(){
 
  const radios = document.getElementsByName("motivoRecusa");
 
@@ -3209,7 +3311,10 @@ console.log("Erro Telegram:", erro);
  location.reload();
 
 }
-  window.cobrarCliente = async (parcelaId)=>{
+  // ================================================
+// 🏠 ABA: DASHBOARD — Cobrar cliente pelo WhatsApp
+// ================================================
+window.cobrarCliente = async (parcelaId)=>{
 
  const ref = doc(db,"parcelas",parcelaId);
  const snap = await getDoc(ref);
@@ -3266,7 +3371,10 @@ encodeURIComponent(mensagem);
 window.open(link,"_blank");
 
 }
- window.abrirNovoUsuario = function(){
+ // ================================================
+// 👥 ABA: USUÁRIOS — Cadastro, edição, perfil, saldo IsaCoin
+// ================================================
+window.abrirNovoUsuario = function(){
 
  document.getElementById("formNovoUsuario").style.display = "block";
 
@@ -3941,6 +4049,15 @@ window.alternarStatusUsuarioFirestore = async function(id){
  renderizarUsuarios();
 
 }
+// ================================================
+// ⚠️ CÓDIGO NÃO UTILIZADO (legado)
+// Essas 4 funções abaixo (verUsuario, editarUsuario,
+// alternarStatusUsuario, excluirUsuario) trabalham em cima do
+// array "usuariosTeste", que fica sempre vazio — nada aqui
+// embaixo é chamado pela tela de usuários de verdade (que usa
+// as versões "...Firestore" lá em cima). Não apaguei nada, só
+// deixei marcado — se quiser, dá pra remover com segurança.
+// ================================================
 window.verUsuario = function(index){
 
  const user = usuariosTeste[index];
@@ -4093,14 +4210,14 @@ z-index:9999;
 ">
 
 <div style="
-background:#1c1c1c;
+background:var(--surface);
 padding:20px;
 border-radius:12px;
 width:90%;
 max-width:700px;
 max-height:85vh;
 overflow:auto;
-color:white;
+color:var(--text);
 ">
 
 <h2>👤 Perfil Completo do Cliente</h2>
@@ -4130,7 +4247,8 @@ align-items:center;
 ">
 
 <div style="
-background:#1c1c1c;
+background:var(--surface);
+color:var(--text);
 padding:20px;
 border-radius:10px;
 width:400px;
@@ -4161,7 +4279,8 @@ align-items:center;
 ">
 
 <div style="
-background:#1c1c1c;
+background:var(--surface);
+color:var(--text);
 padding:20px;
 border-radius:10px;
 width:400px;

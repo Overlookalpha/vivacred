@@ -1696,6 +1696,17 @@ window.emitirFatura = async function(parcelaId){
 
  const emprestimo = emprestimoSnap.data();
 
+ // Dados do cliente (endereço, Izacons, score) — usados pra deixar
+ // a fatura mais completa e reforçar o incentivo a pagar em dia.
+ let cliente = {};
+
+ if(parcela.userId){
+  const clienteSnap = await getDoc(doc(db,"usuarios",parcela.userId));
+  if(clienteSnap.exists()){
+   cliente = clienteSnap.data();
+  }
+ }
+
  const hoje = new Date();
  hoje.setHours(0,0,0,0);
 
@@ -1716,6 +1727,31 @@ window.emitirFatura = async function(parcelaId){
  } else {
   textoVencimento = "Vence em " + diasRestantes + " dias";
  }
+
+ // Mesma tabela de score/limite que já existe na tela de
+ // solicitações — só reaproveitada aqui, nenhum valor novo.
+ const score = cliente.score || 0;
+
+ const nivelInfo =
+  score <= 20 ? { nivel: 1, nome: "Bronze" } :
+  score <= 40 ? { nivel: 2, nome: "Prata" } :
+  score <= 60 ? { nivel: 3, nome: "Ouro" } :
+  score <= 80 ? { nivel: 4, nome: "Platina" } :
+  { nivel: 5, nome: "Diamante" };
+
+ const limiteAtual =
+  emprestimo.pais === "PT"
+  ? (score <= 20 ? "€100" : score <= 40 ? "€300" : score <= 60 ? "€500" : score <= 80 ? "€800" : "€2.000")
+  : (score <= 20 ? "R$300" : score <= 40 ? "R$800" : score <= 60 ? "R$1.500" : score <= 80 ? "R$3.000" : "R$5.000");
+
+ const enderecoCliente =
+  [cliente.cidade, cliente.estado].filter(Boolean).join(" / ") || null;
+
+ // Mesma taxa já usada na tela do cliente (home.html):
+ // 1 Izacon = R$0,01 no Brasil, ou €0,002 em Portugal.
+ const valorPorIsaCoin = emprestimo.pais === "PT" ? 0.002 : 0.01;
+ const isaCoinsCliente = Number(cliente.isaCoins || 0);
+ const valorIsaCoinsConvertido = isaCoinsCliente * valorPorIsaCoin;
 
  const cobranca = calcularCobrancaParcela(parcela, hoje);
 
@@ -1750,6 +1786,7 @@ body{font-family:Arial, sans-serif; background:#f1f5f9; margin:0; padding:30px; 
 .total{background:#0f172a;color:white;border-radius:8px;padding:16px;text-align:center;margin-top:16px;}
 .total .valorTotal{font-size:26px;font-weight:bold;}
 .pix{background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:14px;margin-top:16px;text-align:center;}
+.nivel{background:#eef2ff;border:1px solid #a5b4fc;border-radius:8px;padding:14px;margin-top:16px;text-align:center;line-height:1.6;}
 .pix strong{display:block;margin-bottom:4px;}
 .rodape{text-align:center;padding:16px;font-size:12px;color:#94a3b8;}
 .btnImprimir{display:block;width:100%;padding:12px;margin-top:20px;background:#2563eb;color:white;border:none;border-radius:8px;font-weight:bold;cursor:pointer;font-size:15px;}
@@ -1766,6 +1803,7 @@ body{font-family:Arial, sans-serif; background:#f1f5f9; margin:0; padding:30px; 
   <div class="destaque">⏳ ${textoVencimento}</div>
   <div class="linha"><span class="label">Cliente</span><span class="valor">${emprestimo.nomeCliente || "Cliente"}</span></div>
   <div class="linha"><span class="label">Telefone</span><span class="valor">${emprestimo.telefoneCliente || "-"}</span></div>
+  ${enderecoCliente ? `<div class="linha"><span class="label">Endereço</span><span class="valor">${enderecoCliente}</span></div>` : ""}
   <div class="linha"><span class="label">Parcela</span><span class="valor">${parcela.numero || "-"}</span></div>
   <div class="linha"><span class="label">Vencimento</span><span class="valor">${vencimento.toLocaleDateString("pt-BR")}</span></div>
   <div class="linha"><span class="label">Valor original</span><span class="valor">${moeda} ${Number(parcela.valor || 0).toFixed(2)}</span></div>
@@ -1778,6 +1816,16 @@ body{font-family:Arial, sans-serif; background:#f1f5f9; margin:0; padding:30px; 
   <div class="pix">
    <strong>💳 Pix para pagamento</strong>
    ${chavePix}
+  </div>
+  <div class="nivel">
+   <strong>🏅 Nível ${nivelInfo.nivel} — ${nivelInfo.nome}</strong>
+   Seu limite atual: ${limiteAtual}<br>
+   💎 Você tem <b>${isaCoinsCliente.toLocaleString("pt-BR")} Izacons</b>
+   (equivale a ${moeda} ${valorIsaCoinsConvertido.toFixed(2)})<br>
+   <span style="font-size:12px;opacity:.85;">
+    Pagar em dia (ou adiantado) aumenta seus Izacons e ajuda a
+    subir de nível — quanto maior o nível, maior o limite liberado.
+   </span>
   </div>
  </div>
  <div class="rodape">IsaCred • Gerado em ${new Date().toLocaleDateString("pt-BR")}</div>

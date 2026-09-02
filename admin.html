@@ -1289,6 +1289,11 @@ const vencemEm2Dias = [];
 const vencemAmanha = [];
 const vencemHoje = [];
 const atrasados = [];
+
+// Acumuladores só pra preencher os cards "Esta Semana" e
+// "Em Atraso" do resumo — não mexem nas listas acima.
+let valorEstaSemana = 0;
+const emprestimosAtrasadosSet = new Set();
 emprestimosSnap.forEach((docSnap)=>{
 
  const dados = docSnap.data();
@@ -1370,6 +1375,20 @@ if (diasRestantes < 0 && dados.status !== "pago") {
         multa: dados.multa || 0,
         juros: dados.juros || 0
     });
+
+    emprestimosAtrasadosSet.add(dados.emprestimoId);
+}
+
+// "Esta Semana" = parcelas que vencem de hoje até os
+// próximos 7 dias (ainda não vencidas).
+if (
+    dados.status !== "pago" &&
+    diasRestantes >= 0 &&
+    diasRestantes <= 7
+) {
+    valorEstaSemana += Number(
+        dados.restante ?? dados.valor ?? 0
+    );
 }
 
 }
@@ -1395,9 +1414,21 @@ if(
 
    const vencimento = dados.vencimento.toDate();
 
+   const hojeComparacao = new Date();
+   hojeComparacao.setHours(0,0,0,0);
+
+   const vencimentoComparacao = new Date(vencimento);
+   vencimentoComparacao.setHours(0,0,0,0);
+
+   // "Próximo Vencimento" é pra quem ainda vai vencer — quem já
+   // venceu (atrasado) fica só no card "Em Atraso", não aqui.
+   const aindaNaoVenceu =
+     vencimentoComparacao >= hojeComparacao;
+
    if(
-     !proximaParcela ||
-     vencimento < proximaParcela.vencimento
+     aindaNaoVenceu &&
+     (!proximaParcela ||
+     vencimento < proximaParcela.vencimento)
    ){
 
      proximaParcela = {
@@ -1539,9 +1570,13 @@ document.getElementById("caixaDisponivel").innerHTML =
 "💰 Caixa Disponível<br>" +
 "R$ " + caixaDisponivel.toFixed(2);
 
+// Antes esse card só mostrava o valor do Brasil — Portugal
+// nunca entrava na conta, mesmo tendo clientes lá.
+const dinheiroRuaTotal = dinheiroRuaBR + dinheiroRuaPT;
+
 document.getElementById("dinheiroRua").innerHTML =
 "🏦 Na Rua<br>" +
-"R$ " + dinheiroRuaBR.toFixed(2);
+"R$ " + dinheiroRuaTotal.toFixed(2);
 document.getElementById("dinheiroRuaBR").innerText =
 "R$ " + dinheiroRuaBR.toFixed(2);
 
@@ -1559,6 +1594,17 @@ document.getElementById("recebidoPT").innerText =
 
 document.getElementById("saldoPT").innerText =
 "€ " + saldoPT.toFixed(2);
+
+// Esses dois cards existiam na tela mas nunca eram
+// preenchidos — ficavam sempre com o valor inicial (zero).
+document.getElementById("proximos7Dias").innerHTML =
+"📅 Esta Semana<br>" +
+"R$ " + valorEstaSemana.toFixed(2);
+
+document.getElementById("clientesAtraso").innerHTML =
+"🚨 Em Atraso<br>" +
+emprestimosAtrasadosSet.size +
+(emprestimosAtrasadosSet.size === 1 ? " cliente" : " clientes");
 
 async function montarListaVencimentos(lista,titulo){
 
@@ -1592,10 +1638,147 @@ async function montarListaVencimentos(lista,titulo){
 
    "📅 " +
    parcela.vencimento.toDate().toLocaleDateString("pt-BR") +
+   "<br>" +
+
+   "<button onclick=\"emitirFatura('" + parcela.parcelaId + "')\" style=\"" +
+   "margin-top:6px;background:#2563eb;color:white;\">" +
+   "🧾 Emitir Fatura" +
+   "</button>" +
    "<br>";
  }
 
  return html;
+}
+
+// =============================
+// EMITIR FATURA
+// =============================
+// Pega os dados da parcela + do empréstimo (mesmos dados que já
+// aparecem no dashboard) e monta uma fatura pronta, sem precisar
+// montar nada manualmente.
+window.emitirFatura = async function(parcelaId){
+
+ const parcelaRef = doc(db,"parcelas",parcelaId);
+ const parcelaSnap = await getDoc(parcelaRef);
+
+ if(!parcelaSnap.exists()){
+  alert("Parcela não encontrada.");
+  return;
+ }
+
+ const parcela = parcelaSnap.data();
+
+ const emprestimoRef = doc(db,"emprestimos",parcela.emprestimoId);
+ const emprestimoSnap = await getDoc(emprestimoRef);
+
+ if(!emprestimoSnap.exists()){
+  alert("Empréstimo não encontrado.");
+  return;
+ }
+
+ const emprestimo = emprestimoSnap.data();
+
+ const hoje = new Date();
+ hoje.setHours(0,0,0,0);
+
+ const vencimento = parcela.vencimento.toDate();
+ const vencimentoZerado = new Date(vencimento);
+ vencimentoZerado.setHours(0,0,0,0);
+
+ const diasRestantes = Math.round(
+  (vencimentoZerado - hoje) / 86400000
+ );
+
+ let textoVencimento;
+
+ if(diasRestantes <= 0){
+  textoVencimento = "Vence hoje";
+ } else if(diasRestantes === 1){
+  textoVencimento = "Vence amanhã";
+ } else {
+  textoVencimento = "Vence em " + diasRestantes + " dias";
+ }
+
+ const cobranca = calcularCobrancaParcela(parcela, hoje);
+
+ const moeda = emprestimo.pais === "PT" ? "€" : "R$";
+
+ const valorTotal =
+  cobranca.totalAtualizado > 0
+   ? cobranca.totalAtualizado
+   : Number(parcela.restante ?? parcela.valor ?? 0);
+
+ // Mesma chave Pix já usada no botão "Cobrar Agora".
+ const chavePix = "51998920455";
+
+ const htmlFatura = `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Fatura - ${emprestimo.nomeCliente || "Cliente"}</title>
+<style>
+body{font-family:Arial, sans-serif; background:#f1f5f9; margin:0; padding:30px; color:#111;}
+.fatura{max-width:480px;margin:0 auto;background:white;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.15);}
+.cabecalho{background:#0f172a;color:white;padding:24px;text-align:center;}
+.cabecalho h1{margin:0;font-size:22px;}
+.cabecalho span{font-size:13px;opacity:.8;}
+.corpo{padding:24px;}
+.linha{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #e2e8f0;}
+.linha:last-child{border-bottom:none;}
+.label{color:#64748b;font-size:14px;}
+.valor{font-weight:bold;font-size:14px;}
+.destaque{background:#fff7ed;border:1px solid #fdba74;border-radius:8px;padding:14px;text-align:center;margin:16px 0;font-weight:bold;color:#c2410c;}
+.total{background:#0f172a;color:white;border-radius:8px;padding:16px;text-align:center;margin-top:16px;}
+.total .valorTotal{font-size:26px;font-weight:bold;}
+.pix{background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:14px;margin-top:16px;text-align:center;}
+.pix strong{display:block;margin-bottom:4px;}
+.rodape{text-align:center;padding:16px;font-size:12px;color:#94a3b8;}
+.btnImprimir{display:block;width:100%;padding:12px;margin-top:20px;background:#2563eb;color:white;border:none;border-radius:8px;font-weight:bold;cursor:pointer;font-size:15px;}
+@media print{ .btnImprimir{display:none;} body{background:white;padding:0;} .fatura{box-shadow:none;} }
+</style>
+</head>
+<body>
+<div class="fatura">
+ <div class="cabecalho">
+  <h1>💰 IsaCred</h1>
+  <span>Fatura de Cobrança</span>
+ </div>
+ <div class="corpo">
+  <div class="destaque">⏳ ${textoVencimento}</div>
+  <div class="linha"><span class="label">Cliente</span><span class="valor">${emprestimo.nomeCliente || "Cliente"}</span></div>
+  <div class="linha"><span class="label">Telefone</span><span class="valor">${emprestimo.telefoneCliente || "-"}</span></div>
+  <div class="linha"><span class="label">Parcela</span><span class="valor">${parcela.numero || "-"}</span></div>
+  <div class="linha"><span class="label">Vencimento</span><span class="valor">${vencimento.toLocaleDateString("pt-BR")}</span></div>
+  <div class="linha"><span class="label">Valor original</span><span class="valor">${moeda} ${Number(parcela.valor || 0).toFixed(2)}</span></div>
+  ${cobranca.multa > 0 ? `<div class="linha"><span class="label">Multa</span><span class="valor">${moeda} ${cobranca.multa.toFixed(2)}</span></div>` : ""}
+  ${cobranca.juros > 0 ? `<div class="linha"><span class="label">Juros</span><span class="valor">${moeda} ${cobranca.juros.toFixed(2)}</span></div>` : ""}
+  <div class="total">
+   <div style="font-size:13px;opacity:.8;">Valor a pagar</div>
+   <div class="valorTotal">${moeda} ${valorTotal.toFixed(2)}</div>
+  </div>
+  <div class="pix">
+   <strong>💳 Pix para pagamento</strong>
+   ${chavePix}
+  </div>
+ </div>
+ <div class="rodape">IsaCred • Gerado em ${new Date().toLocaleDateString("pt-BR")}</div>
+</div>
+<button class="btnImprimir" onclick="window.print()">🖨️ Imprimir / Salvar como PDF</button>
+</body>
+</html>
+`;
+
+ const janela = window.open("", "_blank");
+
+ if(!janela){
+  alert("Não foi possível abrir a fatura. Verifique se o navegador está bloqueando pop-ups.");
+  return;
+ }
+
+ janela.document.write(htmlFatura);
+ janela.document.close();
+
 }
 
 document.getElementById("vencimentos3Dias").innerHTML =

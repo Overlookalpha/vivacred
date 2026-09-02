@@ -1658,10 +1658,27 @@ async function montarListaVencimentos(lista,titulo){
 // montar nada manualmente.
 window.emitirFatura = async function(parcelaId){
 
+ // A aba precisa abrir AGORA, ainda dentro do clique do usuário —
+ // se abrir só depois dos dados chegarem do Firebase, o navegador
+ // não reconhece mais como ação direta do clique e bloqueia como
+ // pop-up. Por isso abrimos já com uma tela de "carregando" e
+ // preenchemos o conteúdo depois.
+ const janela = window.open("", "_blank");
+
+ if(!janela){
+  alert("Não foi possível abrir a fatura. Verifique se o navegador está bloqueando pop-ups.");
+  return;
+ }
+
+ janela.document.write(
+  "<p style='font-family:Arial;padding:30px;'>Gerando fatura...</p>"
+ );
+
  const parcelaRef = doc(db,"parcelas",parcelaId);
  const parcelaSnap = await getDoc(parcelaRef);
 
  if(!parcelaSnap.exists()){
+  janela.close();
   alert("Parcela não encontrada.");
   return;
  }
@@ -1672,6 +1689,7 @@ window.emitirFatura = async function(parcelaId){
  const emprestimoSnap = await getDoc(emprestimoRef);
 
  if(!emprestimoSnap.exists()){
+  janela.close();
   alert("Empréstimo não encontrado.");
   return;
  }
@@ -1769,13 +1787,7 @@ body{font-family:Arial, sans-serif; background:#f1f5f9; margin:0; padding:30px; 
 </html>
 `;
 
- const janela = window.open("", "_blank");
-
- if(!janela){
-  alert("Não foi possível abrir a fatura. Verifique se o navegador está bloqueando pop-ups.");
-  return;
- }
-
+ janela.document.open();
  janela.document.write(htmlFatura);
  janela.document.close();
 

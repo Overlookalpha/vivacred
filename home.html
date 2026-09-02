@@ -316,6 +316,35 @@
       100% { background-position: 0 50%; }
     }
 
+    /* ===== BANNER DE STATUS DE PAGAMENTO ===== */
+    .statusPagamento {
+      margin-top: 16px;
+      padding: 13px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .statusPagamento.ok {
+      background: var(--success-soft);
+      color: var(--success);
+      border: 1px solid rgba(23,166,115,0.25);
+    }
+
+    .statusPagamento.atraso {
+      background: var(--danger-soft);
+      color: var(--danger);
+      border: 1px solid rgba(217,45,32,0.25);
+      cursor: pointer;
+    }
+
+    .statusPagamento.atraso:hover {
+      background: #FEE4E2;
+    }
+
     /* ===== TRILHA DE NÍVEIS ===== */
     .trilha-niveis {
       display: flex;
@@ -595,7 +624,9 @@
     </div>
 
     <div id="areaAvisoTopo"></div>
-    
+
+    <div id="statusPagamentoBanner"></div>
+
   <div class="hero-score" id="secaoScore">
   <div class="hero-inner">
    <div style="margin-bottom:10px;">
@@ -1316,6 +1347,32 @@ window.aplicarMascaraMoeda = function(elemento){
 // =========================================
 // COPIAR CHAVE DE PAGAMENTO (Pix/MB WAY)
 // =========================================
+// =========================================
+// ESCOLHER SIMULAÇÃO → abre Solicitar Crédito já preenchido
+// =========================================
+window.escolherSimulacao = function(valor, parcelas){
+
+  const campoValor = document.getElementById("valorSimulado");
+  const campoParcelas = document.getElementById("parcelasSimuladas");
+  const modal = document.getElementById("modalCredito");
+
+  if(campoValor){
+    campoValor.value = Number(valor).toLocaleString("pt-BR");
+    campoValor.dataset.valorNumerico = String(valor);
+  }
+
+  if(campoParcelas){
+    campoParcelas.value = String(parcelas);
+  }
+
+  if(modal){
+    modal.style.display = "flex";
+  }
+
+  mostrarAviso("Valor e parcelas já preenchidos — confira e continue.", "info");
+
+};
+
 window.copiarChavePagamento = async function(chave, botao){
 
   const textoOriginal = botao.innerText;
@@ -1804,6 +1861,7 @@ let paisUsuarioGlobal = "BR";
 let usuarioLogado = null;
 let isaCoinsGlobal = 0;
 let dadosExtratoGlobal = null;
+let primeiraParcelaAtrasadaId = null;
 onAuthStateChanged(auth, async (user) => {
   
 
@@ -1980,6 +2038,7 @@ if(!snapshotNotificacoes.empty){
   const containerParcelas = document.getElementById("minhasParcelas");
 
 containerParcelas.innerHTML = "";
+primeiraParcelaAtrasadaId = null;
 
 const emprestimosMap = {};
 
@@ -2027,6 +2086,43 @@ const gruposQuitados = gruposEmprestimos.filter(g => g.quitado);
 // Guarda pra o botão "Extrato" poder montar o PDF sem precisar
 // buscar tudo de novo no banco.
 dadosExtratoGlobal = gruposEmprestimos;
+
+// =========================================
+// BANNER DE STATUS DE PAGAMENTO
+// Mostra se está tudo em dia, ou aponta direto pra parcela
+// atrasada (clicável — rola a tela até ela).
+// =========================================
+function atualizarBannerStatusPagamento(){
+
+  const banner = document.getElementById("statusPagamentoBanner");
+  if(!banner) return;
+
+  if(primeiraParcelaAtrasadaId){
+
+    banner.className = "statusPagamento atraso";
+    banner.innerHTML =
+      "⚠️ Você tem pagamento pendente. Toque aqui pra regularizar.";
+
+    banner.onclick = () => {
+      const alvo = document.getElementById(primeiraParcelaAtrasadaId);
+      if(alvo){
+        alvo.scrollIntoView({ behavior: "smooth", block: "center" });
+        alvo.style.transition = "background .3s";
+        alvo.style.background = "var(--danger-soft)";
+        setTimeout(() => { alvo.style.background = ""; }, 1500);
+      }
+    };
+
+  } else {
+
+    banner.className = "statusPagamento ok";
+    banner.innerHTML =
+      "✅ Tudo certo! Seus pagamentos estão em dia.";
+    banner.onclick = null;
+
+  }
+
+}
 
 function renderizarGrupoEmprestimo(grupo){
 
@@ -2098,6 +2194,13 @@ function renderizarGrupoEmprestimo(grupo){
   const linha = document.createElement("div");
   linha.style.padding = "9px 0";
   linha.style.borderTop = "1px solid var(--border)";
+
+  if(status === "⚠️ Atrasado"){
+    linha.id = "parcelaLinha-" + docSnap.id;
+    if(!primeiraParcelaAtrasadaId){
+      primeiraParcelaAtrasadaId = "parcelaLinha-" + docSnap.id;
+    }
+  }
 
   if(restante === 0){
 
@@ -2174,6 +2277,8 @@ if(gruposQuitados.length > 0){
   gruposQuitados.forEach(renderizarGrupoEmprestimo);
 
 }
+
+atualizarBannerStatusPagamento();
 
 // Avisa o próprio cliente quando uma parcela está a 3 dias do
 // vencimento — antes só o admin recebia esse aviso, pelo Telegram.
@@ -3510,12 +3615,13 @@ totalPagar / parcela;
 
 simulacoesHTML +=
 `
-<div style="
+<div onclick="escolherSimulacao(${valor}, ${parcela})" style="
 margin-top:10px;
 padding:10px;
 background:var(--surface);
 border:1px solid var(--border);
 border-radius:8px;
+cursor:pointer;
 ">
 <strong>${parcela}x</strong> de
 <strong>
@@ -3537,6 +3643,10 @@ ${(totalPagar - valor).toLocaleString("pt-BR",{
 style:"currency",
 currency:paisUsuarioGlobal==="PT" ? "EUR" : "BRL"
 })}
+</span>
+<br>
+<span style="font-size:12px;color:var(--primary);font-weight:600;">
+Toque para solicitar nessa opção →
 </span>
 </div>
 `;

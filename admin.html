@@ -3385,16 +3385,26 @@ window.open(link,"_blank");
 // ================================================
 window.avisarClienteSolicitacao = async (id)=>{
 
+ const janela = window.open("","_blank");
+
  const ref = doc(db,"emprestimos",id);
  const snap = await getDoc(ref);
 
  if(!snap.exists()){
+   if(janela){ janela.close(); }
    alert("Empréstimo não encontrado");
    return;
  }
 
  const dados = snap.data();
  const moeda = dados.pais === "PT" ? "€" : "R$";
+ const telefone = (dados.telefoneCliente || "").replace(/\D/g,"");
+
+ if(!telefone){
+   if(janela){ janela.close(); }
+   alert("Este cliente não tem telefone cadastrado.");
+   return;
+ }
 
  const mensagem =
  "👩‍💼 Evellyn - Assistente Virtual IsaCred\n\n"+
@@ -3410,30 +3420,38 @@ window.avisarClienteSolicitacao = async (id)=>{
 
  "Obrigado por utilizar a IsaCred.";
 
- const telefone = dados.telefoneCliente || "";
-
  const link =
  "https://wa.me/" +
- telefone.replace(/\D/g,"") +
+ telefone +
  "?text=" +
  encodeURIComponent(mensagem);
 
- window.open(link,"_blank");
+ if(janela){ janela.location.href = link; } else { window.open(link,"_blank"); }
 
 }
 
 window.acionarAvalista = async (id)=>{
 
+ const janela = window.open("","_blank");
+
  const ref = doc(db,"emprestimos",id);
  const snap = await getDoc(ref);
 
  if(!snap.exists()){
+   if(janela){ janela.close(); }
    alert("Empréstimo não encontrado");
    return;
  }
 
  const dados = snap.data();
  const moeda = dados.pais === "PT" ? "€" : "R$";
+ const telefone = (dados.telefoneAvalista || "").replace(/\D/g,"");
+
+ if(!telefone){
+   if(janela){ janela.close(); }
+   alert("Este avalista não tem telefone cadastrado.");
+   return;
+ }
 
  const mensagem =
  "👩‍💼 Evellyn - Assistente Virtual IsaCred\n\n"+
@@ -3449,24 +3467,25 @@ window.acionarAvalista = async (id)=>{
 
  "Obrigado.";
 
- const telefone = dados.telefoneAvalista || "";
-
  const link =
  "https://wa.me/" +
- telefone.replace(/\D/g,"") +
+ telefone +
  "?text=" +
  encodeURIComponent(mensagem);
 
- window.open(link,"_blank");
+ if(janela){ janela.location.href = link; } else { window.open(link,"_blank"); }
 
 }
 
 window.avisarClienteAprovado = async (id)=>{
 
+ const janela = window.open("","_blank");
+
  const ref = doc(db,"emprestimos",id);
  const snap = await getDoc(ref);
 
  if(!snap.exists()){
+   if(janela){ janela.close(); }
    alert("Empréstimo não encontrado");
    return;
  }
@@ -3475,6 +3494,13 @@ window.avisarClienteAprovado = async (id)=>{
  const moeda = dados.pais === "PT" ? "€" : "R$";
  const valorParcela = Number((dados.valorFinal || 0) / (dados.parcelas || 1)).toFixed(2);
  const vencimento = dados.dataVencimento ? dados.dataVencimento.toDate().toLocaleDateString("pt-BR") : "-";
+ const telefone = (dados.telefoneCliente || "").replace(/\D/g,"");
+
+ if(!telefone){
+   if(janela){ janela.close(); }
+   alert("Este cliente não tem telefone cadastrado.");
+   return;
+ }
 
  const mensagem =
  "👩‍💼 Evellyn - Assistente Virtual IsaCred\n\n"+
@@ -3492,30 +3518,38 @@ window.avisarClienteAprovado = async (id)=>{
 
  "Obrigado por utilizar a IsaCred.";
 
- const telefone = dados.telefoneCliente || "";
-
  const link =
  "https://wa.me/" +
- telefone.replace(/\D/g,"") +
+ telefone +
  "?text=" +
  encodeURIComponent(mensagem);
 
- window.open(link,"_blank");
+ if(janela){ janela.location.href = link; } else { window.open(link,"_blank"); }
 
 }
 
 window.avisarAvalistaAprovado = async (id)=>{
 
+ const janela = window.open("","_blank");
+
  const ref = doc(db,"emprestimos",id);
  const snap = await getDoc(ref);
 
  if(!snap.exists()){
+   if(janela){ janela.close(); }
    alert("Empréstimo não encontrado");
    return;
  }
 
  const dados = snap.data();
  const moeda = dados.pais === "PT" ? "€" : "R$";
+ const telefone = (dados.telefoneAvalista || "").replace(/\D/g,"");
+
+ if(!telefone){
+   if(janela){ janela.close(); }
+   alert("Este avalista não tem telefone cadastrado.");
+   return;
+ }
 
  const mensagem =
  "👩‍💼 Evellyn - Assistente Virtual IsaCred\n\n"+
@@ -3529,24 +3563,25 @@ window.avisarAvalistaAprovado = async (id)=>{
 
  "Obrigado pela confiança.";
 
- const telefone = dados.telefoneAvalista || "";
-
  const link =
  "https://wa.me/" +
- telefone.replace(/\D/g,"") +
+ telefone +
  "?text=" +
  encodeURIComponent(mensagem);
 
- window.open(link,"_blank");
+ if(janela){ janela.location.href = link; } else { window.open(link,"_blank"); }
 
 }
 
 window.avisarClienteParcelaPaga = async (parcelaId)=>{
 
+ const janela = window.open("","_blank");
+
  const ref = doc(db,"parcelas",parcelaId);
  const snap = await getDoc(ref);
 
  if(!snap.exists()){
+   if(janela){ janela.close(); }
    alert("Parcela não encontrada");
    return;
  }
@@ -3557,12 +3592,20 @@ window.avisarClienteParcelaPaga = async (parcelaId)=>{
  const emprestimoSnap = await getDoc(emprestimoRef);
 
  if(!emprestimoSnap.exists()){
+   if(janela){ janela.close(); }
    alert("Empréstimo não encontrado");
    return;
  }
 
  const emprestimo = emprestimoSnap.data();
  const moeda = emprestimo.pais === "PT" ? "€" : "R$";
+ const telefone = (emprestimo.telefoneCliente || "").replace(/\D/g,"");
+
+ if(!telefone){
+   if(janela){ janela.close(); }
+   alert("Este cliente não tem telefone cadastrado.");
+   return;
+ }
 
  const mensagem =
  "👩‍💼 Evellyn - Assistente Virtual IsaCred\n\n"+
@@ -3575,15 +3618,13 @@ window.avisarClienteParcelaPaga = async (parcelaId)=>{
 
  "Obrigado por manter seus pagamentos em dia!";
 
- const telefone = emprestimo.telefoneCliente || "";
-
  const link =
  "https://wa.me/" +
- telefone.replace(/\D/g,"") +
+ telefone +
  "?text=" +
  encodeURIComponent(mensagem);
 
- window.open(link,"_blank");
+ if(janela){ janela.location.href = link; } else { window.open(link,"_blank"); }
 
 }
  // ================================================

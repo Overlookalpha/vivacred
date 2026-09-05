@@ -3133,6 +3133,8 @@ if(Number(valor) > restanteAtual){
 }
   window.confirmarParcela = async (parcelaId)=>{
 
+ const janela = window.open("","_blank");
+
  const ref = doc(db,"parcelas",parcelaId);
  const snap = await getDoc(ref);
  const dados = snap.data();
@@ -3249,6 +3251,34 @@ await updateDoc(userRef,{
     finalizado: finalizado,
     status: finalizado ? "finalizado" : "ativo"
 });
+
+ const moeda = emprestimo.pais === "PT" ? "€" : "R$";
+ const telefoneWhats = (emprestimo.telefoneCliente || "").replace(/\D/g,"");
+
+ if(telefoneWhats){
+
+   const mensagem =
+   "👩‍💼 Evellyn - Assistente Virtual IsaCred\n\n"+
+
+   "Olá "+(emprestimo.nomeCliente || "Cliente")+"!\n\n"+
+
+   "✅ Confirmamos o pagamento da parcela "+dados.numero+" de "+emprestimo.parcelas+".\n\n"+
+
+   "💰 Valor: "+moeda+" "+Number(dados.valor).toFixed(2)+"\n\n"+
+
+   "Obrigado por manter seus pagamentos em dia!";
+
+   const link =
+   "https://wa.me/" +
+   telefoneWhats +
+   "?text=" +
+   encodeURIComponent(mensagem);
+
+   if(janela){ janela.location.href = link; } else { window.open(link,"_blank"); }
+
+ } else if(janela){
+   janela.close();
+ }
 
  alert("Parcela confirmada");
 

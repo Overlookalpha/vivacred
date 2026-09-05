@@ -3481,7 +3481,9 @@ const btnSacarIsaCoin = document.getElementById("btnSacarIsaCoin");
 
 if(btnSacarIsaCoin){
 
-  btnSacarIsaCoin.addEventListener("click", ()=>{
+  btnSacarIsaCoin.addEventListener("click", async ()=>{
+
+    const janela = window.open("","_blank");
 
     const minimoSaqueIsaCoin = 10000;
 
@@ -3508,6 +3510,8 @@ if(btnSacarIsaCoin){
 
     if(faltamParaSaque > 0){
 
+      if(janela){ janela.close(); }
+
       mostrarAviso(
         "Você ainda não pode solicitar o saque.\n\n" +
         "Para sacar " + valorSaqueFormatado +
@@ -3520,11 +3524,95 @@ if(btnSacarIsaCoin){
       return;
     }
 
+    if(!auth.currentUser){
+      if(janela){ janela.close(); }
+      return;
+    }
+
+    const saquesPendentesSnap = await getDocs(
+      query(
+        collection(db,"saques"),
+        where("userId","==",auth.currentUser.uid),
+        where("status","==","pendente")
+      )
+    );
+
+    if(!saquesPendentesSnap.empty){
+
+      if(janela){ janela.close(); }
+
+      mostrarAviso(
+        "Você já tem uma solicitação de saque em andamento. Aguarde a confirmação do pagamento.",
+        "info"
+      );
+
+      return;
+    }
+
+    const valorAtualFormatado =
+      (isaCoinsGlobal * valorPorIsaCoin).toLocaleString(localizacaoSaque, {
+        style: "currency",
+        currency: moedaSaque
+      });
+
+    const confirmar = await confirmarModal(
+      "Deseja solicitar o saque de " + valorAtualFormatado +
+      " referente a " + isaCoinsGlobal.toLocaleString("pt-BR") +
+      " ISAcoins?\n\nSuas moedas serão descontadas assim que o pagamento for confirmado."
+    );
+
+    if(!confirmar){
+      if(janela){ janela.close(); }
+      return;
+    }
+
+    const userRef = doc(db,"usuarios",auth.currentUser.uid);
+    const userSnap = await getDoc(userRef);
+    const dadosUsuario = userSnap.exists() ? userSnap.data() : {};
+
+    const isaCoinsAtual = dadosUsuario.isaCoins || 0;
+    const valorSaque = isaCoinsAtual * valorPorIsaCoin;
+
+    await addDoc(collection(db,"saques"),{
+      userId: auth.currentUser.uid,
+      nomeCliente: dadosUsuario.nome || "",
+      telefoneCliente: dadosUsuario.telefone || "",
+      pix: dadosUsuario.pix || "",
+      isaCoins: isaCoinsAtual,
+      valor: valorSaque,
+      moeda: moedaSaque,
+      pais: paisUsuarioGlobal,
+      status: "pendente",
+      criadoEm: new Date()
+    });
+
+    const valorSaqueFormatadoFinal =
+      valorSaque.toLocaleString(localizacaoSaque, {
+        style: "currency",
+        currency: moedaSaque
+      });
+
+    const mensagem =
+    "Olá! Gostaria de solicitar o saque do Clube ISAcoin.\n\n"+
+    "Nome: "+(dadosUsuario.nome || "-")+"\n"+
+    "ISAcoins: "+isaCoinsAtual.toLocaleString("pt-BR")+"\n"+
+    "Valor: "+valorSaqueFormatadoFinal+"\n"+
+    "Chave Pix: "+(dadosUsuario.pix || "-")+"\n\n"+
+    "Aguardo a confirmação, obrigado!";
+
+    const numeroAdmin = "351931714823";
+
+    const link =
+    "https://wa.me/" +
+    numeroAdmin +
+    "?text=" +
+    encodeURIComponent(mensagem);
+
+    if(janela){ janela.location.href = link; } else { window.open(link,"_blank"); }
+
     mostrarAviso(
-      "🎉 Você atingiu o mínimo para saque!\n\n" +
-      "Você poderá solicitar o saque de " +
-      valorSaqueFormatado +
-      ".\n\nSua solicitação será enviada para análise."
+      "🎉 Solicitação de saque enviada! Você receberá seu pagamento em breve.",
+      "success"
     );
 
   });

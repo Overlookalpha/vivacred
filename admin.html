@@ -115,6 +115,7 @@ color:var(--text);
 <div class="menuItem" onclick="abrirTela('historico')">📊 Histórico</div>
 
 <div class="menuItem" onclick="abrirTela('config')">⚙️ Config</div>
+<div class="menuItem" onclick="abrirTela('saques')">💸 Saques</div>
 
 </div>
 
@@ -296,6 +297,16 @@ Abrir
 </button>
 
 </div>
+
+</div>
+
+<!-- SAQUES -->
+
+<div id="telaSaques" style="display:none;">
+
+<h3>💸 Saques ISAcoin</h3>
+
+<div id="listaSaques"></div>
 
 </div>
 
@@ -2993,6 +3004,7 @@ document.getElementById("telaEmprestimos").style.display = "none";
 document.getElementById("telaHistorico").style.display = "none";
 document.getElementById("telaConfig").style.display = "none";
 document.getElementById("telaUsuarios").style.display = "none";
+document.getElementById("telaSaques").style.display = "none";
 
 const menu = document.querySelectorAll(".menuItem");
 menu.forEach(btn => btn.classList.remove("menuAtivo"));
@@ -3023,6 +3035,11 @@ menu[4].classList.add("menuAtivo");
 }
 if(tela === "usuarios"){
 document.getElementById("telaUsuarios").style.display = "block";
+}
+if(tela === "saques"){
+document.getElementById("telaSaques").style.display = "block";
+menu[5].classList.add("menuAtivo");
+carregarSaques();
 }
 window.scrollTo(0,0);
 
@@ -3655,6 +3672,128 @@ window.avisarClienteParcelaPaga = async (parcelaId)=>{
  encodeURIComponent(mensagem);
 
  if(janela){ janela.location.href = link; } else { window.open(link,"_blank"); }
+
+}
+ // ================================================
+// 💸 ABA: SAQUES — Clube ISAcoin
+// ================================================
+window.carregarSaques = async function(){
+
+ const container = document.getElementById("listaSaques");
+ if(!container) return;
+
+ container.innerHTML = "Carregando...";
+
+ const snap = await getDocs(
+   query(collection(db,"saques"), where("status","==","pendente"))
+ );
+
+ if(snap.empty){
+   container.innerHTML = "<p>Nenhuma solicitação de saque pendente.</p>";
+   return;
+ }
+
+ container.innerHTML = "";
+
+ snap.forEach((docSnap)=>{
+
+   const dados = docSnap.data();
+   const moeda = dados.pais === "PT" ? "€" : "R$";
+
+   const div = document.createElement("div");
+   div.className = "card";
+
+   div.innerHTML =
+   "<b>"+(dados.nomeCliente || "Cliente")+"</b><br>"+
+   "Telefone: "+(dados.telefoneCliente || "-")+"<br>"+
+   "Chave Pix: "+(dados.pix || "-")+"<br><br>"+
+   "🪙 ISAcoins: "+Number(dados.isaCoins || 0).toLocaleString("pt-BR")+"<br>"+
+   "💰 Valor a pagar: "+moeda+" "+Number(dados.valor || 0).toFixed(2)+"<br><br>"+
+   "<button style='background:#17A673;color:white;' onclick=\"marcarSaquePago('"+docSnap.id+"')\">✅ Marcar como Pago</button>";
+
+   container.appendChild(div);
+
+ });
+
+}
+
+window.marcarSaquePago = async (id)=>{
+
+ const confirmar = confirm("Confirma que o pagamento deste saque já foi realizado?");
+ if(!confirmar) return;
+
+ const janela = window.open("","_blank");
+
+ const ref = doc(db,"saques",id);
+ const snap = await getDoc(ref);
+
+ if(!snap.exists()){
+   if(janela){ janela.close(); }
+   alert("Solicitação de saque não encontrada");
+   return;
+ }
+
+ const dados = snap.data();
+
+ if(dados.status === "pago"){
+   if(janela){ janela.close(); }
+   alert("Este saque já foi marcado como pago.");
+   return;
+ }
+
+ const userRef = doc(db,"usuarios",dados.userId);
+ const userSnap = await getDoc(userRef);
+
+ if(userSnap.exists()){
+
+   const userData = userSnap.data();
+   const saldoAtual = userData.isaCoins || 0;
+   const novoSaldo = Math.max(0, saldoAtual - (dados.isaCoins || 0));
+
+   await updateDoc(userRef,{
+     isaCoins: novoSaldo,
+     isaCoinsSacadas: (userData.isaCoinsSacadas || 0) + (dados.isaCoins || 0)
+   });
+
+ }
+
+ await updateDoc(ref,{
+   status: "pago",
+   pagoEm: new Date()
+ });
+
+ const moeda = dados.pais === "PT" ? "€" : "R$";
+ const telefone = (dados.telefoneCliente || "").replace(/\D/g,"");
+
+ if(telefone){
+
+   const mensagem =
+   "👩‍💼 Evellyn - Assistente Virtual IsaCred\n\n"+
+
+   "Olá "+(dados.nomeCliente || "Cliente")+"!\n\n"+
+
+   "✅ Seu saque do Clube ISAcoin foi pago!\n\n"+
+
+   "🪙 ISAcoins sacados: "+Number(dados.isaCoins || 0).toLocaleString("pt-BR")+"\n"+
+   "💰 Valor: "+moeda+" "+Number(dados.valor || 0).toFixed(2)+"\n\n"+
+
+   "Obrigado por fazer parte do Clube ISAcoin!";
+
+   const link =
+   "https://wa.me/" +
+   telefone +
+   "?text=" +
+   encodeURIComponent(mensagem);
+
+   if(janela){ janela.location.href = link; } else { window.open(link,"_blank"); }
+
+ } else if(janela){
+   janela.close();
+ }
+
+ alert("Saque marcado como pago");
+
+ carregarSaques();
 
 }
  // ================================================

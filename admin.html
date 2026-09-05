@@ -2463,7 +2463,9 @@ statusTexto +
 
 "<button class='aprovar' onclick=\"aprovarEmprestimo('" + docSnap.id + "')\">✅ Aprovar</button> " +
 "<button onclick=\"editarEmprestimo('" + docSnap.id + "')\">✏️ Editar</button> " +
-"<button onclick=\"abrirModalRecusa('" + docSnap.id + "')\">❌ Recusar</button>";
+"<button onclick=\"abrirModalRecusa('" + docSnap.id + "')\">❌ Recusar</button> " +
+"<button style='background:#25D366;color:white;' onclick=\"avisarClienteSolicitacao('" + docSnap.id + "')\">📲 Avisar Cliente</button> " +
+"<button style='background:#25D366;color:white;' onclick=\"acionarAvalista('" + docSnap.id + "')\">🤝 Acionar Avalista</button>";
 
 container.appendChild(div);
 
@@ -2640,6 +2642,12 @@ Gerenciar Parcelas
 <button onclick="fecharEmprestimo('${emprestimoDoc.id}')">
 ❌ Arquivar
 </button>
+
+<br><br>
+
+<button style="background:#25D366;color:white;" onclick="avisarClienteAprovado('${emprestimoDoc.id}')">✅ Avisar Cliente (Aprovado)</button>
+
+<button style="background:#25D366;color:white;" onclick="avisarAvalistaAprovado('${emprestimoDoc.id}')">✅ Avisar Avalista (Aprovado)</button>
 
 `;
 
@@ -2870,7 +2878,8 @@ let botoes = "";
 if(parcela.pago >= parcela.valor){
 
   botoes =
-  "<div style='color:#17A673;font-weight:bold;font-size:16px;'>🟢 PAGO</div>";
+  "<div style='color:#17A673;font-weight:bold;font-size:16px;'>🟢 PAGO</div>" +
+  "<button style='background:#25D366;color:white;' onclick=\"avisarClienteParcelaPaga('"+parcela.id+"')\">📲 Avisar Cliente (Parcela Paga)</button>";
 
 }else{
 
@@ -3369,6 +3378,212 @@ telefone.replace(/\D/g,"") +
 encodeURIComponent(mensagem);
 
 window.open(link,"_blank");
+
+}
+ // ================================================
+// 📲 NOTIFICAÇÕES MANUAIS DE WHATSAPP (pedido / aprovação / parcela paga)
+// ================================================
+window.avisarClienteSolicitacao = async (id)=>{
+
+ const ref = doc(db,"emprestimos",id);
+ const snap = await getDoc(ref);
+
+ if(!snap.exists()){
+   alert("Empréstimo não encontrado");
+   return;
+ }
+
+ const dados = snap.data();
+ const moeda = dados.pais === "PT" ? "€" : "R$";
+
+ const mensagem =
+ "👩‍💼 Evellyn - Assistente Virtual IsaCred\n\n"+
+
+ "Olá "+(dados.nomeCliente || "Cliente")+"!\n\n"+
+
+ "Recebemos sua solicitação de empréstimo:\n\n"+
+
+ "💰 Valor: "+moeda+" "+Number(dados.valor || 0).toFixed(2)+"\n"+
+ "📦 Parcelas: "+dados.parcelas+"x\n\n"+
+
+ "Seu pedido está em análise e você recebe uma resposta em até 24h.\n\n"+
+
+ "Obrigado por utilizar a IsaCred.";
+
+ const telefone = dados.telefoneCliente || "";
+
+ const link =
+ "https://wa.me/" +
+ telefone.replace(/\D/g,"") +
+ "?text=" +
+ encodeURIComponent(mensagem);
+
+ window.open(link,"_blank");
+
+}
+
+window.acionarAvalista = async (id)=>{
+
+ const ref = doc(db,"emprestimos",id);
+ const snap = await getDoc(ref);
+
+ if(!snap.exists()){
+   alert("Empréstimo não encontrado");
+   return;
+ }
+
+ const dados = snap.data();
+ const moeda = dados.pais === "PT" ? "€" : "R$";
+
+ const mensagem =
+ "👩‍💼 Evellyn - Assistente Virtual IsaCred\n\n"+
+
+ "Olá "+(dados.nomeAvalista || "")+"!\n\n"+
+
+ (dados.nomeCliente || "Um cliente")+" solicitou um empréstimo na IsaCred e indicou seu nome como avalista dessa operação.\n\n"+
+
+ "💰 Valor solicitado: "+moeda+" "+Number(dados.valor || 0).toFixed(2)+"\n"+
+ "📦 Parcelas: "+dados.parcelas+"x\n\n"+
+
+ "Você está ciente e de acordo em ser avalista desse empréstimo? Por favor responda SIM ou NÃO nesta conversa.\n\n"+
+
+ "Obrigado.";
+
+ const telefone = dados.telefoneAvalista || "";
+
+ const link =
+ "https://wa.me/" +
+ telefone.replace(/\D/g,"") +
+ "?text=" +
+ encodeURIComponent(mensagem);
+
+ window.open(link,"_blank");
+
+}
+
+window.avisarClienteAprovado = async (id)=>{
+
+ const ref = doc(db,"emprestimos",id);
+ const snap = await getDoc(ref);
+
+ if(!snap.exists()){
+   alert("Empréstimo não encontrado");
+   return;
+ }
+
+ const dados = snap.data();
+ const moeda = dados.pais === "PT" ? "€" : "R$";
+ const valorParcela = Number((dados.valorFinal || 0) / (dados.parcelas || 1)).toFixed(2);
+ const vencimento = dados.dataVencimento ? dados.dataVencimento.toDate().toLocaleDateString("pt-BR") : "-";
+
+ const mensagem =
+ "👩‍💼 Evellyn - Assistente Virtual IsaCred\n\n"+
+
+ "Olá "+(dados.nomeCliente || "Cliente")+"!\n\n"+
+
+ "✅ Seu empréstimo foi APROVADO!\n\n"+
+
+ "💰 Valor liberado: "+moeda+" "+Number(dados.valor || 0).toFixed(2)+"\n"+
+ "📦 Parcelas: "+dados.parcelas+"x de "+moeda+" "+valorParcela+"\n"+
+ "📅 Vencimento da 1ª parcela: "+vencimento+"\n\n"+
+
+ "Acompanhe tudo pelo app:\n"+
+ "https://overlookalpha.github.io/vivacred/\n\n"+
+
+ "Obrigado por utilizar a IsaCred.";
+
+ const telefone = dados.telefoneCliente || "";
+
+ const link =
+ "https://wa.me/" +
+ telefone.replace(/\D/g,"") +
+ "?text=" +
+ encodeURIComponent(mensagem);
+
+ window.open(link,"_blank");
+
+}
+
+window.avisarAvalistaAprovado = async (id)=>{
+
+ const ref = doc(db,"emprestimos",id);
+ const snap = await getDoc(ref);
+
+ if(!snap.exists()){
+   alert("Empréstimo não encontrado");
+   return;
+ }
+
+ const dados = snap.data();
+ const moeda = dados.pais === "PT" ? "€" : "R$";
+
+ const mensagem =
+ "👩‍💼 Evellyn - Assistente Virtual IsaCred\n\n"+
+
+ "Olá "+(dados.nomeAvalista || "")+"!\n\n"+
+
+ "O empréstimo de "+(dados.nomeCliente || "cliente")+", no qual você está registrado(a) como avalista, foi APROVADO.\n\n"+
+
+ "💰 Valor: "+moeda+" "+Number(dados.valor || 0).toFixed(2)+"\n"+
+ "📦 Parcelas: "+dados.parcelas+"x\n\n"+
+
+ "Obrigado pela confiança.";
+
+ const telefone = dados.telefoneAvalista || "";
+
+ const link =
+ "https://wa.me/" +
+ telefone.replace(/\D/g,"") +
+ "?text=" +
+ encodeURIComponent(mensagem);
+
+ window.open(link,"_blank");
+
+}
+
+window.avisarClienteParcelaPaga = async (parcelaId)=>{
+
+ const ref = doc(db,"parcelas",parcelaId);
+ const snap = await getDoc(ref);
+
+ if(!snap.exists()){
+   alert("Parcela não encontrada");
+   return;
+ }
+
+ const parcela = snap.data();
+
+ const emprestimoRef = doc(db,"emprestimos",parcela.emprestimoId);
+ const emprestimoSnap = await getDoc(emprestimoRef);
+
+ if(!emprestimoSnap.exists()){
+   alert("Empréstimo não encontrado");
+   return;
+ }
+
+ const emprestimo = emprestimoSnap.data();
+ const moeda = emprestimo.pais === "PT" ? "€" : "R$";
+
+ const mensagem =
+ "👩‍💼 Evellyn - Assistente Virtual IsaCred\n\n"+
+
+ "Olá "+(emprestimo.nomeCliente || "Cliente")+"!\n\n"+
+
+ "✅ Confirmamos o pagamento da parcela "+parcela.numero+" de "+emprestimo.parcelas+".\n\n"+
+
+ "💰 Valor: "+moeda+" "+Number(parcela.valor).toFixed(2)+"\n\n"+
+
+ "Obrigado por manter seus pagamentos em dia!";
+
+ const telefone = emprestimo.telefoneCliente || "";
+
+ const link =
+ "https://wa.me/" +
+ telefone.replace(/\D/g,"") +
+ "?text=" +
+ encodeURIComponent(mensagem);
+
+ window.open(link,"_blank");
 
 }
  // ================================================

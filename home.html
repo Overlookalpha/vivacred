@@ -3071,7 +3071,17 @@ fecharBtn.addEventListener("click", async () => {
   if (btn && modal && fechar && confirmar) {
 
 
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
+      const solicitacoesPendentesQuery = query(
+        collection(db, "emprestimos"),
+        where("userId", "==", user.uid),
+        where("status", "==", "aguardando")
+      );
+      const solicitacoesPendentesSnap = await getDocs(solicitacoesPendentesQuery);
+      if (!solicitacoesPendentesSnap.empty) {
+        mostrarAviso("Você já tem uma solicitação em análise. Aguarde a aprovação ou recusa do admin antes de enviar outra.");
+        return;
+      }
       modal.style.display = "flex";
     });
 
@@ -3172,6 +3182,17 @@ if (!taxa) {
 
 const juros = valorFinal * taxa;
 const valorFinalComJuros = valorFinal + juros;
+
+const solicitacoesPendentesQueryFinal = query(
+  collection(db, "emprestimos"),
+  where("userId", "==", user.uid),
+  where("status", "==", "aguardando")
+);
+const solicitacoesPendentesSnapFinal = await getDocs(solicitacoesPendentesQueryFinal);
+if (!solicitacoesPendentesSnapFinal.empty) {
+  mostrarAviso("Você já tem uma solicitação em análise. Aguarde a aprovação ou recusa do admin antes de enviar outra.");
+  return;
+}
 
 await addDoc(collection(db, "emprestimos"), {
   userId: user.uid,

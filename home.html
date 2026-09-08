@@ -593,7 +593,17 @@
   </div>
 
   <div class="header">
-  <div class="logo">ISACRED</div>
+  <div class="logo" style="display:flex;align-items:center;gap:8px;">
+  <div id="headerFotoWrap" style="cursor:pointer;position:relative;flex-shrink:0;" title="Toque para trocar a foto">
+    <img id="headerFotoImg" style="width:32px;height:32px;border-radius:50%;object-fit:cover;display:none;border:2px solid var(--primary-dark);">
+    <div id="headerFotoPlaceholder" style="width:32px;height:32px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:16px;border:2px solid var(--border);">👤</div>
+    <input type="file" id="inputFotoPerfil" accept="image/*" style="display:none;">
+  </div>
+  <div style="display:flex;flex-direction:column;line-height:1.25;min-width:0;">
+    <div id="headerNomeUsuario" style="font-size:13px;font-weight:800;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--primary-dark);">ISACRED</div>
+    <div id="headerNivelBadge" style="font-size:15px;cursor:pointer;" title="Toque para ver os níveis">🍀</div>
+  </div>
+</div>
 
   <div style="display:flex; align-items:center; gap:15px;">
 
@@ -1062,6 +1072,15 @@ color:var(--text);
 
   </div>
 </div>
+<div id="modalNiveis" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--surface);border-radius:14px;padding:20px;max-width:400px;width:100%;max-height:80vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <div style="font-weight:bold;font-size:16px;">🏆 Níveis IsaCred</div>
+      <div id="fecharModalNiveis" style="cursor:pointer;font-size:20px;padding:0 4px;">✕</div>
+    </div>
+    <div id="listaNiveisModal"></div>
+  </div>
+</div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
 import {
@@ -1192,6 +1211,135 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
+
+const inputFotoPerfilEl = document.getElementById("inputFotoPerfil");
+const headerFotoWrapEl = document.getElementById("headerFotoWrap");
+
+if (headerFotoWrapEl && inputFotoPerfilEl) {
+  headerFotoWrapEl.addEventListener("click", function () {
+    inputFotoPerfilEl.click();
+  });
+
+  inputFotoPerfilEl.addEventListener("change", async function () {
+    const arquivo = inputFotoPerfilEl.files && inputFotoPerfilEl.files[0];
+    if (!arquivo || !usuarioLogado) return;
+
+    if (arquivo.size > 5 * 1024 * 1024) {
+      window.mostrarAviso("A foto precisa ter até 5MB.", "erro");
+      return;
+    }
+
+    try {
+      const fotoBase64 = await new Promise(function (resolve, reject) {
+        const leitor = new FileReader();
+        leitor.onload = function () {
+          const img = new Image();
+          img.onload = function () {
+            const tamanho = 160;
+            const canvas = document.createElement("canvas");
+            canvas.width = tamanho;
+            canvas.height = tamanho;
+            const ctx = canvas.getContext("2d");
+            const escala = Math.max(tamanho / img.width, tamanho / img.height);
+            const larguraFinal = img.width * escala;
+            const alturaFinal = img.height * escala;
+            ctx.drawImage(
+              img,
+              (tamanho - larguraFinal) / 2,
+              (tamanho - alturaFinal) / 2,
+              larguraFinal,
+              alturaFinal
+            );
+            resolve(canvas.toDataURL("image/jpeg", 0.8));
+          };
+          img.onerror = reject;
+          img.src = leitor.result;
+        };
+        leitor.onerror = reject;
+        leitor.readAsDataURL(arquivo);
+      });
+
+      const headerFotoImg2 = document.getElementById("headerFotoImg");
+      const headerFotoPlaceholder2 = document.getElementById("headerFotoPlaceholder");
+
+      await updateDoc(doc(db, "usuarios", usuarioLogado.uid), {
+        fotoBase64: fotoBase64
+      });
+
+      if (headerFotoImg2 && headerFotoPlaceholder2) {
+        headerFotoImg2.src = fotoBase64;
+        headerFotoImg2.style.display = "block";
+        headerFotoPlaceholder2.style.display = "none";
+      }
+
+      window.mostrarAviso("Foto de perfil atualizada!", "sucesso");
+    } catch (erro) {
+      window.mostrarAviso("Não foi possível atualizar a foto.", "erro");
+    }
+  });
+}
+
+function abrirModalNiveis() {
+  const pais = paisUsuarioGlobal || "BR";
+  const moeda = pais === "PT" ? "EUR" : "BRL";
+  const localeStr = pais === "PT" ? "pt-PT" : "pt-BR";
+
+  const tabela = [
+    { nome: "Essencial", emoji: "🍀", faixa: "0 a 20 pontos", max: pais === "PT" ? 100 : 300 },
+    { nome: "Bronze", emoji: "🥉", faixa: "21 a 40 pontos", max: pais === "PT" ? 300 : 800 },
+    { nome: "Prata", emoji: "🥈", faixa: "41 a 60 pontos", max: pais === "PT" ? 500 : 1500 },
+    { nome: "Ouro", emoji: "🥇", faixa: "61 a 80 pontos", max: pais === "PT" ? 800 : 3000 },
+    { nome: "Black", emoji: "💎", faixa: "acima de 80 pontos", max: pais === "PT" ? 2000 : 5000 }
+  ];
+
+  const lista = document.getElementById("listaNiveisModal");
+  if (!lista) return;
+  lista.innerHTML = "";
+
+  tabela.forEach(function (n) {
+    const atual = n.nome === nivelAtualGlobal;
+    const linha = document.createElement("div");
+    linha.style.cssText =
+      "display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;margin-bottom:8px;" +
+      (atual
+        ? "background:rgba(34,197,94,.15);border:1px solid rgba(74,222,128,.5);"
+        : "background:var(--bg);border:1px solid var(--border);");
+
+    linha.innerHTML =
+      "<div style='font-size:26px;'>" + n.emoji + "</div>" +
+      "<div style='flex:1;'>" +
+      "<div style='font-weight:700;'>" + n.nome + (atual ? " · seu nível atual" : "") + "</div>" +
+      "<div style='font-size:12px;opacity:.75;'>" + n.faixa + "</div>" +
+      "<div style='font-size:13px;margin-top:3px;'>Limite até " +
+      n.max.toLocaleString(localeStr, { style: "currency", currency: moeda }) +
+      "</div>" +
+      "</div>";
+
+    lista.appendChild(linha);
+  });
+
+  const modalNiveisEl2 = document.getElementById("modalNiveis");
+  if (modalNiveisEl2) modalNiveisEl2.style.display = "flex";
+}
+
+const headerNivelBadgeEl = document.getElementById("headerNivelBadge");
+const modalNiveisEl = document.getElementById("modalNiveis");
+const fecharModalNiveisEl = document.getElementById("fecharModalNiveis");
+
+if (headerNivelBadgeEl) {
+  headerNivelBadgeEl.addEventListener("click", abrirModalNiveis);
+}
+if (fecharModalNiveisEl) {
+  fecharModalNiveisEl.addEventListener("click", function () {
+    if (modalNiveisEl) modalNiveisEl.style.display = "none";
+  });
+}
+if (modalNiveisEl) {
+  modalNiveisEl.addEventListener("click", function (evento) {
+    if (evento.target === modalNiveisEl) modalNiveisEl.style.display = "none";
+  });
+}
+
 
 // =========================================
 // TOAST — substitui os mostrarAviso() do navegador
@@ -1858,6 +2006,7 @@ location.reload();
 }
 let nivelNomeGlobal = null;
 let paisUsuarioGlobal = "BR";
+let nivelAtualGlobal = "Essencial";
 let usuarioLogado = null;
 let isaCoinsGlobal = 0;
 let dadosExtratoGlobal = null;
@@ -2515,6 +2664,27 @@ const dadosCadastroRenda = document.getElementById("dadosCadastroRenda");
 
 if(perfilCreditoNome){
   perfilCreditoNome.innerText = "👤 " + nomeCadastro;
+
+  nivelAtualGlobal = dadosNivelPerfil.nome;
+
+  const headerNomeUsuario = document.getElementById("headerNomeUsuario");
+  const headerNivelBadge = document.getElementById("headerNivelBadge");
+  const headerFotoImg = document.getElementById("headerFotoImg");
+  const headerFotoPlaceholder = document.getElementById("headerFotoPlaceholder");
+
+  if (headerNomeUsuario) {
+    headerNomeUsuario.innerText = nomeCadastro;
+  }
+  if (headerNivelBadge) {
+    headerNivelBadge.innerText = dadosNivelPerfil.emoji;
+    headerNivelBadge.title = "Nível " + dadosNivelPerfil.nome + " — toque para ver todos os níveis";
+  }
+  if (data.fotoBase64 && headerFotoImg && headerFotoPlaceholder) {
+    headerFotoImg.src = data.fotoBase64;
+    headerFotoImg.style.display = "block";
+    headerFotoPlaceholder.style.display = "none";
+  }
+
 }
 
 if(perfilCreditoNivel){

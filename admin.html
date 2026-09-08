@@ -316,6 +316,8 @@ Abrir
 
 <h3>👥 Usuários</h3>
 
+<input type="text" id="buscaUsuario" placeholder="🔎 Buscar por nome, email ou CPF..." oninput="filtrarUsuarios()" style="width:100%;padding:10px;margin-bottom:10px;border-radius:8px;border:1px solid #ccc;box-sizing:border-box;">
+
 <div id="listaUsuariosAdmin" class="card">
 
 Nenhum usuário cadastrado.
@@ -3789,6 +3791,15 @@ alert("Saque marcado como pago");
  // ================================================
 // 👥 ABA: USUÁRIOS — Cadastro, edição, perfil, saldo IsaCoin
 // ================================================
+window.filtrarUsuarios = function(){
+ const termo = (document.getElementById("buscaUsuario").value || "").toLowerCase().trim();
+ const cards = document.querySelectorAll("#listaUsuariosAdmin .card");
+ cards.forEach((card) => {
+  const busca = card.getAttribute("data-busca") || card.innerText.toLowerCase();
+  card.style.display = busca.includes(termo) ? "" : "none";
+ });
+};
+
 window.renderizarUsuarios = async function(){
 
  const lista = document.getElementById("listaUsuariosAdmin");
@@ -3805,7 +3816,7 @@ window.renderizarUsuarios = async function(){
   const id = docSnap.id;
 
   lista.innerHTML += `
-   <div class="card">
+   <div class="card" data-busca="${(user.nome||'').toLowerCase()} ${(user.email||'').toLowerCase()} ${(user.cpf||'').toLowerCase()}">
 
     <strong>${user.nome || "-"}</strong><br>
 
@@ -4119,7 +4130,7 @@ const conteudo = `
 💰 ${user.rendaMensal || "-"}<br>
 🏙️ ${user.cidade || "-"}<br>
 📍 ${user.estado || "-"}<br>
-💳 ${user.chavePix || "-"}
+💳 ${user.pix || user.chavePix || "-"}
 </p>
 
 <hr>
@@ -4295,7 +4306,7 @@ if(estado === null) return;
 const chavePix =
 prompt(
  "Pix / MB Way:",
- user.chavePix || ""
+ user.pix || user.chavePix || ""
 );
 
 if(chavePix === null) return;
@@ -4317,7 +4328,7 @@ await updateDoc(ref,{
   rendaMensal: rendaMensal,
   cidade: cidade,
   estado: estado,
-  chavePix: chavePix
+  pix: chavePix
 });
     
  alert("Usuário atualizado!");

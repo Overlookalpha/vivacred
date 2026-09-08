@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Criar conta - IsaCred</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f172a">
+
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+body{
+min-height:100vh;
+display:flex;
+align-items:center;
+justify-content:center;
+font-family:Arial, sans-serif;
+background:#0f172a;
+color:white;
+padding:30px 0;
+}
+
+.card{
+background:#1e293b;
+padding:40px;
+border-radius:12px;
+width:90%;
+max-width:400px;
+text-align:center;
+}
+
+h2{
+margin-bottom:20px;
+}
+
+label{
+display:block;
+text-align:left;
+font-size:12px;
+color:#94a3b8;
+margin-bottom:4px;
+margin-top:12px;
+}
+
+input,select{
+width:100%;
+padding:12px;
+border:none;
+border-radius:8px;
+font-size:14px;
+}
+
+.linha2{
+display:flex;
+gap:10px;
+}
+
+.linha2 > div{
+flex:1;
+}
+
+button{
+width:100%;
+padding:12px;
+border:none;
+border-radius:8px;
+background:#ff7a18;
+color:white;
+font-weight:bold;
+cursor:pointer;
+transition:0.3s;
+margin-top:22px;
+}
+
+button:hover{
+background:#ff5500;
+}
+
+button:disabled{
+opacity:0.6;
+cursor:default;
+}
+
+.back{
+margin-top:15px;
+display:block;
+color:#ccc;
+font-size:12px;
+text-decoration:none;
+}
+
+.aviso{
+font-size:11px;
+color:#94a3b8;
+margin-top:6px;
+text-align:left;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+<h2>Criar conta no IsaCred</h2>
+
+<label>Nome completo</label>
+<input type="text" id="nome" placeholder="Seu nome completo">
+
+<label>Email</label>
+<input type="email" id="email" placeholder="Seu e-mail">
+
+<label>Senha</label>
+<input type="password" id="senha" placeholder="Crie uma senha">
+<div class="aviso">Mínimo de 6 caracteres.</div>
+
+<label>Confirmar senha</label>
+<input type="password" id="confirmarSenha" placeholder="Repita a senha">
+
+<label>Telefone</label>
+<input type="tel" id="telefone" placeholder="Telefone com DDD/indicativo">
+
+<div class="linha2">
+<div>
+<label>País</label>
+<select id="pais">
+<option value="BR">🇧🇷 Brasil</option>
+<option value="PT">🇵🇹 Portugal</option>
+</select>
+</div>
+<div>
+<label>CPF / NIF</label>
+<input type="text" id="documento" placeholder="CPF ou NIF">
+</div>
+</div>
+
+<label>Data de nascimento</label>
+<input type="text" id="dataNascimento" placeholder="DD/MM/AAAA" maxlength="10">
+
+<button id="btnCadastrar">Criar conta</button>
+
+<a href="login.html" class="back">Já tem conta? Entrar</a>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+import {
+getAuth,
+createUserWithEmailAndPassword,
+setPersistence,
+browserLocalPersistence
+} from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+import {
+getFirestore,
+doc,
+setDoc
+} from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+
+const firebaseConfig = {
+apiKey: "AIzaSyDJHtQp7OUxgYqtcD_2eTqzh1BRpufvKrY",
+authDomain: "vivacred-5a5b8.firebaseapp.com",
+projectId: "vivacred-5a5b8",
+storageBucket: "vivacred-5a5b8.firebasestorage.app",
+messagingSenderId: "932933359706",
+appId: "1:932933359706:web:59fd16618feea3b2fa6063"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+await setPersistence(auth, browserLocalPersistence);
+
+function formatarDataNascimento(valor){
+const numeros = valor.replace(/\D/g, "").slice(0, 8);
+let saida = numeros;
+if (numeros.length > 4) {
+saida = numeros.slice(0, 2) + "/" + numeros.slice(2, 4) + "/" + numeros.slice(4);
+} else if (numeros.length > 2) {
+saida = numeros.slice(0, 2) + "/" + numeros.slice(2);
+}
+return saida;
+}
+
+const inputDataNascimento = document.getElementById("dataNascimento");
+inputDataNascimento.addEventListener("input", () => {
+inputDataNascimento.value = formatarDataNascimento(inputDataNascimento.value);
+});
+
+function dataNascimentoValida(valor){
+const partes = valor.split("/");
+if (partes.length !== 3) return false;
+const [dia, mes, ano] = partes.map(Number);
+if (!dia || !mes || !ano) return false;
+if (mes < 1 || mes > 12) return false;
+if (dia < 1 || dia > 31) return false;
+if (ano < 1900 || ano > new Date().getFullYear()) return false;
+return true;
+}
+
+function traduzErro(codigo){
+const mensagens = {
+"auth/email-already-in-use": "Esse e-mail já está cadastrado. Tente entrar em vez de criar conta.",
+"auth/invalid-email": "Digite um e-mail válido.",
+"auth/weak-password": "A senha precisa ter pelo menos 6 caracteres.",
+"auth/missing-password": "Digite uma senha.",
+"auth/network-request-failed": "Falha de conexão. Verifique sua internet e tente de novo."
+};
+return mensagens[codigo] || "Não foi possível criar a conta (" + codigo + ").";
+}
+
+// Trava pra evitar duplo clique/duplo envio enquanto o cadastro
+// ainda está em andamento (mesma lógica usada no Viralizar pra
+// evitar corrida entre o cadastro e o redirecionamento).
+let cadastrando = false;
+
+const btnCadastrar = document.getElementById("btnCadastrar");
+
+btnCadastrar.addEventListener("click", async () => {
+if (cadastrando) return;
+
+const nome = document.getElementById("nome").value.trim();
+const email = document.getElementById("email").value.trim();
+const senha = document.getElementById("senha").value;
+const confirmarSenha = document.getElementById("confirmarSenha").value;
+const telefone = document.getElementById("telefone").value.trim();
+const pais = document.getElementById("pais").value;
+const documento = document.getElementById("documento").value.trim();
+const dataNascimento = document.getElementById("dataNascimento").value.trim();
+
+if (!nome || !email || !senha || !telefone || !documento || !dataNascimento) {
+alert("Preencha todos os campos antes de continuar.");
+return;
+}
+
+if (senha.length < 6) {
+alert("A senha precisa ter pelo menos 6 caracteres.");
+return;
+}
+
+if (senha !== confirmarSenha) {
+alert("As senhas não são iguais.");
+return;
+}
+
+if (!dataNascimentoValida(dataNascimento)) {
+alert("Digite a data de nascimento no formato DD/MM/AAAA.");
+return;
+}
+
+cadastrando = true;
+btnCadastrar.disabled = true;
+btnCadastrar.textContent = "Criando conta...";
+
+try {
+const cred = await createUserWithEmailAndPassword(auth, email, senha);
+
+await setDoc(doc(db, "usuarios", cred.user.uid), {
+nome: nome,
+email: email,
+telefone: telefone,
+cpf: documento,
+pais: pais,
+moeda: pais === "PT" ? "€" : "R$",
+dataNascimento: dataNascimento,
+score: 20,
+nivel: "Essencial",
+limiteBase: 100,
+status: "ativo",
+isaCoins: 0,
+diasLembrete: 3,
+criadoEm: new Date()
+});
+
+window.location.href = "home.html";
+} catch (error) {
+cadastrando = false;
+btnCadastrar.disabled = false;
+btnCadastrar.textContent = "Criar conta";
+alert(traduzErro(error.code));
+}
+});
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+navigator.serviceWorker.register("service-worker.js");
+}
+</script>
+
+</body>
+</html>

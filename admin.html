@@ -2030,6 +2030,16 @@ async function enviarTelegram(texto){
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+async function criarNotificacao(userId, titulo, mensagem){
+  await addDoc(collection(db,"notificacoes"),{
+    userId: userId,
+    titulo: titulo,
+    mensagem: mensagem,
+    data: new Date(),
+    lida: false
+  });
+}
 let emprestimoRecusaId = null;
 
 // ================================================
@@ -2755,7 +2765,13 @@ for (let i = 1; i <= dados.parcelas; i++) {
  );
 
 }
- alert("Empréstimo aprovado!");
+ await criarNotificacao(
+  dados.userId,
+  "✅ Empréstimo aprovado",
+  "Seu empréstimo de " + (dados.moeda || "R$") + dados.valor + " em " + dados.parcelas + "x foi aprovado e o valor já foi liberado!"
+);
+
+alert("Empréstimo aprovado!");
  location.reload();
 };
 // ================================================
@@ -3228,7 +3244,13 @@ await updateDoc(userRef,{
    janela.close();
  }
 
- alert("Parcela confirmada");
+ await criarNotificacao(
+  dados.userId,
+  "✅ Pagamento confirmado",
+  "Confirmamos o pagamento da parcela " + dados.numero + " de " + emprestimo.parcelas + " no valor de " + moeda + " " + Number(dados.valor).toFixed(2) + "."
+);
+
+alert("Parcela confirmada");
 
  location.reload();
 
@@ -3287,6 +3309,12 @@ ${motivo}
 
 🔴 Status: RECUSADO
 `);
+
+await criarNotificacao(
+  dados.userId,
+  "❌ Solicitação de empréstimo recusada",
+  "Sua solicitação de empréstimo não foi aprovada. Motivo: " + motivo
+);
 
 }
 
@@ -3737,7 +3765,13 @@ window.marcarSaquePago = async (id)=>{
      janela.close();
    }
 
-   alert("Saque marcado como pago");
+   await criarNotificacao(
+  dados.userId,
+  "✅ Saque pago",
+  "Seu saque de " + Number(dados.isaCoins || 0).toLocaleString("pt-BR") + " ISAcoins (" + moeda + " " + Number(dados.valor || 0).toFixed(2) + ") foi pago!"
+);
+
+alert("Saque marcado como pago");
 
    carregarSaques();
 

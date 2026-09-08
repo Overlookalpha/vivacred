@@ -601,7 +601,7 @@
   </div>
   <div style="display:flex;flex-direction:column;line-height:1.25;min-width:0;">
     <div id="headerNomeUsuario" style="font-size:13px;font-weight:800;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--primary-dark);">ISACRED</div>
-    <div id="headerNivelBadge" style="font-size:15px;cursor:pointer;" title="Toque para ver os níveis">🍀</div>
+    <div id="headerNivelBadge" style="font-size:12px;font-weight:700;cursor:pointer;color:var(--success);white-space:nowrap;" title="Toque para ver os níveis">🍀 Essencial</div>
   </div>
 </div>
 
@@ -2676,7 +2676,7 @@ if(perfilCreditoNome){
     headerNomeUsuario.innerText = nomeCadastro;
   }
   if (headerNivelBadge) {
-    headerNivelBadge.innerText = dadosNivelPerfil.emoji;
+    headerNivelBadge.innerText = dadosNivelPerfil.emoji + " " + dadosNivelPerfil.nome;
     headerNivelBadge.title = "Nível " + dadosNivelPerfil.nome + " — toque para ver todos os níveis";
   }
   if (data.fotoBase64 && headerFotoImg && headerFotoPlaceholder) {

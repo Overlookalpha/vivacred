@@ -1748,14 +1748,32 @@ if(menuSairBtn && logoutBtn){
 const menuWhatsappBtn = document.getElementById("menuWhatsappBtn");
 
 if(menuWhatsappBtn){
-  menuWhatsappBtn.addEventListener("click", () => {
+  menuWhatsappBtn.addEventListener("click", async () => {
 
     // Sempre vai pro WhatsApp do admin (Isaias), não importa
     // o país do cliente.
     const numero = "351931714823";
 
+    let textoCliente = "";
+
+    try {
+      if(usuarioLogado){
+        const clienteRef = doc(db, "usuarios", usuarioLogado.uid);
+        const clienteSnap = await getDoc(clienteRef);
+        const cliente = clienteSnap.exists() ? clienteSnap.data() : {};
+
+        textoCliente =
+          "\n\n👤 Nome: " + (cliente.nome || "Não informado") +
+          "\n📧 E-mail: " + (usuarioLogado.email || "Não informado") +
+          "\n📱 Telefone: " + (cliente.telefone || "Não informado") +
+          "\n🪪 CPF/NIF: " + (cliente.cpf || "Não informado");
+      }
+    } catch (erro) {
+      // Se der erro ao buscar os dados, manda a mensagem mesmo assim, sem os dados.
+    }
+
     const mensagem = encodeURIComponent(
-      "Olá! Preciso de ajuda com minha conta no IsaCred."
+      "Olá! Preciso de ajuda com minha conta no IsaCred." + textoCliente
     );
 
     window.open("https://wa.me/" + numero + "?text=" + mensagem, "_blank");
@@ -2706,8 +2724,58 @@ if(perfilCreditoLimite){
     });
 }
 
+window.editarDadoCadastro = async function(campo){
+
+  if(!usuarioLogado){
+    mostrarAviso("Não foi possível identificar seu usuário. Atualize a página.", "error");
+    return;
+  }
+
+  const rotulos = {
+    nome: "Nome completo",
+    telefone: "Telefone (com DDD/indicativo)",
+    pix: paisUsuarioGlobal === "PT" ? "MB Way" : "Chave Pix",
+    profissao: "Profissão",
+    cidade: "Cidade",
+    estado: "Estado"
+  };
+
+  const ref = doc(db, "usuarios", usuarioLogado.uid);
+  const snap = await getDoc(ref);
+
+  if(!snap.exists()){
+    mostrarAviso("Não foi possível carregar seus dados. Atualize a página.", "error");
+    return;
+  }
+
+  const dados = snap.data();
+  const valorAtual = dados[campo] || (campo === "pix" ? (dados.chavePix || "") : "") || "";
+
+  const novoValor = prompt("Editar " + (rotulos[campo] || campo) + ":", valorAtual);
+
+  if(novoValor === null) return;
+
+  const valorLimpo = novoValor.trim();
+
+  if(!valorLimpo){
+    mostrarAviso("O campo não pode ficar vazio.", "error");
+    return;
+  }
+
+  const atualizacao = {};
+  atualizacao[campo] = valorLimpo;
+
+  await updateDoc(ref, atualizacao);
+
+  mostrarAviso("Dado atualizado com sucesso!", "success");
+
+  window.location.reload();
+};
+
 if(dadosCadastroNome){
-  dadosCadastroNome.innerText = "👤 Nome: " + nomeCadastro;
+  dadosCadastroNome.innerHTML =
+    "👤 Nome: " + nomeCadastro +
+    ' <span onclick="editarDadoCadastro(\'nome\')" style="cursor:pointer;opacity:.7;">✏️</span>';
 }
 
 if(dadosCadastroEmail){
@@ -2715,7 +2783,9 @@ if(dadosCadastroEmail){
 }
 
 if(dadosCadastroTelefone){
-  dadosCadastroTelefone.innerText = "📱 Telefone: " + telefoneCadastro;
+  dadosCadastroTelefone.innerHTML =
+    "📱 Telefone: " + telefoneCadastro +
+    ' <span onclick="editarDadoCadastro(\'telefone\')" style="cursor:pointer;opacity:.7;">✏️</span>';
 }
 
 if(dadosCadastroCpf){
@@ -2724,23 +2794,27 @@ if(dadosCadastroCpf){
 }
 
 if(dadosCadastroPix){
-  dadosCadastroPix.innerText =
-    (paisUsuario === "PT" ? "📲 MB Way: " : "🔑 Chave Pix: ") + pixCadastro;
+  dadosCadastroPix.innerHTML =
+    (paisUsuario === "PT" ? "📲 MB Way: " : "🔑 Chave Pix: ") + pixCadastro +
+    ' <span onclick="editarDadoCadastro(\'pix\')" style="cursor:pointer;opacity:.7;">✏️</span>';
 }
 
 if(dadosCadastroProfissao){
-  dadosCadastroProfissao.innerText =
-    "💼 Profissão: " + profissaoCadastro;
+  dadosCadastroProfissao.innerHTML =
+    "💼 Profissão: " + profissaoCadastro +
+    ' <span onclick="editarDadoCadastro(\'profissao\')" style="cursor:pointer;opacity:.7;">✏️</span>';
 }
 
 if(dadosCadastroCidade){
-  dadosCadastroCidade.innerText =
-    "📍 Cidade: " + cidadeCadastro;
+  dadosCadastroCidade.innerHTML =
+    "📍 Cidade: " + cidadeCadastro +
+    ' <span onclick="editarDadoCadastro(\'cidade\')" style="cursor:pointer;opacity:.7;">✏️</span>';
 }
 
 if(dadosCadastroEstado){
-  dadosCadastroEstado.innerText =
-    "🗺️ Estado: " + estadoCadastro;
+  dadosCadastroEstado.innerHTML =
+    "🗺️ Estado: " + estadoCadastro +
+    ' <span onclick="editarDadoCadastro(\'estado\')" style="cursor:pointer;opacity:.7;">✏️</span>';
 }
 
 if(dadosCadastroRenda){

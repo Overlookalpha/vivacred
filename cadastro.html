@@ -139,6 +139,23 @@ text-align:left;
 </div>
 </div>
 
+<label>Chave Pix</label>
+<input type="text" id="pix" placeholder="Sua chave Pix (opcional)">
+
+<label>Profissão</label>
+<input type="text" id="profissao" placeholder="Sua profissão (opcional)">
+
+<div class="linha2">
+<div>
+<label>Cidade</label>
+<input type="text" id="cidade" placeholder="Sua cidade (opcional)">
+</div>
+<div>
+<label>Estado</label>
+<input type="text" id="estado" placeholder="UF ou distrito (opcional)">
+</div>
+</div>
+
 <label>Data de nascimento</label>
 <input type="text" id="dataNascimento" placeholder="DD/MM/AAAA" maxlength="10">
 
@@ -231,6 +248,11 @@ const telefone = document.getElementById("telefone").value.trim();
 const pais = document.getElementById("pais").value;
 const documento = document.getElementById("documento").value.trim();
 const dataNascimento = document.getElementById("dataNascimento").value.trim();
+const pix = document.getElementById("pix").value.trim();
+const profissao = document.getElementById("profissao").value.trim();
+const cidade = document.getElementById("cidade").value.trim();
+const estado = document.getElementById("estado").value.trim();
+
 
 if (!nome || !email || !senha || !telefone || !documento || !dataNascimento) {
 alert("Preencha todos os campos antes de continuar.");
@@ -267,6 +289,10 @@ cpf: documento,
 pais: pais,
 moeda: pais === "PT" ? "€" : "R$",
 dataNascimento: dataNascimento,
+pix: pix,
+profissao: profissao,
+cidade: cidade,
+estado: estado,
 score: 20,
 nivel: "Essencial",
 limiteBase: 100,

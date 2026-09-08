@@ -3082,6 +3082,15 @@ fecharBtn.addEventListener("click", async () => {
         mostrarAviso("Você já tem uma solicitação em análise. Aguarde a aprovação ou recusa do admin antes de enviar outra.");
         return;
       }
+      const clienteSnapCheck = await getDoc(doc(db, "usuarios", user.uid));
+      const clienteDadosCheck = clienteSnapCheck.exists() ? clienteSnapCheck.data() : {};
+      if (clienteDadosCheck.bloqueadoSolicitacaoAte) {
+        const dataLimiteCheck = clienteDadosCheck.bloqueadoSolicitacaoAte.toDate ? clienteDadosCheck.bloqueadoSolicitacaoAte.toDate() : new Date(clienteDadosCheck.bloqueadoSolicitacaoAte);
+        if (dataLimiteCheck > new Date()) {
+          mostrarAviso("Você não pode enviar uma nova solicitação até " + dataLimiteCheck.toLocaleDateString("pt-BR") + ".");
+          return;
+        }
+      }
       modal.style.display = "flex";
     });
 
@@ -3192,6 +3201,14 @@ const solicitacoesPendentesSnapFinal = await getDocs(solicitacoesPendentesQueryF
 if (!solicitacoesPendentesSnapFinal.empty) {
   mostrarAviso("Você já tem uma solicitação em análise. Aguarde a aprovação ou recusa do admin antes de enviar outra.");
   return;
+}
+
+if (cliente.bloqueadoSolicitacaoAte) {
+  const dataLimiteFinal = cliente.bloqueadoSolicitacaoAte.toDate ? cliente.bloqueadoSolicitacaoAte.toDate() : new Date(cliente.bloqueadoSolicitacaoAte);
+  if (dataLimiteFinal > new Date()) {
+    mostrarAviso("Você não pode enviar uma nova solicitação até " + dataLimiteFinal.toLocaleDateString("pt-BR") + ".");
+    return;
+  }
 }
 
 await addDoc(collection(db, "emprestimos"), {

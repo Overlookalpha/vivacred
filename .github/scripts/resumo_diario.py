@@ -6,13 +6,15 @@ Roda uma vez por dia via GitHub Actions (ver
 computador de ninguem estar ligado.
 
 Junta num unico resumo diario: pagamentos em aberto, pagamentos vencendo
-(hoje / amanha / em 2-3 dias / atrasados), aniversariantes de hoje e dos
-proximos 7 dias, clientes perto de bater 10.000 ISAcoins, dinheiro na rua,
-dinheiro em caixa e o melhor cliente (maior nota de credito).
+nos proximos 7 dias (um a um, com nome, valor, parcela e aviso de
+antecedencia que o cliente pediu), atrasados, aniversariantes de hoje e
+dos proximos 7 dias, clientes perto de bater 10.000 ISAcoins, dinheiro na
+rua, dinheiro em caixa e o melhor cliente (maior nota de credito).
 
 A logica de calculo (aniversario, multa/juros de atraso, dinheiro na rua,
-caixa disponivel) replica exatamente a mesma logica ja usada no admin.html
-do VivaCred, pra os numeros baterem com o painel.
+caixa disponivel, numero da parcela, aviso de antecedencia) replica
+exatamente a mesma logica ja usada no admin.html do VivaCred, pra os
+numeros baterem com o painel.
 """
 
 import json
@@ -32,6 +34,10 @@ TELEGRAM_API = "https://api.telegram.org/bot" + TELEGRAM_TOKEN
 # desativada por la, entao o painel tambem usa sempre 1000 + 1000).
 CAPITAL_BR = 1000
 CAPITAL_PT = 1000
+
+# Quantos dias pra frente mostrar na lista de "vencendo" (a pedido do
+# usuario: quer ver todos os que vencem de hoje ate 7 dias a frente).
+DIAS_JANELA_VENCIMENTO = 7
 
 
 def inicializar_firebase():
@@ -92,11 +98,30 @@ def calcular_aniversario(data_nascimento_str, hoje):
 
     return {"diasRestantes": dias_restantes, "idade": idade}
 
+
+def formatar_parcela(numero, total):
+    """Replica o "${parcela.numero} de ${emprestimo.parcelas}" do admin.html."""
+    if not numero:
+        return "-"
+    try:
+        texto = str(int(numero))
+    except (ValueError, TypeError):
+        texto = str(numero)
+    if total:
+        try:
+            texto += " de " + str(int(total))
+        except (ValueError, TypeError):
+            texto += " de " + str(total)
+    return texto
+
 def gerar_diagnostico(db):
     hoje = date.today()
 
     usuarios_snap = list(db.collection("usuarios").stream())
     usuarios_por_id = {doc.id: (doc.to_dict() or {}) for doc in usuarios_snap}
+
+    emprestimos_snap = list(db.collection("emprestimos").stream())
+    emprestimos_por_id = {doc.id: (doc.to_dict() or {}) for doc in emprestimos_snap}
 
     clientes_total = 0
     clientes_ativos = 0
@@ -140,12 +165,13 @@ def gerar_diagnostico(db):
                     }
                 )
 
-    # ---- Pagamentos em aberto / vencendo (colecao "parcelas") ----
+    # ---- Pagamentos em aberto / vencendo / atrasados (colecao "parcelas") ----
     parcelas_snap = list(db.collection("parcelas").stream())
 
     abertos_qtd = 0
     abertos_valor = 0.0
-    buckets = {"atrasados": [], "hoje": [], "amanha": [], "doisDias": [], "tresDias": []}
+    atrasados = []
+    vencendo = []
 
     for doc in parcelas_snap:
         parcela = doc.to_dict() or {}
@@ -164,29 +190,43 @@ def gerar_diagnostico(db):
         user = usuarios_por_id.get(parcela.get("userId"), {})
         nome = user.get("nome", "Cliente")
 
+        # Preferencia de aviso que o proprio cliente escolheu (1, 3 ou 7
+        # dias de antecedencia) - mesmo campo "diasLembrete" do admin.html,
+        # com o mesmo padrao de 3 dias quando ele nunca escolheu.
+        dias_aviso = int(user.get("diasLembrete") or 3)
+
+        emprestimo = emprestimos_por_id.get(parcela.get("emprestimoId"), {})
+        parcela_label = formatar_parcela(parcela.get("numero"), emprestimo.get("parcelas"))
+        valor_parcela = float(parcela.get("restante") if parcela.get("restante") is not None else parcela.get("valor") or 0)
+
         if dias < 0:
             cobranca = calcular_cobranca_parcela(parcela, hoje)
-            buckets["atrasados"].append(
-                {"nome": nome, "diasAtraso": cobranca["diasAtraso"], "valor": cobranca["totalAtualizado"]}
+            atrasados.append(
+                {
+                    "nome": nome,
+                    "parcela": parcela_label,
+                    "diasAtraso": cobranca["diasAtraso"],
+                    "valor": cobranca["totalAtualizado"],
+                    "diasAviso": dias_aviso,
+                }
             )
-        elif dias == 0:
-            buckets["hoje"].append({"nome": nome, "valor": parcela.get("restante") or parcela.get("valor") or 0})
-        elif dias == 1:
-            buckets["amanha"].append({"nome": nome, "valor": parcela.get("restante") or parcela.get("valor") or 0})
-        elif dias == 2:
-            buckets["doisDias"].append({"nome": nome, "valor": parcela.get("restante") or parcela.get("valor") or 0})
-        elif dias == 3:
-            buckets["tresDias"].append({"nome": nome, "valor": parcela.get("restante") or parcela.get("valor") or 0})
+        elif 0 <= dias <= DIAS_JANELA_VENCIMENTO:
+            vencendo.append(
+                {
+                    "nome": nome,
+                    "parcela": parcela_label,
+                    "valor": valor_parcela,
+                    "diasRestantes": dias,
+                    "diasAviso": dias_aviso,
+                }
+            )
 
     # ---- Financeiro: dinheiro na rua / caixa disponivel (BR + PT) ----
     # Mesma logica de calcularFinanceiro() no admin.html: "na rua" e o
     # principal emprestado menos o que ja foi recebido de volta; "caixa"
     # e o capital inicial menos o que esta emprestado, mais o que ja voltou.
-    emprestimos_snap = list(db.collection("emprestimos").stream())
-
     total_emprestado = {"BR": 0.0, "PT": 0.0}
-    for doc in emprestimos_snap:
-        emp = doc.to_dict() or {}
+    for emp in emprestimos_por_id.values():
         if emp.get("status") == "ativo":
             pais = emp.get("pais") or "BR"
             total_emprestado[pais] = total_emprestado.get(pais, 0) + float(emp.get("valor") or 0)
@@ -213,7 +253,8 @@ def gerar_diagnostico(db):
         "melhorCliente": melhor_cliente,
         "abertosQtd": abertos_qtd,
         "abertosValor": abertos_valor,
-        "buckets": buckets,
+        "atrasados": atrasados,
+        "vencendo": vencendo,
         "dinheiroNaRua": dinheiro_na_rua,
         "caixaDisponivel": caixa_disponivel,
     }
@@ -238,32 +279,60 @@ def montar_mensagem(d):
     )
     linhas.append("")
 
-    b = d["buckets"]
-    linhas.append("📅 <b>Pagamentos vencendo:</b>")
-    if b["atrasados"]:
-        total = sum(item["valor"] for item in b["atrasados"])
-        linhas.append("🚨 Atrasados: " + str(len(b["atrasados"])) + " — " + formatar_moeda(total))
-    if b["hoje"]:
-        total = sum(float(item["valor"] or 0) for item in b["hoje"])
-        linhas.append("🔴 Hoje: " + str(len(b["hoje"])) + " — " + formatar_moeda(total))
-    if b["amanha"]:
-        total = sum(float(item["valor"] or 0) for item in b["amanha"])
-        linhas.append("🟠 Amanhã: " + str(len(b["amanha"])) + " — " + formatar_moeda(total))
-    if b["doisDias"]:
-        total = sum(float(item["valor"] or 0) for item in b["doisDias"])
-        linhas.append("🟡 Em 2 dias: " + str(len(b["doisDias"])) + " — " + formatar_moeda(total))
-    if b["tresDias"]:
-        total = sum(float(item["valor"] or 0) for item in b["tresDias"])
-        linhas.append("🟢 Em 3 dias: " + str(len(b["tresDias"])) + " — " + formatar_moeda(total))
-    if not any([b["atrasados"], b["hoje"], b["amanha"], b["doisDias"], b["tresDias"]]):
-        linhas.append("Nada vencendo nos próximos 3 dias. ✅")
-    linhas.append("")
-
-    if b["atrasados"]:
-        linhas.append("🚨 <b>Clientes em atraso:</b>")
-        for item in sorted(b["atrasados"], key=lambda x: -x["diasAtraso"])[:10]:
-            linhas.append("• " + item["nome"] + " — " + str(item["diasAtraso"]) + " dia(s) — " + formatar_moeda(item["valor"]))
+    atrasados = d["atrasados"]
+    if atrasados:
+        total_atrasado = sum(item["valor"] for item in atrasados)
+        linhas.append("🚨 <b>Atrasados</b> (" + str(len(atrasados)) + ") — " + formatar_moeda(total_atrasado))
+        for item in sorted(atrasados, key=lambda x: -x["diasAtraso"]):
+            linhas.append(
+                "• "
+                + item["nome"]
+                + " — parcela "
+                + item["parcela"]
+                + " — "
+                + formatar_moeda(item["valor"])
+                + " — "
+                + str(item["diasAtraso"])
+                + " dia(s) de atraso"
+                + " — 🔔 aviso pedido: "
+                + str(item["diasAviso"])
+                + (" dia" if item["diasAviso"] == 1 else " dias")
+                + " de antecedência"
+            )
         linhas.append("")
+
+    vencendo = d["vencendo"]
+    linhas.append("📅 <b>Vencendo nos próximos " + str(DIAS_JANELA_VENCIMENTO) + " dias:</b>")
+    if vencendo:
+        for dias in range(0, DIAS_JANELA_VENCIMENTO + 1):
+            itens_dia = [item for item in vencendo if item["diasRestantes"] == dias]
+            if not itens_dia:
+                continue
+            if dias == 0:
+                rotulo = "Hoje"
+            elif dias == 1:
+                rotulo = "Amanhã"
+            else:
+                rotulo = "Em " + str(dias) + " dias"
+            total_dia = sum(item["valor"] for item in itens_dia)
+            linhas.append("")
+            linhas.append("🔸 <b>" + rotulo + "</b> (" + str(len(itens_dia)) + ") — " + formatar_moeda(total_dia))
+            for item in itens_dia:
+                linhas.append(
+                    "• "
+                    + item["nome"]
+                    + " — parcela "
+                    + item["parcela"]
+                    + " — "
+                    + formatar_moeda(item["valor"])
+                    + " — 🔔 cliente pediu aviso com "
+                    + str(item["diasAviso"])
+                    + (" dia" if item["diasAviso"] == 1 else " dias")
+                    + " de antecedência"
+                )
+    else:
+        linhas.append("Nada vencendo nos próximos " + str(DIAS_JANELA_VENCIMENTO) + " dias. ✅")
+    linhas.append("")
 
     if d["aniversariosHoje"]:
         linhas.append("🎂 <b>Aniversário hoje:</b>")

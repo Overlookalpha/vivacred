@@ -1750,6 +1750,11 @@ const menuWhatsappBtn = document.getElementById("menuWhatsappBtn");
 if(menuWhatsappBtn){
   menuWhatsappBtn.addEventListener("click", async () => {
 
+    // Abre a aba ANTES de qualquer await, senão o navegador
+    // bloqueia o popup por não considerar mais um clique direto
+    // do usuário (foi isso que quebrou o botão).
+    const novaAba = window.open("", "_blank");
+
     // Sempre vai pro WhatsApp do admin (Isaias), não importa
     // o país do cliente.
     const numero = "351931714823";
@@ -1776,7 +1781,13 @@ if(menuWhatsappBtn){
       "Olá! Preciso de ajuda com minha conta no IsaCred." + textoCliente
     );
 
-    window.open("https://wa.me/" + numero + "?text=" + mensagem, "_blank");
+    const link = "https://wa.me/" + numero + "?text=" + mensagem;
+
+    if(novaAba){
+      novaAba.location.href = link;
+    } else {
+      window.open(link, "_blank");
+    }
 
   });
 }

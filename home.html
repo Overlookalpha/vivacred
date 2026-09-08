@@ -3598,7 +3598,7 @@ document.getElementById("limiteDisponivel").classList.remove("guiaScore");
 document.getElementById("btnSolicitar").classList.add("guiaScore");
 
 mostrarEvellyn(
-"Quando quiser solicitar crédito, toque neste botão verde."
+"Quando quiser solicitar crédito, toque neste botão laranja."
 );
 
 }
@@ -3757,6 +3757,12 @@ if(btnSacarIsaCoin){
         status: "pendente",
         criadoEm: new Date()
       });
+
+      await criarNotificacao(
+        auth.currentUser.uid,
+        "💸 Solicitação de saque enviada",
+        "Sua solicitação de saque do Clube ISAcoin foi enviada. Assim que o pagamento for feito, você será avisado por aqui."
+      );
 
       const valorSaqueFormatadoFinal =
         valorSaque.toLocaleString(localizacaoSaque, {
@@ -4180,6 +4186,12 @@ document.getElementById("btnConfirmarPagamentoParcela").onclick = async function
                 ? "📎 Comprovante: " + comprovanteUrl + "\n\n"
                 : "📎 Comprovante: não anexado\n\n") +
             "⏳ Status: cliente informou que realizou o pagamento. Aguardando conferência."
+        );
+
+        await criarNotificacao(
+            usuarioLogado.uid,
+            "📎 Confirmação de pagamento enviada",
+            "Recebemos sua confirmação de pagamento da parcela " + dados.numero + ". Vamos conferir e te avisamos por aqui em até 24 horas."
         );
 
         mostrarAviso(

@@ -3876,8 +3876,14 @@ window.renderizarUsuarios = async function(){
    )
 }<br><br>
 
+${user.notasInternas ? "📝 <b>Nota:</b> " + user.notasInternas + "<br><br>" : ""}
+
     <button onclick="verUsuarioFirestore('${id}')">
       Ver
+    </button>
+
+    <button onclick="editarNotasUsuario('${id}')">
+      📝 Notas
     </button>
 
     <button onclick="editarUsuarioFirestore('${id}')">
@@ -3903,6 +3909,32 @@ ${user.status === "ativo" ? "Bloquear" : "Desbloquear"}
 
 }
   renderizarUsuarios();
+
+window.editarNotasUsuario = async function(id){
+
+ const ref = doc(db,"usuarios",id);
+ const snap = await getDoc(ref);
+
+ if(!snap.exists()){
+  alert("Usuário não encontrado");
+  return;
+ }
+
+ const user = snap.data();
+
+ const nota = prompt(
+  "Nota interna sobre este cliente (só você vê):",
+  user.notasInternas || ""
+ );
+
+ if(nota === null) return;
+
+ await updateDoc(ref,{
+  notasInternas: nota
+ });
+
+ renderizarUsuarios();
+};
 
 window.verUsuarioFirestore = async function(id){
 
@@ -4138,7 +4170,8 @@ const conteudo = `
 💰 ${user.rendaMensal || "-"}<br>
 🏙️ ${user.cidade || "-"}<br>
 📍 ${user.estado || "-"}<br>
-💳 ${user.pix || user.chavePix || "-"}
+💳 ${user.pix || user.chavePix || "-"}<br>
+📝 Nota interna: ${user.notasInternas || "-"}
 </p>
 
 <hr>

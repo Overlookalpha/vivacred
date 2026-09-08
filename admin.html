@@ -3291,6 +3291,14 @@ if(emprestimoSnap.exists()){
 
 const dados = emprestimoSnap.data();
 
+if (motivo === "Analisamos seu perfil e, no momento, não podemos liberar o empréstimo. Tente novamente daqui a 1 a 3 meses.") {
+  const dataLimiteNovaSolicitacao = new Date();
+  dataLimiteNovaSolicitacao.setMonth(dataLimiteNovaSolicitacao.getMonth() + 3);
+  await updateDoc(doc(db, "usuarios", dados.userId), {
+    bloqueadoSolicitacaoAte: dataLimiteNovaSolicitacao
+  });
+}
+
 await enviarTelegram(`
 ❌ EMPRÉSTIMO RECUSADO
 
@@ -4664,6 +4672,8 @@ width:400px;
 <label><input type="radio" name="motivoRecusa" value="Histórico de atraso"> Histórico de atraso</label><br><br>
 
 <label><input type="radio" name="motivoRecusa" value="Já possui empréstimo ativo"> Já possui empréstimo ativo</label><br><br>
+
+<label><input type="radio" name="motivoRecusa" value="Analisamos seu perfil e, no momento, não podemos liberar o empréstimo. Tente novamente daqui a 1 a 3 meses."> Perfil não aprovado no momento (bloqueia novas solicitações por 3 meses)</label><br><br>
 
 <button onclick="confirmarRecusa()">Confirmar Recusa</button>
 <button onclick="fecharModalRecusa()">Cancelar</button>

@@ -3673,6 +3673,11 @@ function iniciarEvellyn(){
 
 if(evellynIniciada) return;
 
+// Só mostra o tutorial da Évellyn no primeiro login (quando a
+// conta foi criada). Depois que o cliente termina o tutorial
+// uma vez, "tutorialIsaCred" fica salvo e ela não fala mais.
+if(localStorage.getItem("tutorialIsaCred") === "ok") return;
+
 evellynIniciada = true;
 
 executarTutorial();

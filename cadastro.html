@@ -175,7 +175,11 @@ browserLocalPersistence
 import {
 getFirestore,
 doc,
-setDoc
+setDoc,
+query,
+where,
+getDocs,
+collection
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -271,6 +275,16 @@ return;
 
 if (!dataNascimentoValida(dataNascimento)) {
 alert("Digite a data de nascimento no formato DD/MM/AAAA.");
+return;
+}
+
+const cpfExistenteQuery = query(
+collection(db, "usuarios"),
+where("cpf", "==", documento)
+);
+const cpfExistenteSnap = await getDocs(cpfExistenteQuery);
+if (!cpfExistenteSnap.empty) {
+alert("Este CPF/NIF já está cadastrado. Se você esqueceu sua senha, entre em contato pelo suporte.");
 return;
 }
 

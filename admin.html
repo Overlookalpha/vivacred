@@ -2415,6 +2415,8 @@ total + Number(e.data().valor || 0),
 statusTexto +
 "<br>" +
 
+"<button onclick=\"consultarProtesto('" + (dados.cpfCliente || "") + "')\">🔎 Consultar protesto</button> " +
+
 "<button class='aprovar' onclick=\"aprovarEmprestimo('" + docSnap.id + "')\">✅ Aprovar</button> " +
 "<button onclick=\"editarEmprestimo('" + docSnap.id + "')\">✏️ Editar</button> " +
 "<button onclick=\"abrirModalRecusa('" + docSnap.id + "')\">❌ Recusar</button> " +
@@ -2678,6 +2680,22 @@ const data = userSnap.data();
 
 
   
+window.consultarProtesto = function(cpf){
+
+ if(!cpf){
+  alert("CPF/NIF não informado nessa solicitação.");
+  return;
+ }
+
+ if(navigator.clipboard && navigator.clipboard.writeText){
+  navigator.clipboard.writeText(cpf).catch(function(){});
+ }
+
+ alert("CPF copiado: " + cpf + "\n\nVai abrir a consulta de protesto (CENPROT) numa aba nova. Cole o número no campo de busca da página.");
+
+ window.open("https://www.pesquisaprotesto.com.br/servico/consulta-documento", "_blank");
+};
+
 window.aprovarEmprestimo = async (id) => {
 
  const emprestimoRef = doc(db, "emprestimos", id);

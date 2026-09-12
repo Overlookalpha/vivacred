@@ -2350,8 +2350,12 @@ function renderizarGrupoEmprestimo(grupo){
   (hoje - vencimento) / (1000 * 60 * 60 * 24)
   );
 
-  multa = dados.valor * 0.05;
-  juros = dados.valor * 0.01 * diasAtraso;
+  // Um acordo feito pelo administrador retira os encargos somente
+  // desta parcela, sem mudar a data de vencimento.
+  const acordoSemEncargos = dados.acordoSemEncargos === true;
+
+  multa = acordoSemEncargos ? 0 : dados.valor * 0.05;
+  juros = acordoSemEncargos ? 0 : dados.valor * 0.01 * diasAtraso;
 
   restante = dados.valor + multa + juros - dados.pago;
 

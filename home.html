@@ -920,6 +920,7 @@ color:var(--text);
       <div id="dadosCadastroEmail">📧 E-mail: —</div>
       <div id="dadosCadastroTelefone">📱 Telefone: —</div>
       <div id="dadosCadastroCpf">🪪 CPF: —</div>
+      <div id="dadosCadastroNascimento">🎂 Data de nascimento: — 🔒</div>
       <div id="dadosCadastroPix">🔑 Chave Pix: —</div>
       <div id="dadosCadastroProfissao">💼 Profissão: —</div>
       <div id="dadosCadastroCidade">📍 Cidade: —</div>
@@ -2675,6 +2676,7 @@ const dadosNivelPerfil = calcularNivel(data.score || 20, paisUsuario);
 const nomeCadastro = data.nome || "Não informado";
 const telefoneCadastro = data.telefone || "Não informado";
 const cpfCadastro = data.cpf || "Não informado";
+const nascimentoCadastro = data.dataNascimento || "Não informado";
 const pixCadastro = data.pix || data.chavePix || "Não informado";
 const profissaoCadastro = data.profissao || "Não informado";
 const cidadeCadastro = data.cidade || "Não informado";
@@ -2689,6 +2691,7 @@ const dadosCadastroNome = document.getElementById("dadosCadastroNome");
 const dadosCadastroEmail = document.getElementById("dadosCadastroEmail");
 const dadosCadastroTelefone = document.getElementById("dadosCadastroTelefone");
 const dadosCadastroCpf = document.getElementById("dadosCadastroCpf");
+const dadosCadastroNascimento = document.getElementById("dadosCadastroNascimento");
 const dadosCadastroPix = document.getElementById("dadosCadastroPix");
 const dadosCadastroProfissao = document.getElementById("dadosCadastroProfissao");
 const dadosCadastroCidade = document.getElementById("dadosCadastroCidade");
@@ -2755,6 +2758,11 @@ window.editarDadoCadastro = async function(campo){
     estado: "Estado"
   };
 
+  if(!Object.prototype.hasOwnProperty.call(rotulos, campo)){
+    mostrarAviso("Este dado só pode ser alterado pelo administrador.", "error");
+    return;
+  }
+
   const ref = doc(db, "usuarios", usuarioLogado.uid);
   const snap = await getDoc(ref);
 
@@ -2806,6 +2814,12 @@ if(dadosCadastroTelefone){
 if(dadosCadastroCpf){
   dadosCadastroCpf.innerText =
     (paisUsuario === "PT" ? "🪪 NIF: " : "🪪 CPF: ") + cpfCadastro;
+}
+
+if(dadosCadastroNascimento){
+  dadosCadastroNascimento.innerText =
+    "🎂 Data de nascimento: " + nascimentoCadastro + " 🔒";
+  dadosCadastroNascimento.title = "Somente o administrador pode alterar esta data";
 }
 
 if(dadosCadastroPix){

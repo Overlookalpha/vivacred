@@ -333,7 +333,7 @@ Nenhum usuário cadastrado.
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
 import {
   getFirestore,
   collection,
@@ -3915,6 +3915,7 @@ window.renderizarUsuarios = async function(){
     <strong>${user.nome || "-"}</strong><br>
 
     📧 ${user.email || "-"}<br>
+    🔐 Senha protegida pelo Firebase<br>
     📞 ${user.telefone || "-"}<br>
 
     🌍 ${
@@ -3976,6 +3977,10 @@ ${user.notasInternas ? "📝 <b>Nota:</b> " + user.notasInternas + "<br><br>" : 
       Editar
     </button>
 
+    <button onclick="enviarRecuperacaoSenha('${id}')">
+      🔑 Recuperar senha
+    </button>
+
    <button onclick="adicionarIsaCoin('${id}')">
 🪙 + ISC
 </button>
@@ -3995,6 +4000,39 @@ ${user.status === "ativo" ? "Bloquear" : "Desbloquear"}
 
 }
   renderizarUsuarios();
+
+window.enviarRecuperacaoSenha = async function(id){
+
+ const ref = doc(db,"usuarios",id);
+ const snap = await getDoc(ref);
+
+ if(!snap.exists()){
+  alert("Usuário não encontrado");
+  return;
+ }
+
+ const user = snap.data();
+ const email = (user.email || "").trim();
+
+ if(!email){
+  alert("Este cliente não possui e-mail cadastrado.");
+  return;
+ }
+
+ const confirmar = confirm(
+  "Enviar um link de recuperação de senha para " + email + "?"
+ );
+
+ if(!confirmar) return;
+
+ try{
+  await sendPasswordResetEmail(auth,email);
+  alert("Link de recuperação enviado para " + email + ".");
+ }catch(erro){
+  console.error("Erro ao enviar recuperação de senha:",erro);
+  alert("Não foi possível enviar o link. Confira se o e-mail está correto.");
+ }
+};
 
 window.editarNotasUsuario = async function(id){
 
@@ -4249,6 +4287,7 @@ const conteudo = `
 
 <p>
 📧 ${user.email || "-"}<br>
+🔐 Senha protegida pelo Firebase<br>
 📞 ${user.telefone || "-"}<br>
 📄 ${user.cpf || "-"}<br>
 🎂 ${user.dataNascimento || "-"}<br>
@@ -4259,6 +4298,10 @@ const conteudo = `
 💳 ${user.pix || user.chavePix || "-"}<br>
 📝 Nota interna: ${user.notasInternas || "-"}
 </p>
+
+<button onclick="enviarRecuperacaoSenha('${id}')">
+🔑 Enviar recuperação de senha
+</button>
 
 <hr>
 

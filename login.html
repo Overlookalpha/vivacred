@@ -63,6 +63,19 @@ button:hover{
   background:#ff5500;
 }
 
+.esqueciSenha{
+  margin-top:12px;
+  padding:5px;
+  background:transparent;
+  color:#ff7a18;
+  font-size:13px;
+}
+
+.esqueciSenha:hover{
+  background:transparent;
+  text-decoration:underline;
+}
+
 .back{
   margin-top:15px;
   display:block;
@@ -89,6 +102,7 @@ button:hover{
   <input type="email" id="email" placeholder="Seu e-mail">
 <input type="password" id="senha" placeholder="Sua senha">
 <button id="btnLogin">Entrar</button>
+  <button type="button" id="btnRecuperarSenha" class="esqueciSenha">Esqueci minha senha</button>
   <a href="cadastro.html" class="criarConta">Ainda não tem conta? Criar conta</a>
   <a href="index.html" class="back">Voltar</a>
 </div>
@@ -98,6 +112,7 @@ button:hover{
   import { 
   getAuth, 
   signInWithEmailAndPassword, 
+  sendPasswordResetEmail,
   setPersistence, 
   browserLocalPersistence 
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
@@ -120,6 +135,31 @@ button:hover{
   await setPersistence(auth, browserLocalPersistence);
 
 const btnLogin = document.getElementById("btnLogin");
+const btnRecuperarSenha = document.getElementById("btnRecuperarSenha");
+
+btnRecuperarSenha.addEventListener("click", async () => {
+  const email = document.getElementById("email").value.trim();
+
+  if(!email){
+    alert("Digite seu e-mail no campo acima para recuperar a senha.");
+    document.getElementById("email").focus();
+    return;
+  }
+
+  btnRecuperarSenha.disabled = true;
+  btnRecuperarSenha.innerText = "Enviando...";
+
+  try{
+    await sendPasswordResetEmail(auth,email);
+    alert("Enviamos um link de recuperação para " + email + ". Confira também a caixa de spam.");
+  }catch(error){
+    console.error("Erro ao recuperar senha:",error);
+    alert("Não foi possível enviar o link. Confira se o e-mail está correto.");
+  }finally{
+    btnRecuperarSenha.disabled = false;
+    btnRecuperarSenha.innerText = "Esqueci minha senha";
+  }
+});
 
 btnLogin.addEventListener("click", async () => {
   const email = document.getElementById("email").value;

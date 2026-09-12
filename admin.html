@@ -418,11 +418,15 @@ function calcularCobrancaParcela(parcela, hojeReferencia = new Date()){
   )
  );
 
- const multa = diasAtraso > 0
+ // Um acordo sem encargos vale apenas para esta parcela. A data de
+ // vencimento continua intacta e as demais parcelas seguem cobrando normal.
+ const acordoSemEncargos = parcela.acordoSemEncargos === true;
+
+ const multa = diasAtraso > 0 && !acordoSemEncargos
   ? Number((valorOriginal * 0.05).toFixed(2))
   : 0;
 
- const juros = diasAtraso > 0
+ const juros = diasAtraso > 0 && !acordoSemEncargos
   ? Number((valorOriginal * 0.01 * diasAtraso).toFixed(2))
   : 0;
 
@@ -1370,14 +1374,17 @@ if (dados.status !== "pago" && diasRestantes === 0) {
 }
 
 if (diasRestantes < 0 && dados.status !== "pago") {
+    const cobranca = calcularCobrancaParcela(dados, hoje);
+
     atrasados.push({
         emprestimoId: dados.emprestimoId,
         parcelaId: docSnap.id,
-        diasAtraso: Math.abs(diasRestantes),
+        diasAtraso: cobranca.diasAtraso,
         valor: dados.valor,
-        restante: dados.restante || 0,
-        multa: dados.multa || 0,
-        juros: dados.juros || 0
+        restante: cobranca.totalAtualizado,
+        multa: cobranca.multa,
+        juros: cobranca.juros,
+        acordoSemEncargos: dados.acordoSemEncargos === true
     });
 
     emprestimosAtrasadosSet.add(dados.emprestimoId);
@@ -1748,7 +1755,10 @@ window.emitirFatura = async function(parcelaId){
 
  let textoVencimento;
 
- if(diasRestantes <= 0){
+ if(diasRestantes < 0){
+  textoVencimento = "Atrasada há " + Math.abs(diasRestantes) +
+   (Math.abs(diasRestantes) === 1 ? " dia" : " dias");
+ } else if(diasRestantes === 0){
   textoVencimento = "Vence hoje";
  } else if(diasRestantes === 1){
   textoVencimento = "Vence amanhã";
@@ -1841,6 +1851,7 @@ body{font-family:Arial, sans-serif; background:#f1f5f9; margin:0; padding:30px; 
   <div class="linha"><span class="label">Valor original</span><span class="valor">${moeda} ${Number(parcela.valor || 0).toFixed(2)}</span></div>
   ${cobranca.multa > 0 ? `<div class="linha"><span class="label">Multa</span><span class="valor">${moeda} ${cobranca.multa.toFixed(2)}</span></div>` : ""}
   ${cobranca.juros > 0 ? `<div class="linha"><span class="label">Juros</span><span class="valor">${moeda} ${cobranca.juros.toFixed(2)}</span></div>` : ""}
+  ${parcela.acordoSemEncargos === true ? `<div class="destaque" style="background:#f0fdf4;border-color:#86efac;color:#166534;">🤝 Acordo: multa e juros retirados</div>` : ""}
   <div class="total">
    <div style="font-size:13px;opacity:.8;">Valor a pagar</div>
    <div class="valorTotal">${moeda} ${valorTotal.toFixed(2)}</div>
@@ -1874,6 +1885,49 @@ body{font-family:Arial, sans-serif; background:#f1f5f9; margin:0; padding:30px; 
  janela.document.write(htmlFatura);
  janela.document.close();
 
+}
+
+// Gera uma fatura de acordo para uma única parcela atrasada. Somente os
+// encargos desta parcela são retirados; o vencimento nunca é alterado.
+window.emitirFaturaSemEncargos = async function(parcelaId){
+
+ const parcelaRef = doc(db,"parcelas",parcelaId);
+ const parcelaSnap = await getDoc(parcelaRef);
+
+ if(!parcelaSnap.exists()){
+  alert("Parcela não encontrada.");
+  return;
+ }
+
+ const parcela = parcelaSnap.data();
+
+ if(parcela.status === "pago"){
+  alert("Esta parcela já está paga.");
+  return;
+ }
+
+ const confirmou = confirm(
+  "Confirmar acordo sem multa e juros somente para esta parcela?"
+ );
+
+ if(!confirmou) return;
+
+ const valorOriginal = Number(parcela.valor || 0);
+ const valorPago = Number(parcela.pago || 0);
+ const restanteSemEncargos = Number(
+  Math.max(0, valorOriginal - valorPago).toFixed(2)
+ );
+
+ await updateDoc(parcelaRef,{
+  acordoSemEncargos: true,
+  acordoSemEncargosEm: new Date(),
+  acordoSemEncargosPor: "admin",
+  multa: 0,
+  juros: 0,
+  restante: restanteSemEncargos
+ });
+
+ await window.emitirFatura(parcelaId);
 }
 
 document.getElementById("vencimentos3Dias").innerHTML =
@@ -1920,6 +1974,7 @@ if(atrasados.length === 0){
    if(emprestimoSnap.exists()){
 
      const emp = emprestimoSnap.data();
+     const moeda = emp.pais === "PT" ? "€" : "R$";
  
      htmlAtrasados +=
 
@@ -1933,23 +1988,31 @@ if(atrasados.length === 0){
 " dias de atraso" +
 "<br>" +
 
-"💰 Valor Original: R$ " +
+"💰 Valor Original: " + moeda + " " +
 Number(atraso.valor || 0).toFixed(2) +
 "<br>" +
 
-"➕ Multa: R$ " +
+"➕ Multa: " + moeda + " " +
 Number(atraso.multa || 0).toFixed(2) +
 "<br>" +
 
-"➕ Juros: R$ " +
+"➕ Juros: " + moeda + " " +
 Number(atraso.juros || 0).toFixed(2) +
 "<br>" +
 
-"📌 Total Atualizado: R$ " +
+"📌 Total Atualizado: " + moeda + " " +
 Number(
  atraso.restante || atraso.valor || 0
 ).toFixed(2) +
 
+"<br>" +
+(atraso.acordoSemEncargos
+ ? "🤝 Acordo sem multa e juros ativo<br>"
+ : "") +
+"<button onclick=\"emitirFatura('" + atraso.parcelaId + "')\" style=\"margin-top:8px;background:#2563eb;color:white;\">🧾 Emitir Fatura</button> " +
+(!atraso.acordoSemEncargos
+ ? "<button onclick=\"emitirFaturaSemEncargos('" + atraso.parcelaId + "')\" style=\"margin-top:8px;background:#16a34a;color:white;\">🤝 Acordo sem multa e juros</button>"
+ : "") +
 "<br><br>";
 
    }

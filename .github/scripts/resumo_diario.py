@@ -39,6 +39,11 @@ CAPITAL_PT = 1000
 # usuario: quer ver todos os que vencem de hoje ate 7 dias a frente).
 DIAS_JANELA_VENCIMENTO = 7
 
+# Premio anual concedido automaticamente no dia do aniversario. O ano
+# processado fica salvo no documento do usuario para impedir premio duplicado
+# caso a rotina seja executada novamente no mesmo dia.
+BONUS_ANIVERSARIO_ISACOIN = 5000
+
 
 def inicializar_firebase():
     info = json.loads(os.environ["FIREBASE_SERVICE_ACCOUNT_JSON"])
@@ -99,6 +104,98 @@ def calcular_aniversario(data_nascimento_str, hoje):
     return {"diasRestantes": dias_restantes, "idade": idade}
 
 
+def aniversario_e_hoje(data_nascimento_str, hoje):
+    """Confere apenas dia e mes da data salva como DD/MM/AAAA."""
+    try:
+        dia, mes, _ = [int(p) for p in data_nascimento_str.split("/")]
+    except (ValueError, AttributeError):
+        return False
+    return dia == hoje.day and mes == hoje.month
+
+
+@firestore.transactional
+def registrar_bonus_aniversario(transaction, usuario_ref, hoje, cliente_em_atraso):
+    """Registra uma unica decisao por ano e credita o premio quando permitido."""
+    usuario_snap = usuario_ref.get(transaction=transaction)
+    if not usuario_snap.exists:
+        return "ignorado"
+
+    usuario = usuario_snap.to_dict() or {}
+    if not aniversario_e_hoje(usuario.get("dataNascimento"), hoje):
+        return "ignorado"
+
+    if str(usuario.get("bonusAniversarioProcessadoAno") or "") == str(hoje.year):
+        return "ja_processado"
+
+    dados_processamento = {
+        "bonusAniversarioProcessadoAno": hoje.year,
+        "bonusAniversarioProcessadoEm": firestore.SERVER_TIMESTAMP,
+    }
+
+    if cliente_em_atraso:
+        dados_processamento.update(
+            {
+                "bonusAniversarioStatus": "negado_atraso",
+                "bonusAniversarioMotivo": "parcela_atrasada",
+            }
+        )
+        transaction.update(usuario_ref, dados_processamento)
+        return "negado_atraso"
+
+    dados_processamento.update(
+        {
+            "isaCoins": firestore.Increment(BONUS_ANIVERSARIO_ISACOIN),
+            "isaCoinsRecebidas": firestore.Increment(BONUS_ANIVERSARIO_ISACOIN),
+            "bonusAniversarioStatus": "concedido",
+            "bonusAniversarioMotivo": None,
+        }
+    )
+    transaction.update(usuario_ref, dados_processamento)
+    return "concedido"
+
+
+def processar_bonus_aniversario(db):
+    """Concede ou nega o premio dos aniversariantes antes do resumo diario."""
+    hoje = date.today()
+    usuarios_em_atraso = set()
+
+    for parcela_doc in db.collection("parcelas").stream():
+        parcela = parcela_doc.to_dict() or {}
+        if parcela.get("status") == "pago":
+            continue
+
+        vencimento = parcela.get("vencimento")
+        user_id = parcela.get("userId")
+        if vencimento is None or not user_id:
+            continue
+
+        vencimento_data = vencimento.date() if hasattr(vencimento, "date") else vencimento
+        if vencimento_data < hoje:
+            usuarios_em_atraso.add(user_id)
+
+    resultado = {"concedidos": 0, "negados": 0, "jaProcessados": 0}
+    for usuario_doc in db.collection("usuarios").stream():
+        usuario = usuario_doc.to_dict() or {}
+        if not aniversario_e_hoje(usuario.get("dataNascimento"), hoje):
+            continue
+
+        transaction = db.transaction()
+        status = registrar_bonus_aniversario(
+            transaction,
+            usuario_doc.reference,
+            hoje,
+            usuario_doc.id in usuarios_em_atraso,
+        )
+        if status == "concedido":
+            resultado["concedidos"] += 1
+        elif status == "negado_atraso":
+            resultado["negados"] += 1
+        elif status == "ja_processado":
+            resultado["jaProcessados"] += 1
+
+    return resultado
+
+
 def formatar_parcela(numero, total):
     """Replica o "${parcela.numero} de ${emprestimo.parcelas}" do admin.html."""
     if not numero:
@@ -155,7 +252,15 @@ def gerar_diagnostico(db):
             if aniversario is None:
                 continue
             if aniversario["diasRestantes"] == 0:
-                aniversarios_hoje.append({"nome": user.get("nome", "Cliente"), "idade": aniversario["idade"]})
+                aniversarios_hoje.append(
+                    {
+                        "nome": user.get("nome", "Cliente"),
+                        "idade": aniversario["idade"],
+                        "bonusStatus": user.get("bonusAniversarioStatus")
+                        if str(user.get("bonusAniversarioProcessadoAno") or "") == str(hoje.year)
+                        else None,
+                    }
+                )
             elif 0 < aniversario["diasRestantes"] <= 7:
                 aniversarios_7_dias.append(
                     {
@@ -337,7 +442,12 @@ def montar_mensagem(d):
     if d["aniversariosHoje"]:
         linhas.append("🎂 <b>Aniversário hoje:</b>")
         for a in d["aniversariosHoje"]:
-            linhas.append("• " + a["nome"] + " (" + str(a["idade"]) + " anos)")
+            premio = ""
+            if a.get("bonusStatus") == "concedido":
+                premio = " — +5.000 ISC concedidos ✅"
+            elif a.get("bonusStatus") == "negado_atraso":
+                premio = " — sem prêmio: cliente em atraso 🚫"
+            linhas.append("• " + a["nome"] + " (" + str(a["idade"]) + " anos)" + premio)
         linhas.append("")
 
     if d["aniversarios7Dias"]:
@@ -379,6 +489,8 @@ def montar_mensagem(d):
 
 def main():
     db = inicializar_firebase()
+    resultado_bonus = processar_bonus_aniversario(db)
+    print("Bonus de aniversario: " + json.dumps(resultado_bonus, ensure_ascii=False))
     diagnostico = gerar_diagnostico(db)
     mensagem = montar_mensagem(diagnostico)
     print(mensagem)

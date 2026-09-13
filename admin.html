@@ -2616,7 +2616,6 @@ window.classificarEmprestimosAtuais = async function(){
     Number(dadosControle.reais || 0) + " reais e " +
     Number(dadosControle.testes || 0) + " testes.";
    if(status) status.innerText = mensagem;
-   alert(mensagem);
    return;
   }
 
@@ -2701,12 +2700,9 @@ window.classificarEmprestimosAtuais = async function(){
    parcelasClassificadas + " parcelas revisadas.";
 
   if(status) status.innerText = mensagem;
-  alert(mensagem);
-  location.reload();
  }catch(erro){
   console.error("Erro ao classificar empréstimos:",erro);
   if(status) status.innerText = "Não foi possível concluir a classificação.";
-  alert("Não foi possível concluir a classificação. Nenhum registro foi apagado.");
  }
 };
 
@@ -2756,6 +2752,10 @@ if (!adminSnap.exists()) {
 }
 
   console.log("Admin autenticado");
+
+// A limpeza aprovada é idempotente e roda uma única vez. O documento
+// de controle impede qualquer repetição depois que ela termina.
+await window.classificarEmprestimosAtuais();
   
 // O diagnóstico e o cálculo financeiro não dependem um do outro,
 // então rodam ao mesmo tempo em vez de um esperar o outro terminar.

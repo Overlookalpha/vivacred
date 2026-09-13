@@ -5,6 +5,8 @@ import firebase_admin
 import requests
 from firebase_admin import credentials, firestore
 
+# Execução de recuperação: processa também os alertas presos após o login.
+
 
 def moeda(valor, pais):
     simbolo = "€" if pais == "PT" else "R$"

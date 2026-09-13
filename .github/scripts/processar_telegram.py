@@ -96,9 +96,9 @@ def mensagem_cliente(db, tipo, dados_evento, uid):
 
 
 def montar_mensagem(db, evento):
-    tipo = str(evento.get("tipo") or "")
+    tipo = str(evento.get("tipoTelegram") or "")
     uid = str(evento.get("criadoPor") or "")
-    dados = evento.get("dados") or {}
+    dados = evento.get("dadosTelegram") or {}
     if tipo == "admin_texto":
         if not uid or not db.collection("admins").document(uid).get().exists:
             raise ValueError("Administrador não autorizado")
@@ -117,24 +117,24 @@ def main():
     chat_id = os.environ["TELEGRAM_CHAT_ID"]
     url = f"https://api.telegram.org/bot{token}/sendMessage"
 
-    pendentes = list(db.collection("filaTelegram").where("status", "==", "pendente").limit(50).stream())
+    pendentes = list(db.collection("notificacoes").where("statusTelegram", "==", "pendente").limit(50).stream())
     print(f"Alertas pendentes encontrados: {len(pendentes)}")
     enviados = 0
     erros = 0
     for snap in pendentes:
         ref = snap.reference
         try:
-            ref.update({"status": "processando"})
+            ref.update({"statusTelegram": "processando"})
             texto = montar_mensagem(db, snap.to_dict() or {})
             resposta = requests.post(url, json={"chat_id": chat_id, "text": texto}, timeout=20)
             resposta.raise_for_status()
             retorno = resposta.json()
             if not retorno.get("ok"):
                 raise RuntimeError(retorno.get("description") or "Telegram recusou a mensagem")
-            ref.update({"status": "enviado", "enviadoEm": firestore.SERVER_TIMESTAMP})
+            ref.update({"statusTelegram": "enviado", "enviadoEm": firestore.SERVER_TIMESTAMP})
             enviados += 1
         except Exception as erro:
-            ref.update({"status": "erro", "erro": str(erro)[:300], "processadoEm": firestore.SERVER_TIMESTAMP})
+            ref.update({"statusTelegram": "erro", "erroTelegram": str(erro)[:300], "processadoEm": firestore.SERVER_TIMESTAMP})
             erros += 1
     print(f"Alertas enviados: {enviados}; alertas com erro: {erros}")
 

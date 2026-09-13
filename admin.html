@@ -255,6 +255,18 @@ Saldo:<br>
 
 </div>
 
+<div class="card">
+<h3>💵 Colocar dinheiro na empresa</h3>
+<p>Registre aqui o dinheiro que você colocar para fazer novos empréstimos. O valor entra no Caixa, mas não é contado como lucro.</p>
+<select id="aportePais">
+<option value="BR">Brasil (R$)</option>
+<option value="PT">Portugal (€)</option>
+</select>
+<input id="aporteValor" type="number" min="0.01" step="0.01" placeholder="Valor colocado na empresa">
+<input id="aporteMotivo" type="text" placeholder="Motivo (ex.: completar empréstimo de € 1.000)">
+<button onclick="registrarAporte()">Adicionar ao Caixa</button>
+</div>
+
 </div>
 
 </div>
@@ -331,27 +343,6 @@ Classificar empréstimos antigos
 </button>
 
 <div id="statusClassificacaoTestes" style="margin-top:10px;"></div>
-
-</div>
-
-<div class="card">
-
-<h4>💵 Aporte do proprietário</h4>
-
-<p>
-Registre todo dinheiro novo colocado no VivaCred. O aporte aumenta o Caixa, mas não é contado como lucro.
-</p>
-
-<select id="aportePais">
-<option value="BR">Brasil (R$)</option>
-<option value="PT">Portugal (€)</option>
-</select>
-
-<input id="aporteValor" type="number" min="0.01" step="0.01" placeholder="Valor do aporte">
-
-<button onclick="registrarAporte()">
-Registrar aporte
-</button>
 
 </div>
 
@@ -2595,12 +2586,11 @@ const firebaseConfig = {
 };
 // ================================================
 // 📲 TELEGRAM
-// O envio direto pelo navegador foi desativado porque expunha a chave secreta
-// do bot no site público. O resumo diário continua pelo GitHub Actions, usando
-// os Secrets protegidos do repositório.
+// O envio direto pelo navegador permanece desativado até a integração
+// usar uma função protegida, sem publicar a chave secreta do bot.
 // ================================================
 async function enviarTelegram(texto){
- console.log("Telegram direto desativado; envio protegido pelo resumo diário.");
+ console.log("Telegram direto desativado; aguardando envio protegido.");
  return false;
 }
  // enviarTelegram("🚀 Teste VivaCred funcionando!");
@@ -2674,8 +2664,10 @@ function calcularDistribuicaoPagamento(valorRecebido, emprestimo, parcela = null
 
 window.registrarAporte = async function(){
  const input = document.getElementById("aporteValor");
+ const motivoInput = document.getElementById("aporteMotivo");
  const pais = document.getElementById("aportePais").value;
  const valor = arredondarDinheiro(input.value);
+ const motivo = (motivoInput.value || "Aporte do proprietário").trim();
 
  if(valor <= 0){
   alert("Informe um valor de aporte válido.");
@@ -2689,7 +2681,8 @@ window.registrarAporte = async function(){
 
  if(!confirmar) return;
 
- await setDoc(
+ const loteAporte = writeBatch(db);
+ loteAporte.set(
   doc(db,"configuracoes","financeiro"),
   camposAcumuladosFinanceiros(pais,{
    impactoCaixa: valor,
@@ -2697,8 +2690,19 @@ window.registrarAporte = async function(){
   }),
   { merge: true }
  );
+ loteAporte.set(doc(collection(db,"movimentacoesCaixa")),{
+  tipo: "aporte",
+  pais: pais,
+  moeda: moeda,
+  valor: valor,
+  motivo: motivo,
+  criadoEm: new Date(),
+  origem: "admin"
+ });
+ await loteAporte.commit();
 
  input.value = "";
+ motivoInput.value = "";
  alert("Aporte registrado no Caixa.");
  await calcularFinanceiro();
 };

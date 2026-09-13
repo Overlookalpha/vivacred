@@ -231,6 +231,26 @@ Saldo:<br>
 <div id="clientesAtraso">0 clientes</div>
 </div>
 
+<div class="card">
+<h3>💳 A Receber</h3>
+<div id="totalAReceber">R$ 0</div>
+</div>
+
+<div class="card">
+<h3>💵 Aportes</h3>
+<div id="totalAportes">R$ 0</div>
+</div>
+
+<div class="card">
+<h3>🤝 Evelyn 10%</h3>
+<div id="totalEvelyn">R$ 0</div>
+</div>
+
+<div class="card">
+<h3>📈 Lucro Líquido</h3>
+<div id="lucroLiquido">R$ 0</div>
+</div>
+
 </div>
 
 </div>
@@ -298,6 +318,43 @@ Abrir
 
 </div>
 
+<div class="card">
+
+<h4>🧪 Registros de teste</h4>
+
+<p>
+Classifica os empréstimos antigos já conferidos. Registros de teste ficam guardados, mas não entram no Caixa, Dinheiro na Rua, vencimentos, atrasos ou histórico financeiro.
+</p>
+
+<button onclick="classificarEmprestimosAtuais()">
+Classificar empréstimos antigos
+</button>
+
+<div id="statusClassificacaoTestes" style="margin-top:10px;"></div>
+
+</div>
+
+<div class="card">
+
+<h4>💵 Aporte do proprietário</h4>
+
+<p>
+Registre todo dinheiro novo colocado no VivaCred. O aporte aumenta o Caixa, mas não é contado como lucro.
+</p>
+
+<select id="aportePais">
+<option value="BR">Brasil (R$)</option>
+<option value="PT">Portugal (€)</option>
+</select>
+
+<input id="aporteValor" type="number" min="0.01" step="0.01" placeholder="Valor do aporte">
+
+<button onclick="registrarAporte()">
+Registrar aporte
+</button>
+
+</div>
+
 </div>
 
 <!-- SAQUES -->
@@ -344,6 +401,7 @@ import {
   deleteDoc,
   addDoc,
   setDoc,
+  writeBatch,
   query,
   where,
   orderBy,
@@ -444,6 +502,12 @@ function calcularCobrancaParcela(parcela, hojeReferencia = new Date()){
   juros,
   totalAtualizado
  };
+}
+
+// Registros classificados como teste continuam guardados no Firebase para
+// conferência, mas ficam completamente fora da contabilidade.
+function registroTeste(dados){
+ return dados?.tipoRegistro === "teste" || dados?.teste === true;
 }
 
 // ================================================
@@ -662,16 +726,36 @@ if((user.score || 0) >= 80){
 }
    
  });
+const emprestimosSnap =
+await getDocs(collection(db,"emprestimos"));
+
+const emprestimosPorId = {};
+const emprestimosTesteIds = new Set();
+
+emprestimosSnap.forEach((docSnap)=>{
+ const dados = docSnap.data();
+ emprestimosPorId[docSnap.id] = dados;
+ if(registroTeste(dados)) emprestimosTesteIds.add(docSnap.id);
+});
+
 const parcelasSnap =
 await getDocs(collection(db,"parcelas"));
 
 const hoje = new Date();
 hoje.setHours(0,0,0,0);
 
+let diagnosticoNaRuaBR = 0;
+let diagnosticoNaRuaPT = 0;
+
 
 for (const docSnap of parcelasSnap.docs) {
 
  const parcela = docSnap.data();
+
+ if(
+  registroTeste(parcela) ||
+  emprestimosTesteIds.has(parcela.emprestimoId)
+ ) continue;
 
 // Antes isso fazia uma consulta ao Firebase por parcela
 // (centenas de idas ao banco, uma de cada vez). Agora usa
@@ -682,6 +766,49 @@ const user = usuariosPorId[parcela.userId] || {};
   parcela.status === "pago" ||
   !parcela.vencimento
  ) continue;
+
+ const emprestimoParcela = emprestimosPorId[parcela.emprestimoId] || {};
+
+ if(emprestimoParcela.status === "ativo"){
+  const principal = Number(emprestimoParcela.valor || 0);
+  const totalContrato = Number(
+   emprestimoParcela.valorFinal || principal || 0
+  );
+  const proporcaoPadrao = totalContrato > 0
+   ? Math.min(1,principal / totalContrato)
+   : 1;
+  const pago = Number(parcela.pago || 0);
+  let principalPendente;
+
+  if(parcela.acordoAtivo === true){
+   const principalAcordo = Number(
+    parcela.principalPendenteAcordo ??
+    (Number(parcela.valor || 0) * proporcaoPadrao)
+   );
+   const pagoDepois = Math.max(
+    0,
+    pago - Number(parcela.pagoAntesAcordo || 0)
+   );
+   const proporcaoAcordo = Number(
+    parcela.proporcaoPrincipalAcordo ?? proporcaoPadrao
+   );
+   principalPendente = Math.max(
+    0,
+    principalAcordo - pagoDepois * proporcaoAcordo
+   );
+  }else{
+   principalPendente = Math.max(
+    0,
+    (Number(parcela.valor || 0) - pago) * proporcaoPadrao
+   );
+  }
+
+  if((emprestimoParcela.pais || "BR") === "PT"){
+   diagnosticoNaRuaPT += principalPendente;
+  }else{
+   diagnosticoNaRuaBR += principalPendente;
+  }
+ }
 
  const vencimento =
  parcela.vencimento.toDate();
@@ -891,34 +1018,36 @@ console.log("AMANHA", resultado.cobrancas.amanha.length);
 console.log("2 DIAS", resultado.cobrancas.doisDias.length);
 console.log("3 DIAS", resultado.cobrancas.tresDias.length);
 
-const emprestimosSnap =
-await getDocs(collection(db,"emprestimos"));
+const [configuracaoSnap,movimentacoesSnap] = await Promise.all([
+ getDoc(doc(db,"configuracoes","financeiro")),
+ getDocs(collection(db,"movimentacoesCaixa"))
+]);
+const configuracao = configuracaoSnap.exists()
+ ? configuracaoSnap.data()
+ : {};
+let caixaBR = Number(
+ configuracao.saldoInicialBR ?? SALDO_INICIAL_CAIXA_BR
+);
+let caixaPT = Number(
+ configuracao.saldoInicialPT ?? SALDO_INICIAL_CAIXA_PT
+);
 
-let totalNaRua = 0;
-
-emprestimosSnap.forEach((docSnap)=>{
-
- const emp = docSnap.data();
-
- if(
-  emp.status === "ativo" &&
-  emp.finalizado !== true
- ){
-
-  totalNaRua += Number(emp.valor || 0);
-
+movimentacoesSnap.forEach((movimentoDoc)=>{
+ const movimento = movimentoDoc.data();
+ if(registroTeste(movimento)) return;
+ if(movimento.pais === "PT"){
+  caixaPT += Number(movimento.impactoCaixa || 0);
+ }else{
+  caixaBR += Number(movimento.impactoCaixa || 0);
  }
-
 });
 
-resultado.financeiro.naRua =
-totalNaRua;
-
-resultado.financeiro.caixa =
-Math.max(
- 0,
- (capitalBR + capitalPT) - totalNaRua
-);
+resultado.financeiro.naRuaBR = arredondarDinheiro(diagnosticoNaRuaBR);
+resultado.financeiro.naRuaPT = arredondarDinheiro(diagnosticoNaRuaPT);
+resultado.financeiro.naRua = resultado.financeiro.naRuaBR;
+resultado.financeiro.caixaBR = arredondarDinheiro(caixaBR);
+resultado.financeiro.caixaPT = arredondarDinheiro(caixaPT);
+resultado.financeiro.caixa = resultado.financeiro.caixaBR;
   
  return resultado;
 
@@ -943,10 +1072,12 @@ ${Number(d.isacoin.totalCirculacao || 0).toLocaleString("pt-BR")} ISC
 ${d.clientes.vip}
 
 💵 Caixa Disponível:
-R$ ${Number(d.financeiro.caixa || 0).toFixed(2)}
+R$ ${Number(d.financeiro.caixaBR || 0).toFixed(2)}
+€ ${Number(d.financeiro.caixaPT || 0).toFixed(2)}
 
 🏦 Dinheiro na Rua:
-R$ ${Number(d.financeiro.naRua || 0).toFixed(2)}
+R$ ${Number(d.financeiro.naRuaBR || 0).toFixed(2)}
+€ ${Number(d.financeiro.naRuaPT || 0).toFixed(2)}
 
 🪙 Próximos Saques ISAcoin:
 ${d.isacoin.proximosSaques.length}
@@ -1289,8 +1420,33 @@ let totalRecebidoPT = 0;
 let capitalEmprestadoBR = 0;
 let capitalEmprestadoPT = 0;
 
- const emprestimosSnap = await getDocs(collection(db,"emprestimos"));
- const parcelasSnap = await getDocs(collection(db,"parcelas"));
+let totalAReceberBR = 0;
+let totalAReceberPT = 0;
+let dinheiroRuaBR = 0;
+let dinheiroRuaPT = 0;
+
+ const [
+  emprestimosSnap,
+  parcelasSnap,
+  configuracaoFinanceiraSnap,
+  movimentacoesSnap
+ ] = await Promise.all([
+  getDocs(collection(db,"emprestimos")),
+  getDocs(collection(db,"parcelas")),
+  getDoc(doc(db,"configuracoes","financeiro")),
+  getDocs(collection(db,"movimentacoesCaixa"))
+ ]);
+ const emprestimosTesteIds = new Set(
+  emprestimosSnap.docs
+   .filter(docSnap => registroTeste(docSnap.data()))
+   .map(docSnap => docSnap.id)
+ );
+ const emprestimosPorIdFinanceiro = new Map(
+  emprestimosSnap.docs.map(docSnap => [
+   docSnap.id,
+   docSnap.data()
+  ])
+ );
 let proximaParcela = null;
 const vencemEm3Dias = [];
 const vencemEm2Dias = [];
@@ -1307,6 +1463,8 @@ emprestimosSnap.forEach((docSnap)=>{
  const dados = docSnap.data();
   (dados);
  const pais = dados.pais || "BR";
+
+ if(registroTeste(dados)) return;
 
  if(dados.status === "ativo"){
 
@@ -1329,6 +1487,79 @@ emprestimosSnap.forEach((docSnap)=>{
 parcelasSnap.forEach((docSnap)=>{
 
  const dados = docSnap.data();
+
+ if(
+  registroTeste(dados) ||
+  emprestimosTesteIds.has(dados.emprestimoId)
+ ) return;
+
+ const pagoRegistrado = Number(dados.pago || 0);
+ const restanteContratado = Math.max(
+  0,
+  Number(dados.restante ?? (Number(dados.valor || 0) - pagoRegistrado))
+ );
+
+ const emprestimoDaParcela = emprestimosPorIdFinanceiro.get(
+  dados.emprestimoId
+ );
+
+ if(
+  emprestimoDaParcela?.status === "ativo" &&
+  dados.status !== "pago" &&
+  restanteContratado > 0
+ ){
+  if((dados.pais || "BR") === "PT"){
+   totalAReceberPT += restanteContratado;
+  }else{
+   totalAReceberBR += restanteContratado;
+  }
+ }
+
+ if(
+  emprestimoDaParcela &&
+  emprestimoDaParcela.status === "ativo" &&
+  dados.status !== "pago"
+ ){
+  const principalContrato = Number(emprestimoDaParcela.valor || 0);
+  const totalContrato = Number(
+   emprestimoDaParcela.valorFinal || principalContrato || 0
+  );
+  const proporcaoPadrao = totalContrato > 0
+   ? Math.min(1, principalContrato / totalContrato)
+   : 1;
+
+  let principalPendenteParcela;
+
+  if(dados.acordoAtivo === true){
+   const principalNoAcordo = Number(
+    dados.principalPendenteAcordo ??
+    (Number(dados.valor || 0) * proporcaoPadrao)
+   );
+   const pagoDepoisAcordo = Math.max(
+    0,
+    pagoRegistrado - Number(dados.pagoAntesAcordo || 0)
+   );
+   const proporcaoAcordo = Number(
+    dados.proporcaoPrincipalAcordo ?? proporcaoPadrao
+   );
+   principalPendenteParcela = Math.max(
+    0,
+    principalNoAcordo - (pagoDepoisAcordo * proporcaoAcordo)
+   );
+  }else{
+   principalPendenteParcela = Math.max(
+    0,
+    (Number(dados.valor || 0) - pagoRegistrado) * proporcaoPadrao
+   );
+  }
+
+  if((emprestimoDaParcela.pais || "BR") === "PT"){
+   dinheiroRuaPT += principalPendenteParcela;
+  }else{
+   dinheiroRuaBR += principalPendenteParcela;
+  }
+ }
+
 const hoje = new Date();
 hoje.setHours(0,0,0,0);
 
@@ -1560,34 +1791,62 @@ color:white;
  }
 
 }
-const dinheiroRuaBR =
-totalEmprestadoBR - totalRecebidoBR;
+dinheiroRuaBR = arredondarDinheiro(dinheiroRuaBR);
+dinheiroRuaPT = arredondarDinheiro(dinheiroRuaPT);
 
-const dinheiroRuaPT =
-totalEmprestadoPT - totalRecebidoPT;
+const configuracaoFinanceira = configuracaoFinanceiraSnap.exists()
+ ? configuracaoFinanceiraSnap.data()
+ : {};
 
-const saldoBR = Math.max(
-  0,
-  capitalBR - capitalEmprestadoBR + totalRecebidoBR
+let saldoBR = Number(
+ configuracaoFinanceira.saldoInicialBR ?? SALDO_INICIAL_CAIXA_BR
 );
-
-const saldoPT = Math.max(
-  0,
-  capitalPT - capitalEmprestadoPT + totalRecebidoPT
+let saldoPT = Number(
+ configuracaoFinanceira.saldoInicialPT ?? SALDO_INICIAL_CAIXA_PT
 );
-const caixaDisponivel = saldoBR + saldoPT;
+let aportesBR = 0;
+let aportesPT = 0;
+let evelynBR = 0;
+let evelynPT = 0;
+let lucroLiquidoBR = 0;
+let lucroLiquidoPT = 0;
+
+movimentacoesSnap.forEach((movimentoDoc)=>{
+ const movimento = movimentoDoc.data();
+ if(registroTeste(movimento)) return;
+
+ const pais = movimento.pais === "PT" ? "PT" : "BR";
+ const impactoCaixa = Number(movimento.impactoCaixa || 0);
+ const aporte = movimento.tipo === "aporte"
+  ? Number(movimento.valor || impactoCaixa || 0)
+  : 0;
+ const repasseEvelyn = Number(movimento.repasseEvelyn || 0);
+ const lucroLiquidoMovimento = Number(movimento.lucroLiquido || 0);
+
+ if(pais === "PT"){
+  saldoPT += impactoCaixa;
+  aportesPT += aporte;
+  evelynPT += repasseEvelyn;
+  lucroLiquidoPT += lucroLiquidoMovimento;
+ }else{
+  saldoBR += impactoCaixa;
+  aportesBR += aporte;
+  evelynBR += repasseEvelyn;
+  lucroLiquidoBR += lucroLiquidoMovimento;
+ }
+});
 
 document.getElementById("caixaDisponivel").innerHTML =
 "💰 Caixa Disponível<br>" +
-"R$ " + caixaDisponivel.toFixed(2);
+"R$ " + saldoBR.toFixed(2) +
+"<br>€ " + saldoPT.toFixed(2);
 
 // Antes esse card só mostrava o valor do Brasil — Portugal
 // nunca entrava na conta, mesmo tendo clientes lá.
-const dinheiroRuaTotal = dinheiroRuaBR + dinheiroRuaPT;
-
 document.getElementById("dinheiroRua").innerHTML =
 "🏦 Na Rua<br>" +
-"R$ " + dinheiroRuaTotal.toFixed(2);
+"R$ " + dinheiroRuaBR.toFixed(2) +
+"<br>€ " + dinheiroRuaPT.toFixed(2);
 document.getElementById("dinheiroRuaBR").innerText =
 "R$ " + dinheiroRuaBR.toFixed(2);
 
@@ -1616,6 +1875,26 @@ document.getElementById("clientesAtraso").innerHTML =
 "🚨 Em Atraso<br>" +
 emprestimosAtrasadosSet.size +
 (emprestimosAtrasadosSet.size === 1 ? " cliente" : " clientes");
+
+document.getElementById("totalAReceber").innerHTML =
+"💳 Total a Receber<br>" +
+"R$ " + totalAReceberBR.toFixed(2) +
+"<br>€ " + totalAReceberPT.toFixed(2);
+
+document.getElementById("totalAportes").innerHTML =
+"💵 Aportes desde o novo Caixa<br>" +
+"R$ " + aportesBR.toFixed(2) +
+"<br>€ " + aportesPT.toFixed(2);
+
+document.getElementById("totalEvelyn").innerHTML =
+"🤝 Reservado para Evelyn<br>" +
+"R$ " + evelynBR.toFixed(2) +
+"<br>€ " + evelynPT.toFixed(2);
+
+document.getElementById("lucroLiquido").innerHTML =
+"📈 Lucro recebido após Evelyn<br>" +
+"R$ " + lucroLiquidoBR.toFixed(2) +
+"<br>€ " + lucroLiquidoPT.toFixed(2);
 
 // ================================================
 // 🏠 ABA: DASHBOARD — Renderização das listas de vencimento
@@ -1930,6 +2209,163 @@ window.emitirFaturaSemEncargos = async function(parcelaId){
  await window.emitirFatura(parcelaId);
 }
 
+// Registra uma renegociação sem criar entrada fictícia no Caixa. O Caixa só
+// muda quando o cliente efetivamente paga o valor acordado.
+window.registrarAcordoParcela = async function(parcelaId){
+ const parcelaRef = doc(db,"parcelas",parcelaId);
+ const parcelaSnap = await getDoc(parcelaRef);
+
+ if(!parcelaSnap.exists()){
+  alert("Parcela não encontrada.");
+  return;
+ }
+
+ const parcela = parcelaSnap.data();
+
+ if(parcela.status === "pago"){
+  alert("Esta parcela já está paga.");
+  return;
+ }
+
+ const emprestimoRef = doc(db,"emprestimos",parcela.emprestimoId);
+ const emprestimoSnap = await getDoc(emprestimoRef);
+
+ if(!emprestimoSnap.exists()){
+  alert("Empréstimo não encontrado.");
+  return;
+ }
+
+ const emprestimo = emprestimoSnap.data();
+ const cobrancaAtual = calcularCobrancaParcela(parcela,new Date());
+ const moeda = emprestimo.pais === "PT" ? "€" : "R$";
+ const valorInformado = prompt(
+  "Valor total que o cliente deverá pagar no acordo:",
+  cobrancaAtual.totalAtualizado.toFixed(2)
+ );
+
+ if(valorInformado === null) return;
+
+ const novoRestante = arredondarDinheiro(
+  String(valorInformado).replace(",",".")
+ );
+
+ if(novoRestante <= 0){
+  alert("Informe um valor de acordo válido.");
+  return;
+ }
+
+ const dataInformada = prompt(
+  "Novo vencimento no formato DD/MM/AAAA:",
+  parcela.vencimento.toDate().toLocaleDateString("pt-BR")
+ );
+
+ if(dataInformada === null) return;
+
+ const partesData = dataInformada.split("/").map(Number);
+ const novoVencimento = new Date(
+  partesData[2],
+  partesData[1] - 1,
+  partesData[0],
+  12,0,0
+ );
+
+ if(
+  partesData.length !== 3 ||
+  Number.isNaN(novoVencimento.getTime())
+ ){
+  alert("Data inválida. Use DD/MM/AAAA.");
+  return;
+ }
+
+ const principalContrato = Number(emprestimo.valor || 0);
+ const totalContrato = Number(
+  emprestimo.valorFinal || principalContrato || 0
+ );
+ const proporcaoPadrao = totalContrato > 0
+  ? Math.min(1, principalContrato / totalContrato)
+  : 1;
+ const saldoContratualAntes = Math.max(
+  0,
+  Number(parcela.valor || 0) - Number(parcela.pago || 0)
+ );
+ const principalPendenteAntes = arredondarDinheiro(
+  saldoContratualAntes * proporcaoPadrao
+ );
+ const perdaPrincipal = arredondarDinheiro(
+  Math.max(0, principalPendenteAntes - novoRestante)
+ );
+ const principalMantidoNoAcordo = arredondarDinheiro(
+  Math.min(principalPendenteAntes,novoRestante)
+ );
+ const proporcaoPrincipalAcordo = novoRestante > 0
+  ? principalMantidoNoAcordo / novoRestante
+  : 0;
+
+ const confirmou = confirm(
+  "Confirmar acordo de " + moeda + " " + novoRestante.toFixed(2) +
+  " com vencimento em " + dataInformada + "?\n\n" +
+  "O Caixa não será alterado agora."
+ );
+
+ if(!confirmou) return;
+
+ const lote = writeBatch(db);
+ const valorPagoAntes = Number(parcela.pago || 0);
+
+ lote.update(parcelaRef,{
+  acordoAtivo: true,
+  valorAntesAcordo: Number(
+   parcela.valorAntesAcordo ?? parcela.valor ?? 0
+  ),
+  restanteAntesAcordo: saldoContratualAntes,
+  valorAcordado: novoRestante,
+  valor: arredondarDinheiro(valorPagoAntes + novoRestante),
+  restante: novoRestante,
+  pagoAntesAcordo: valorPagoAntes,
+  principalPendenteAcordo: principalMantidoNoAcordo,
+  proporcaoPrincipalAcordo,
+  perdaPrincipalAcordo: perdaPrincipal,
+  vencimento: novoVencimento,
+  acordoCriadoEm: new Date(),
+  acordoCriadoPor: "admin",
+  multa: 0,
+  juros: 0,
+  diasAtraso: 0,
+  status: "pendente"
+ });
+
+ if(perdaPrincipal > 0){
+  const perdaRef = doc(
+   db,
+   "movimentacoesCaixa",
+   "perda_acordo_" + parcelaId
+  );
+
+  lote.set(perdaRef,{
+   tipo: "perda_acordo",
+   pais: emprestimo.pais || "BR",
+   emprestimoId: parcela.emprestimoId,
+   parcelaId,
+   userId: parcela.userId,
+   cliente: emprestimo.nomeCliente || "Cliente",
+   valor: perdaPrincipal,
+   perdaAcordo: perdaPrincipal,
+   lucroLiquido: -perdaPrincipal,
+   impactoCaixa: 0,
+   descricao: "Capital perdoado em acordo",
+   criadoEm: new Date(),
+   tipoRegistro: "real"
+  });
+ }
+
+ await lote.commit();
+
+ alert(
+  "Acordo registrado. O novo valor já entrou em A Receber, sem alterar o Caixa."
+ );
+ location.reload();
+};
+
 document.getElementById("vencimentos3Dias").innerHTML =
 await montarListaVencimentos(
  vencemEm3Dias,
@@ -2018,6 +2454,7 @@ Number(
 (!atraso.acordoSemEncargos
  ? "<button onclick=\"emitirFaturaSemEncargos('" + atraso.parcelaId + "')\" style=\"margin-top:8px;background:#16a34a;color:white;\">🤝 Acordo sem multa e juros</button>"
  : "") +
+" <button onclick=\"registrarAcordoParcela('" + atraso.parcelaId + "')\" style=\"margin-top:8px;background:#7c3aed;color:white;\">📝 Registrar acordo</button>" +
 "<br><br>";
 
    }
@@ -2057,49 +2494,254 @@ const firebaseConfig = {
   projectId: "vivacred-5a5b8",
 };
 // ================================================
-// 📲 TELEGRAM — Envio de fato (usada por todas as telas)
+// 📲 TELEGRAM
+// O envio direto pelo navegador foi desativado porque expunha a chave secreta
+// do bot no site público. O resumo diário continua pelo GitHub Actions, usando
+// os Secrets protegidos do repositório.
 // ================================================
 async function enviarTelegram(texto){
-
- try{
-
-  console.log("🚀 ENVIANDO TELEGRAM");
-  console.log(texto);
-
-  const token = "8855201631:AAEm19qaN-OjFon9Pfb2KElLpfqSP4w2Qqs";
-  const chatId = "7136900890";
-
-  const resposta = await fetch(
-   `https://api.telegram.org/bot${token}/sendMessage`,
-   {
-    method:"POST",
-    headers:{
-     "Content-Type":"application/json"
-    },
-    body:JSON.stringify({
-      chat_id: chatId,
-      text: texto
-    })
-   }
-  );
-
-  const retorno = await resposta.text();
-
-  console.log("✅ RESPOSTA TELEGRAM");
-  console.log(retorno);
-
- }catch(erro){
-
-  console.error("❌ ERRO TELEGRAM");
-  console.error(erro);
-
- }
-
+ console.log("Telegram direto desativado; envio protegido pelo resumo diário.");
+ return false;
 }
  // enviarTelegram("🚀 Teste VivaCred funcionando!");
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+const SALDO_INICIAL_CAIXA_BR = 331;
+const SALDO_INICIAL_CAIXA_PT = 0;
+const PERCENTUAL_EVELYN = 0.10;
+
+function arredondarDinheiro(valor){
+ return Number(Number(valor || 0).toFixed(2));
+}
+
+function calcularDistribuicaoPagamento(valorRecebido, emprestimo, parcela = null){
+ const bruto = arredondarDinheiro(valorRecebido);
+ const principal = Number(emprestimo?.valor || 0);
+ const totalContrato = Number(emprestimo?.valorFinal || principal || 0);
+ const proporcaoPadrao = totalContrato > 0
+  ? Math.min(1, principal / totalContrato)
+  : 1;
+ const proporcaoPrincipal = parcela?.acordoAtivo === true
+  ? Number(parcela.proporcaoPrincipalAcordo ?? proporcaoPadrao)
+  : proporcaoPadrao;
+ const principalRecuperado = arredondarDinheiro(
+  bruto * proporcaoPrincipal
+ );
+ const lucroBruto = arredondarDinheiro(
+  bruto - principalRecuperado
+ );
+ const repasseEvelyn = arredondarDinheiro(
+  bruto * PERCENTUAL_EVELYN
+ );
+ const valorLiquido = arredondarDinheiro(
+  bruto - repasseEvelyn
+ );
+ const lucroLiquido = arredondarDinheiro(
+  lucroBruto - repasseEvelyn
+ );
+
+ return {
+  valorBruto: bruto,
+  principalRecuperado,
+  lucroBruto,
+  repasseEvelyn,
+  valorLiquido,
+  lucroLiquido
+ };
+}
+
+window.registrarAporte = async function(){
+ const input = document.getElementById("aporteValor");
+ const pais = document.getElementById("aportePais").value;
+ const valor = arredondarDinheiro(input.value);
+
+ if(valor <= 0){
+  alert("Informe um valor de aporte válido.");
+  return;
+ }
+
+ const moeda = pais === "PT" ? "€" : "R$";
+ const confirmar = confirm(
+  "Registrar aporte de " + moeda + " " + valor.toFixed(2) + " no Caixa?"
+ );
+
+ if(!confirmar) return;
+
+ await addDoc(collection(db,"movimentacoesCaixa"),{
+  tipo: "aporte",
+  pais,
+  valor,
+  impactoCaixa: valor,
+  descricao: "Aporte do proprietário",
+  criadoEm: new Date(),
+  tipoRegistro: "real"
+ });
+
+ input.value = "";
+ alert("Aporte registrado no Caixa.");
+ await calcularFinanceiro();
+};
+
+const NOMES_REAIS_CONFIRMADOS = new Set([
+ "sirlei",
+ "tatiane",
+ "douglas andreola de carvalho",
+ "douglas de carvalho",
+ "andre henrique rodrigues",
+ "andre henriques rodrigues",
+ "jose carlos de souza orvieto",
+ "carlos orviedo",
+ "pedro dionisio de chaves ribeiro",
+ "rosane figueira",
+ "katia viviane de azevedo",
+ "catia viviande de azevedo"
+]);
+
+const EMAILS_REAIS_CONFIRMADOS = new Set([
+ "sirlei@isacred.com",
+ "tatiane@isacred.com",
+ "douglas@isacred.com",
+ "andre@isacred.com",
+ "carlos@isacred.com",
+ "pedro@isacred.com",
+ "rosane@isacred.com",
+ "viviane@isacred.com"
+]);
+
+function normalizarIdentificacao(valor){
+ return String(valor || "")
+  .normalize("NFD")
+  .replace(/[\u0300-\u036f]/g, "")
+  .trim()
+  .toLowerCase()
+  .replace(/\s+/g, " ");
+}
+
+function emprestimoConfirmadoReal(dados){
+ const nome = normalizarIdentificacao(
+  dados.nomeCliente || dados.nome
+ );
+ const email = normalizarIdentificacao(dados.email);
+
+ return (
+  NOMES_REAIS_CONFIRMADOS.has(nome) ||
+  EMAILS_REAIS_CONFIRMADOS.has(email)
+ );
+}
+
+window.classificarEmprestimosAtuais = async function(){
+ const confirmar = confirm(
+  "Classificar agora todos os empréstimos antigos?\n\n" +
+  "Os clientes reais confirmados serão preservados. Todos os demais registros existentes serão marcados como teste e sairão da contabilidade. Nada será apagado."
+ );
+
+ if(!confirmar) return;
+
+ const status = document.getElementById("statusClassificacaoTestes");
+ if(status) status.innerText = "Classificando, aguarde...";
+
+ try{
+  const controleRef = doc(
+   db,
+   "configuracoes",
+   "classificacaoTestes202609"
+  );
+  const controleSnap = await getDoc(controleRef);
+
+  if(controleSnap.exists() && controleSnap.data().concluida === true){
+   const dadosControle = controleSnap.data();
+   const mensagem =
+    "Classificação já concluída: " +
+    Number(dadosControle.reais || 0) + " reais e " +
+    Number(dadosControle.testes || 0) + " testes.";
+   if(status) status.innerText = mensagem;
+   alert(mensagem);
+   return;
+  }
+
+  const emprestimosSnap = await getDocs(
+   collection(db,"emprestimos")
+  );
+  const classificacaoPorId = new Map();
+  let reais = 0;
+  let testes = 0;
+
+  for(const emprestimoDoc of emprestimosSnap.docs){
+   const dados = emprestimoDoc.data();
+   const tipoRegistro = emprestimoConfirmadoReal(dados)
+    ? "real"
+    : "teste";
+
+   classificacaoPorId.set(emprestimoDoc.id, tipoRegistro);
+
+   if(tipoRegistro === "real") reais++;
+   else testes++;
+
+   await updateDoc(
+    doc(db,"emprestimos",emprestimoDoc.id),
+    {
+     tipoRegistro,
+     teste: tipoRegistro === "teste",
+     classificadoEm: new Date(),
+     classificacao: "limpeza_confirmada_2026_09"
+    }
+   );
+  }
+
+  const parcelasSnap = await getDocs(collection(db,"parcelas"));
+  let parcelasClassificadas = 0;
+
+  for(const parcelaDoc of parcelasSnap.docs){
+   const dados = parcelaDoc.data();
+   const tipoRegistro = classificacaoPorId.get(dados.emprestimoId);
+
+   if(!tipoRegistro) continue;
+
+   await updateDoc(
+    doc(db,"parcelas",parcelaDoc.id),
+    {
+     tipoRegistro,
+     teste: tipoRegistro === "teste"
+    }
+   );
+   parcelasClassificadas++;
+  }
+
+  await setDoc(controleRef,{
+   concluida: true,
+   executadaEm: new Date(),
+   reais,
+   testes,
+   parcelasClassificadas
+  });
+
+  await setDoc(
+   doc(db,"configuracoes","financeiro"),
+   {
+    saldoInicialBR: SALDO_INICIAL_CAIXA_BR,
+    saldoInicialPT: SALDO_INICIAL_CAIXA_PT,
+    percentualEvelyn: PERCENTUAL_EVELYN * 100,
+    inicioNovoCaixaEm: new Date()
+   },
+   { merge: true }
+  );
+
+  const mensagem =
+   "Classificação concluída: " + reais + " empréstimos reais, " +
+   testes + " empréstimos de teste e " +
+   parcelasClassificadas + " parcelas revisadas.";
+
+  if(status) status.innerText = mensagem;
+  alert(mensagem);
+  location.reload();
+ }catch(erro){
+  console.error("Erro ao classificar empréstimos:",erro);
+  if(status) status.innerText = "Não foi possível concluir a classificação.";
+  alert("Não foi possível concluir a classificação. Nenhum registro foi apagado.");
+ }
+};
 
 async function criarNotificacao(userId, titulo, mensagem){
   await addDoc(collection(db,"notificacoes"),{
@@ -2213,7 +2855,7 @@ const historicoCliente = snapshot.docs.filter((d)=>{
 
  const e = d.data();
 
- return e.email === dados.email;
+ return e.email === dados.email && !registroTeste(e);
 
 });
 
@@ -2508,7 +3150,11 @@ for(const emprestimoDoc of emprestimosSnap.docs){
 
     const emp = emprestimoDoc.data();
 
-    if(emp.status !== "ativo" || emp.arquivado === true){
+    if(
+     emp.status !== "ativo" ||
+     emp.arquivado === true ||
+     registroTeste(emp)
+    ){
         continue;
     }
 
@@ -2690,7 +3336,7 @@ const historicoSnapshot = await getDocs(collection(db,"emprestimos"));
 historicoSnapshot.forEach((docSnap) => {
   const dados = docSnap.data();
 
-  if (dados.finalizado !== true) return;
+  if (dados.finalizado !== true || registroTeste(dados)) return;
 
   const div = document.createElement("div");
   div.className = "card";
@@ -2794,10 +3440,25 @@ if(userSnap.exists()){
 
  await updateDoc(emprestimoRef, {
    status: "ativo",
+   tipoRegistro: "real",
+   teste: false,
    dataAprovacao: hoje,
    dataVencimento: vencimento,
    parcelasPagas: 0,
    finalizado: false
+ });
+
+ await addDoc(collection(db,"movimentacoesCaixa"),{
+  tipo: "emprestimo_liberado",
+  pais: dados.pais || "BR",
+  valor: Number(dados.valor || 0),
+  impactoCaixa: -Number(dados.valor || 0),
+  emprestimoId: id,
+  userId: dados.userId,
+  cliente: dados.nomeCliente || "Cliente",
+  descricao: "Capital liberado em novo empréstimo",
+  criadoEm: new Date(),
+  tipoRegistro: "real"
  });
 try{
 
@@ -2837,6 +3498,8 @@ for (let i = 1; i <= dados.parcelas; i++) {
    emprestimoId: id,
    userId: dados.userId,
    pais: dados.pais || "BR",
+   tipoRegistro: "real",
+   teste: false,
 
    numero: i,
    valor: valorParcela,
@@ -3173,12 +3836,50 @@ if(Number(valor) > restanteAtual){
  const novoPago = Number(dados.pago) + Number(valor);
  const restante = dados.valor - novoPago;
 
- await updateDoc(ref,{
+ const emprestimoRef = doc(db,"emprestimos",dados.emprestimoId);
+ const emprestimoSnap = await getDoc(emprestimoRef);
+
+ if(!emprestimoSnap.exists()){
+  alert("Empréstimo não encontrado.");
+  return;
+ }
+
+ const emprestimo = emprestimoSnap.data();
+ const distribuicao = calcularDistribuicaoPagamento(
+  Number(valor),
+  emprestimo,
+  dados
+ );
+ const movimentoRef = doc(collection(db,"movimentacoesCaixa"));
+ const lote = writeBatch(db);
+
+ lote.update(ref,{
   pago: novoPago,
   restante: restante
  });
 
- alert("Pagamento registrado");
+ lote.set(movimentoRef,{
+  tipo: "recebimento_cliente",
+  pais: emprestimo.pais || dados.pais || "BR",
+  emprestimoId: dados.emprestimoId,
+  parcelaId,
+  userId: dados.userId,
+  cliente: emprestimo.nomeCliente || "Cliente",
+  ...distribuicao,
+  impactoCaixa: distribuicao.valorLiquido,
+  percentualEvelyn: PERCENTUAL_EVELYN * 100,
+  descricao: "Pagamento parcial recebido",
+  criadoEm: new Date(),
+  tipoRegistro: "real"
+ });
+
+ await lote.commit();
+
+ alert(
+  "Pagamento registrado.\n\n" +
+  "Evelyn (10%): " + distribuicao.repasseEvelyn.toFixed(2) + "\n" +
+  "Entrada líquida no Caixa: " + distribuicao.valorLiquido.toFixed(2)
+ );
 
  location.reload();
 
@@ -3190,6 +3891,26 @@ if(Number(valor) > restanteAtual){
  const ref = doc(db,"parcelas",parcelaId);
  const snap = await getDoc(ref);
  const dados = snap.data();
+
+ const emprestimoRef = doc(db,"emprestimos",dados.emprestimoId);
+ const emprestimoSnap = await getDoc(emprestimoRef);
+
+ if(!emprestimoSnap.exists()){
+  if(janela) janela.close();
+  alert("Empréstimo não encontrado.");
+  return;
+ }
+
+ const emprestimo = emprestimoSnap.data();
+ const valorRecebidoAgora = Math.max(
+  0,
+  Number(dados.valor || 0) - Number(dados.pago || 0)
+ );
+ const distribuicao = calcularDistribuicaoPagamento(
+  valorRecebidoAgora,
+  emprestimo,
+  dados
+ );
 
 const vencimento = dados.vencimento.toDate();
 
@@ -3209,7 +3930,14 @@ if(diasDiferenca > 0){
  perfilPagamento = "atrasado";
 }
     
-await updateDoc(ref,{
+const movimentoRef = doc(
+ db,
+ "movimentacoesCaixa",
+ "pagamento_" + parcelaId + "_final"
+);
+const lotePagamento = writeBatch(db);
+
+lotePagamento.update(ref,{
     pago: dados.valor,
     restante: 0,
     status:"pago",
@@ -3223,6 +3951,23 @@ await updateDoc(ref,{
     diasDiferenca: diasDiferenca,
     perfilPagamento: perfilPagamento
 });
+
+lotePagamento.set(movimentoRef,{
+ tipo: "recebimento_cliente",
+ pais: emprestimo.pais || dados.pais || "BR",
+ emprestimoId: dados.emprestimoId,
+ parcelaId,
+ userId: dados.userId,
+ cliente: emprestimo.nomeCliente || "Cliente",
+ ...distribuicao,
+ impactoCaixa: distribuicao.valorLiquido,
+ percentualEvelyn: PERCENTUAL_EVELYN * 100,
+ descricao: "Pagamento final da parcela",
+ criadoEm: new Date(),
+ tipoRegistro: "real"
+});
+
+await lotePagamento.commit();
 
 // aumentar score do cliente
 
@@ -3290,10 +4035,6 @@ await updateDoc(userRef,{
 
 }
 
- const emprestimoRef = doc(db,"emprestimos",dados.emprestimoId);
- const emprestimoSnap = await getDoc(emprestimoRef);
- const emprestimo = emprestimoSnap.data();
-
  const novasPagas = (emprestimo.parcelasPagas || 0) + 1;
 
  const finalizado = novasPagas >= emprestimo.parcelas;
@@ -3338,7 +4079,11 @@ await updateDoc(userRef,{
   "Confirmamos o pagamento da parcela " + dados.numero + " de " + emprestimo.parcelas + " no valor de " + moeda + " " + Number(dados.valor).toFixed(2) + "."
 );
 
-alert("Parcela confirmada");
+alert(
+ "Parcela confirmada.\n\n" +
+ "Evelyn (10%): " + distribuicao.repasseEvelyn.toFixed(2) + "\n" +
+ "Entrada líquida no Caixa: " + distribuicao.valorLiquido.toFixed(2)
+);
 
  location.reload();
 
@@ -4079,7 +4824,8 @@ window.verUsuarioFirestore = async function(id){
 
 const historicoCliente =
 emprestimosSnap.docs.filter(e =>
- e.data().email === user.email
+ e.data().email === user.email &&
+ !registroTeste(e.data())
 );
 
 const totalSolicitacoes =

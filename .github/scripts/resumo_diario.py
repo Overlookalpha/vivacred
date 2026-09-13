@@ -29,11 +29,10 @@ TELEGRAM_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 TELEGRAM_API = "https://api.telegram.org/bot" + TELEGRAM_TOKEN
 
-# Capital inicial usado pelo calculo de "caixa disponivel" - mesmos valores
-# hoje fixos no admin.html (a leitura de configuracoes/financeiro esta
-# desativada por la, entao o painel tambem usa sempre 1000 + 1000).
-CAPITAL_BR = 1000
-CAPITAL_PT = 1000
+# Novo Caixa começa com o saldo real confirmado pelo proprietário. A partir
+# deste marco, aportes, novos empréstimos e pagamentos geram movimentações.
+SALDO_INICIAL_CAIXA_BR = 331
+SALDO_INICIAL_CAIXA_PT = 0
 
 # Quantos dias pra frente mostrar na lista de "vencendo" (a pedido do
 # usuario: quer ver todos os que vencem de hoje ate 7 dias a frente).
@@ -211,6 +210,11 @@ def formatar_parcela(numero, total):
             texto += " de " + str(total)
     return texto
 
+
+def registro_teste(dados):
+    """Registros de teste ficam salvos, mas não entram em nenhum resumo financeiro."""
+    return dados.get("tipoRegistro") == "teste" or dados.get("teste") is True
+
 def gerar_diagnostico(db):
     hoje = date.today()
 
@@ -219,6 +223,11 @@ def gerar_diagnostico(db):
 
     emprestimos_snap = list(db.collection("emprestimos").stream())
     emprestimos_por_id = {doc.id: (doc.to_dict() or {}) for doc in emprestimos_snap}
+    emprestimos_teste_ids = {
+        emprestimo_id
+        for emprestimo_id, emprestimo in emprestimos_por_id.items()
+        if registro_teste(emprestimo)
+    }
 
     clientes_total = 0
     clientes_ativos = 0
@@ -280,6 +289,8 @@ def gerar_diagnostico(db):
 
     for doc in parcelas_snap:
         parcela = doc.to_dict() or {}
+        if registro_teste(parcela) or parcela.get("emprestimoId") in emprestimos_teste_ids:
+            continue
         if parcela.get("status") == "pago":
             continue
 
@@ -326,27 +337,66 @@ def gerar_diagnostico(db):
                 }
             )
 
-    # ---- Financeiro: dinheiro na rua / caixa disponivel (BR + PT) ----
-    # Mesma logica de calcularFinanceiro() no admin.html: "na rua" e o
-    # principal emprestado menos o que ja foi recebido de volta; "caixa"
-    # e o capital inicial menos o que esta emprestado, mais o que ja voltou.
-    total_emprestado = {"BR": 0.0, "PT": 0.0}
-    for emp in emprestimos_por_id.values():
-        if emp.get("status") == "ativo":
-            pais = emp.get("pais") or "BR"
-            total_emprestado[pais] = total_emprestado.get(pais, 0) + float(emp.get("valor") or 0)
+    # ---- Financeiro: cada indicador tem uma função diferente. ----
+    # "Na rua" é somente o principal ainda não recuperado. "A receber" é
+    # a soma contratual das parcelas restantes. O Caixa vem exclusivamente
+    # do saldo inicial mais as movimentações registradas a partir deste marco.
+    dinheiro_na_rua = {"BR": 0.0, "PT": 0.0}
+    total_a_receber = {"BR": 0.0, "PT": 0.0}
 
-    total_recebido = {"BR": 0.0, "PT": 0.0}
     for doc in parcelas_snap:
         parcela = doc.to_dict() or {}
-        pais = parcela.get("pais") or "BR"
-        total_recebido[pais] = total_recebido.get(pais, 0) + float(parcela.get("pago") or 0)
+        emprestimo_id = parcela.get("emprestimoId")
+        emprestimo = emprestimos_por_id.get(emprestimo_id, {})
 
-    dinheiro_na_rua = (total_emprestado["BR"] - total_recebido["BR"]) + (total_emprestado["PT"] - total_recebido["PT"])
+        if registro_teste(parcela) or emprestimo_id in emprestimos_teste_ids:
+            continue
+        if parcela.get("status") == "pago":
+            continue
 
-    saldo_br = max(0, CAPITAL_BR - total_emprestado["BR"] + total_recebido["BR"])
-    saldo_pt = max(0, CAPITAL_PT - total_emprestado["PT"] + total_recebido["PT"])
-    caixa_disponivel = saldo_br + saldo_pt
+        pais = emprestimo.get("pais") or parcela.get("pais") or "BR"
+        pago = float(parcela.get("pago") or 0)
+        restante = max(0, float(parcela.get("restante") if parcela.get("restante") is not None else float(parcela.get("valor") or 0) - pago))
+        if emprestimo.get("status") != "ativo":
+            continue
+
+        total_a_receber[pais] = total_a_receber.get(pais, 0) + restante
+
+        principal = float(emprestimo.get("valor") or 0)
+        total_contrato = float(emprestimo.get("valorFinal") or principal or 0)
+        proporcao_padrao = min(1, principal / total_contrato) if total_contrato > 0 else 1
+
+        if parcela.get("acordoAtivo") is True:
+            principal_acordo = float(parcela.get("principalPendenteAcordo") if parcela.get("principalPendenteAcordo") is not None else float(parcela.get("valor") or 0) * proporcao_padrao)
+            pago_depois = max(0, pago - float(parcela.get("pagoAntesAcordo") or 0))
+            proporcao = float(parcela.get("proporcaoPrincipalAcordo") if parcela.get("proporcaoPrincipalAcordo") is not None else proporcao_padrao)
+            principal_pendente = max(0, principal_acordo - pago_depois * proporcao)
+        else:
+            principal_pendente = max(0, (float(parcela.get("valor") or 0) - pago) * proporcao_padrao)
+
+        dinheiro_na_rua[pais] = dinheiro_na_rua.get(pais, 0) + principal_pendente
+
+    config_snap = db.collection("configuracoes").document("financeiro").get()
+    config = config_snap.to_dict() or {} if config_snap.exists else {}
+    saldo_caixa = {
+        "BR": float(config.get("saldoInicialBR") if config.get("saldoInicialBR") is not None else SALDO_INICIAL_CAIXA_BR),
+        "PT": float(config.get("saldoInicialPT") if config.get("saldoInicialPT") is not None else SALDO_INICIAL_CAIXA_PT),
+    }
+    aportes = {"BR": 0.0, "PT": 0.0}
+    repasse_evelyn = {"BR": 0.0, "PT": 0.0}
+    lucro_liquido = {"BR": 0.0, "PT": 0.0}
+
+    for movimento_doc in db.collection("movimentacoesCaixa").stream():
+        movimento = movimento_doc.to_dict() or {}
+        if registro_teste(movimento):
+            continue
+        pais = "PT" if movimento.get("pais") == "PT" else "BR"
+        impacto = float(movimento.get("impactoCaixa") or 0)
+        saldo_caixa[pais] += impacto
+        if movimento.get("tipo") == "aporte":
+            aportes[pais] += float(movimento.get("valor") or impacto)
+        repasse_evelyn[pais] += float(movimento.get("repasseEvelyn") or 0)
+        lucro_liquido[pais] += float(movimento.get("lucroLiquido") or 0)
 
     return {
         "clientesTotal": clientes_total,
@@ -361,7 +411,11 @@ def gerar_diagnostico(db):
         "atrasados": atrasados,
         "vencendo": vencendo,
         "dinheiroNaRua": dinheiro_na_rua,
-        "caixaDisponivel": caixa_disponivel,
+        "totalAReceber": total_a_receber,
+        "caixaDisponivel": saldo_caixa,
+        "aportes": aportes,
+        "repasseEvelyn": repasse_evelyn,
+        "lucroLiquido": lucro_liquido,
     }
 
 
@@ -372,8 +426,11 @@ def montar_mensagem(d):
     hoje_str = date.today().strftime("%d/%m/%Y")
     linhas = ["📊 <b>VivaCred — Resumo do dia " + hoje_str + "</b>", ""]
 
-    linhas.append("💰 <b>Caixa disponível:</b> " + formatar_moeda(d["caixaDisponivel"]))
-    linhas.append("🏦 <b>Dinheiro na rua:</b> " + formatar_moeda(d["dinheiroNaRua"]))
+    linhas.append("💰 <b>Caixa disponível:</b> " + formatar_moeda(d["caixaDisponivel"]["BR"]) + " | € " + ("%.2f" % d["caixaDisponivel"]["PT"]))
+    linhas.append("🏦 <b>Dinheiro na rua:</b> " + formatar_moeda(d["dinheiroNaRua"]["BR"]) + " | € " + ("%.2f" % d["dinheiroNaRua"]["PT"]))
+    linhas.append("💳 <b>Total a receber:</b> " + formatar_moeda(d["totalAReceber"]["BR"]) + " | € " + ("%.2f" % d["totalAReceber"]["PT"]))
+    linhas.append("🤝 <b>Evelyn (10%):</b> " + formatar_moeda(d["repasseEvelyn"]["BR"]) + " | € " + ("%.2f" % d["repasseEvelyn"]["PT"]))
+    linhas.append("📈 <b>Lucro líquido recebido:</b> " + formatar_moeda(d["lucroLiquido"]["BR"]) + " | € " + ("%.2f" % d["lucroLiquido"]["PT"]))
     linhas.append("")
 
     linhas.append(

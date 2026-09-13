@@ -402,6 +402,7 @@ import {
   addDoc,
   setDoc,
   writeBatch,
+  increment,
   query,
   where,
   orderBy,
@@ -1018,29 +1019,18 @@ console.log("AMANHA", resultado.cobrancas.amanha.length);
 console.log("2 DIAS", resultado.cobrancas.doisDias.length);
 console.log("3 DIAS", resultado.cobrancas.tresDias.length);
 
-const [configuracaoSnap,movimentacoesSnap] = await Promise.all([
- getDoc(doc(db,"configuracoes","financeiro")),
- getDocs(collection(db,"movimentacoesCaixa"))
-]);
+const configuracaoSnap = await getDoc(
+ doc(db,"configuracoes","financeiro")
+);
 const configuracao = configuracaoSnap.exists()
  ? configuracaoSnap.data()
  : {};
 let caixaBR = Number(
  configuracao.saldoInicialBR ?? SALDO_INICIAL_CAIXA_BR
-);
+) + Number(configuracao.impactoCaixaBR || 0);
 let caixaPT = Number(
  configuracao.saldoInicialPT ?? SALDO_INICIAL_CAIXA_PT
-);
-
-movimentacoesSnap.forEach((movimentoDoc)=>{
- const movimento = movimentoDoc.data();
- if(registroTeste(movimento)) return;
- if(movimento.pais === "PT"){
-  caixaPT += Number(movimento.impactoCaixa || 0);
- }else{
-  caixaBR += Number(movimento.impactoCaixa || 0);
- }
-});
+) + Number(configuracao.impactoCaixaPT || 0);
 
 resultado.financeiro.naRuaBR = arredondarDinheiro(diagnosticoNaRuaBR);
 resultado.financeiro.naRuaPT = arredondarDinheiro(diagnosticoNaRuaPT);
@@ -1426,15 +1416,13 @@ let dinheiroRuaBR = 0;
 let dinheiroRuaPT = 0;
 
  const [
-  emprestimosSnap,
-  parcelasSnap,
-  configuracaoFinanceiraSnap,
-  movimentacoesSnap
+ emprestimosSnap,
+ parcelasSnap,
+  configuracaoFinanceiraSnap
  ] = await Promise.all([
   getDocs(collection(db,"emprestimos")),
   getDocs(collection(db,"parcelas")),
-  getDoc(doc(db,"configuracoes","financeiro")),
-  getDocs(collection(db,"movimentacoesCaixa"))
+  getDoc(doc(db,"configuracoes","financeiro"))
  ]);
  const emprestimosTesteIds = new Set(
   emprestimosSnap.docs
@@ -1800,41 +1788,16 @@ const configuracaoFinanceira = configuracaoFinanceiraSnap.exists()
 
 let saldoBR = Number(
  configuracaoFinanceira.saldoInicialBR ?? SALDO_INICIAL_CAIXA_BR
-);
+) + Number(configuracaoFinanceira.impactoCaixaBR || 0);
 let saldoPT = Number(
  configuracaoFinanceira.saldoInicialPT ?? SALDO_INICIAL_CAIXA_PT
-);
-let aportesBR = 0;
-let aportesPT = 0;
-let evelynBR = 0;
-let evelynPT = 0;
-let lucroLiquidoBR = 0;
-let lucroLiquidoPT = 0;
-
-movimentacoesSnap.forEach((movimentoDoc)=>{
- const movimento = movimentoDoc.data();
- if(registroTeste(movimento)) return;
-
- const pais = movimento.pais === "PT" ? "PT" : "BR";
- const impactoCaixa = Number(movimento.impactoCaixa || 0);
- const aporte = movimento.tipo === "aporte"
-  ? Number(movimento.valor || impactoCaixa || 0)
-  : 0;
- const repasseEvelyn = Number(movimento.repasseEvelyn || 0);
- const lucroLiquidoMovimento = Number(movimento.lucroLiquido || 0);
-
- if(pais === "PT"){
-  saldoPT += impactoCaixa;
-  aportesPT += aporte;
-  evelynPT += repasseEvelyn;
-  lucroLiquidoPT += lucroLiquidoMovimento;
- }else{
-  saldoBR += impactoCaixa;
-  aportesBR += aporte;
-  evelynBR += repasseEvelyn;
-  lucroLiquidoBR += lucroLiquidoMovimento;
- }
-});
+) + Number(configuracaoFinanceira.impactoCaixaPT || 0);
+let aportesBR = Number(configuracaoFinanceira.aportesBR || 0);
+let aportesPT = Number(configuracaoFinanceira.aportesPT || 0);
+let evelynBR = Number(configuracaoFinanceira.repasseEvelynBR || 0);
+let evelynPT = Number(configuracaoFinanceira.repasseEvelynPT || 0);
+let lucroLiquidoBR = Number(configuracaoFinanceira.lucroLiquidoBR || 0);
+let lucroLiquidoPT = Number(configuracaoFinanceira.lucroLiquidoPT || 0);
 
 document.getElementById("caixaDisponivel").innerHTML =
 "💰 Caixa Disponível<br>" +
@@ -2335,27 +2298,11 @@ window.registrarAcordoParcela = async function(parcelaId){
  });
 
  if(perdaPrincipal > 0){
-  const perdaRef = doc(
-   db,
-   "movimentacoesCaixa",
-   "perda_acordo_" + parcelaId
+  acumularFinanceiroNoLote(
+   lote,
+   emprestimo.pais || "BR",
+   { lucroLiquido: -perdaPrincipal }
   );
-
-  lote.set(perdaRef,{
-   tipo: "perda_acordo",
-   pais: emprestimo.pais || "BR",
-   emprestimoId: parcela.emprestimoId,
-   parcelaId,
-   userId: parcela.userId,
-   cliente: emprestimo.nomeCliente || "Cliente",
-   valor: perdaPrincipal,
-   perdaAcordo: perdaPrincipal,
-   lucroLiquido: -perdaPrincipal,
-   impactoCaixa: 0,
-   descricao: "Capital perdoado em acordo",
-   criadoEm: new Date(),
-   tipoRegistro: "real"
-  });
  }
 
  await lote.commit();
@@ -2512,6 +2459,26 @@ const SALDO_INICIAL_CAIXA_BR = 331;
 const SALDO_INICIAL_CAIXA_PT = 0;
 const PERCENTUAL_EVELYN = 0.10;
 
+function camposAcumuladosFinanceiros(pais, valores = {}){
+ const sufixo = pais === "PT" ? "PT" : "BR";
+ const campos = {};
+
+ for(const [nome,valor] of Object.entries(valores)){
+  const numero = arredondarDinheiro(valor);
+  if(numero !== 0) campos[nome + sufixo] = increment(numero);
+ }
+
+ return campos;
+}
+
+function acumularFinanceiroNoLote(lote, pais, valores){
+ lote.set(
+  doc(db,"configuracoes","financeiro"),
+  camposAcumuladosFinanceiros(pais,valores),
+  { merge: true }
+ );
+}
+
 function arredondarDinheiro(valor){
  return Number(Number(valor || 0).toFixed(2));
 }
@@ -2569,15 +2536,14 @@ window.registrarAporte = async function(){
 
  if(!confirmar) return;
 
- await addDoc(collection(db,"movimentacoesCaixa"),{
-  tipo: "aporte",
-  pais,
-  valor,
-  impactoCaixa: valor,
-  descricao: "Aporte do proprietário",
-  criadoEm: new Date(),
-  tipoRegistro: "real"
- });
+ await setDoc(
+  doc(db,"configuracoes","financeiro"),
+  camposAcumuladosFinanceiros(pais,{
+   impactoCaixa: valor,
+   aportes: valor
+  }),
+  { merge: true }
+ );
 
  input.value = "";
  alert("Aporte registrado no Caixa.");
@@ -2632,13 +2598,6 @@ function emprestimoConfirmadoReal(dados){
 }
 
 window.classificarEmprestimosAtuais = async function(){
- const confirmar = confirm(
-  "Classificar agora todos os empréstimos antigos?\n\n" +
-  "Os clientes reais confirmados serão preservados. Todos os demais registros existentes serão marcados como teste e sairão da contabilidade. Nada será apagado."
- );
-
- if(!confirmar) return;
-
  const status = document.getElementById("statusClassificacaoTestes");
  if(status) status.innerText = "Classificando, aguarde...";
 
@@ -2722,6 +2681,14 @@ window.classificarEmprestimosAtuais = async function(){
    {
     saldoInicialBR: SALDO_INICIAL_CAIXA_BR,
     saldoInicialPT: SALDO_INICIAL_CAIXA_PT,
+    impactoCaixaBR: 0,
+    impactoCaixaPT: 0,
+    aportesBR: 0,
+    aportesPT: 0,
+    repasseEvelynBR: 0,
+    repasseEvelynPT: 0,
+    lucroLiquidoBR: 0,
+    lucroLiquidoPT: 0,
     percentualEvelyn: PERCENTUAL_EVELYN * 100,
     inicioNovoCaixaEm: new Date()
    },
@@ -3448,18 +3415,13 @@ if(userSnap.exists()){
    finalizado: false
  });
 
- await addDoc(collection(db,"movimentacoesCaixa"),{
-  tipo: "emprestimo_liberado",
-  pais: dados.pais || "BR",
-  valor: Number(dados.valor || 0),
-  impactoCaixa: -Number(dados.valor || 0),
-  emprestimoId: id,
-  userId: dados.userId,
-  cliente: dados.nomeCliente || "Cliente",
-  descricao: "Capital liberado em novo empréstimo",
-  criadoEm: new Date(),
-  tipoRegistro: "real"
- });
+ await setDoc(
+  doc(db,"configuracoes","financeiro"),
+  camposAcumuladosFinanceiros(dados.pais || "BR",{
+   impactoCaixa: -Number(dados.valor || 0)
+  }),
+  { merge: true }
+ );
 try{
 
 await enviarTelegram(`
@@ -3850,7 +3812,6 @@ if(Number(valor) > restanteAtual){
   emprestimo,
   dados
  );
- const movimentoRef = doc(collection(db,"movimentacoesCaixa"));
  const lote = writeBatch(db);
 
  lote.update(ref,{
@@ -3858,20 +3819,15 @@ if(Number(valor) > restanteAtual){
   restante: restante
  });
 
- lote.set(movimentoRef,{
-  tipo: "recebimento_cliente",
-  pais: emprestimo.pais || dados.pais || "BR",
-  emprestimoId: dados.emprestimoId,
-  parcelaId,
-  userId: dados.userId,
-  cliente: emprestimo.nomeCliente || "Cliente",
-  ...distribuicao,
-  impactoCaixa: distribuicao.valorLiquido,
-  percentualEvelyn: PERCENTUAL_EVELYN * 100,
-  descricao: "Pagamento parcial recebido",
-  criadoEm: new Date(),
-  tipoRegistro: "real"
- });
+ acumularFinanceiroNoLote(
+  lote,
+  emprestimo.pais || dados.pais || "BR",
+  {
+   impactoCaixa: distribuicao.valorLiquido,
+   repasseEvelyn: distribuicao.repasseEvelyn,
+   lucroLiquido: distribuicao.lucroLiquido
+  }
+ );
 
  await lote.commit();
 
@@ -3930,11 +3886,6 @@ if(diasDiferenca > 0){
  perfilPagamento = "atrasado";
 }
     
-const movimentoRef = doc(
- db,
- "movimentacoesCaixa",
- "pagamento_" + parcelaId + "_final"
-);
 const lotePagamento = writeBatch(db);
 
 lotePagamento.update(ref,{
@@ -3952,20 +3903,15 @@ lotePagamento.update(ref,{
     perfilPagamento: perfilPagamento
 });
 
-lotePagamento.set(movimentoRef,{
- tipo: "recebimento_cliente",
- pais: emprestimo.pais || dados.pais || "BR",
- emprestimoId: dados.emprestimoId,
- parcelaId,
- userId: dados.userId,
- cliente: emprestimo.nomeCliente || "Cliente",
- ...distribuicao,
- impactoCaixa: distribuicao.valorLiquido,
- percentualEvelyn: PERCENTUAL_EVELYN * 100,
- descricao: "Pagamento final da parcela",
- criadoEm: new Date(),
- tipoRegistro: "real"
-});
+acumularFinanceiroNoLote(
+ lotePagamento,
+ emprestimo.pais || dados.pais || "BR",
+ {
+  impactoCaixa: distribuicao.valorLiquido,
+  repasseEvelyn: distribuicao.repasseEvelyn,
+  lucroLiquido: distribuicao.lucroLiquido
+ }
+);
 
 await lotePagamento.commit();
 

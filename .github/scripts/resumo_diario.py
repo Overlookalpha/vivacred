@@ -379,24 +379,21 @@ def gerar_diagnostico(db):
     config_snap = db.collection("configuracoes").document("financeiro").get()
     config = config_snap.to_dict() or {} if config_snap.exists else {}
     saldo_caixa = {
-        "BR": float(config.get("saldoInicialBR") if config.get("saldoInicialBR") is not None else SALDO_INICIAL_CAIXA_BR),
-        "PT": float(config.get("saldoInicialPT") if config.get("saldoInicialPT") is not None else SALDO_INICIAL_CAIXA_PT),
+        "BR": float(config.get("saldoInicialBR") if config.get("saldoInicialBR") is not None else SALDO_INICIAL_CAIXA_BR) + float(config.get("impactoCaixaBR") or 0),
+        "PT": float(config.get("saldoInicialPT") if config.get("saldoInicialPT") is not None else SALDO_INICIAL_CAIXA_PT) + float(config.get("impactoCaixaPT") or 0),
     }
-    aportes = {"BR": 0.0, "PT": 0.0}
-    repasse_evelyn = {"BR": 0.0, "PT": 0.0}
-    lucro_liquido = {"BR": 0.0, "PT": 0.0}
-
-    for movimento_doc in db.collection("movimentacoesCaixa").stream():
-        movimento = movimento_doc.to_dict() or {}
-        if registro_teste(movimento):
-            continue
-        pais = "PT" if movimento.get("pais") == "PT" else "BR"
-        impacto = float(movimento.get("impactoCaixa") or 0)
-        saldo_caixa[pais] += impacto
-        if movimento.get("tipo") == "aporte":
-            aportes[pais] += float(movimento.get("valor") or impacto)
-        repasse_evelyn[pais] += float(movimento.get("repasseEvelyn") or 0)
-        lucro_liquido[pais] += float(movimento.get("lucroLiquido") or 0)
+    aportes = {
+        "BR": float(config.get("aportesBR") or 0),
+        "PT": float(config.get("aportesPT") or 0),
+    }
+    repasse_evelyn = {
+        "BR": float(config.get("repasseEvelynBR") or 0),
+        "PT": float(config.get("repasseEvelynPT") or 0),
+    }
+    lucro_liquido = {
+        "BR": float(config.get("lucroLiquidoBR") or 0),
+        "PT": float(config.get("lucroLiquidoPT") or 0),
+    }
 
     return {
         "clientesTotal": clientes_total,

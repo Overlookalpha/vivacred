@@ -1,0 +1,29 @@
+name: Classificar emprestimos antigos
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/classificar-testes.yml"
+      - ".github/scripts/classificar_testes.py"
+  workflow_dispatch: {}
+
+jobs:
+  classificar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar dependencias
+        run: pip install -r .github/scripts/requirements.txt
+
+      - name: Classificar sem apagar registros
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: python .github/scripts/classificar_testes.py

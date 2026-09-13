@@ -160,7 +160,7 @@ def processar_bonus_aniversario(db):
 
     for parcela_doc in db.collection("parcelas").stream():
         parcela = parcela_doc.to_dict() or {}
-        if parcela.get("status") == "pago":
+        if parcela_encerrada(parcela):
             continue
 
         vencimento = parcela.get("vencimento")
@@ -214,6 +214,11 @@ def formatar_parcela(numero, total):
 def registro_teste(dados):
     """Registros de teste ficam salvos, mas não entram em nenhum resumo financeiro."""
     return dados.get("tipoRegistro") == "teste" or dados.get("teste") is True
+
+
+def parcela_encerrada(dados):
+    """Parcelas pagas ou assumidas como perda não geram cobrança nem saldo."""
+    return dados.get("status") in {"pago", "perdido"}
 
 def gerar_diagnostico(db):
     hoje = date.today()
@@ -291,7 +296,7 @@ def gerar_diagnostico(db):
         parcela = doc.to_dict() or {}
         if registro_teste(parcela) or parcela.get("emprestimoId") in emprestimos_teste_ids:
             continue
-        if parcela.get("status") == "pago":
+        if parcela_encerrada(parcela):
             continue
 
         abertos_qtd += 1
@@ -351,7 +356,7 @@ def gerar_diagnostico(db):
 
         if registro_teste(parcela) or emprestimo_id in emprestimos_teste_ids:
             continue
-        if parcela.get("status") == "pago":
+        if parcela_encerrada(parcela):
             continue
 
         pais = emprestimo.get("pais") or parcela.get("pais") or "BR"

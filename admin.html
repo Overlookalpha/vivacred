@@ -431,7 +431,7 @@ function calcularCobrancaParcela(parcela, hojeReferencia = new Date()){
  const valorOriginal = Number(parcela.valor || 0);
  const valorPago = Number(parcela.pago || 0);
 
- if(parcela.status === "pago"){
+ if(["pago","perdido"].includes(parcela.status)){
   return {
    valorOriginal,
    valorPago,
@@ -509,6 +509,47 @@ function calcularCobrancaParcela(parcela, hojeReferencia = new Date()){
 // conferência, mas ficam completamente fora da contabilidade.
 function registroTeste(dados){
  return dados?.tipoRegistro === "teste" || dados?.teste === true;
+}
+
+function parcelaEmAberto(parcela){
+ if(!parcela || ["pago","perdido"].includes(parcela.status)) return false;
+ const pago = Number(parcela.pago || 0);
+ const restante = Number(
+  parcela.restante ?? (Number(parcela.valor || 0) - pago)
+ );
+ return restante > 0;
+}
+
+function calcularPrincipalPendenteParcela(emprestimo, parcela){
+ const principalContrato = Number(emprestimo?.valor || 0);
+ const totalContrato = Number(
+  emprestimo?.valorFinal || principalContrato || 0
+ );
+ const proporcaoPadrao = totalContrato > 0
+  ? Math.min(1, principalContrato / totalContrato)
+  : 1;
+ const pago = Number(parcela?.pago || 0);
+
+ if(parcela?.acordoAtivo === true){
+  const principalNoAcordo = Number(
+   parcela.principalPendenteAcordo ??
+   (Number(parcela.valor || 0) * proporcaoPadrao)
+  );
+  const pagoDepoisAcordo = Math.max(
+   0,
+   pago - Number(parcela.pagoAntesAcordo || 0)
+  );
+  const proporcaoAcordo = Number(
+   parcela.proporcaoPrincipalAcordo ?? proporcaoPadrao
+  );
+  return arredondarDinheiro(
+   Math.max(0, principalNoAcordo - (pagoDepoisAcordo * proporcaoAcordo))
+  );
+ }
+
+ return arredondarDinheiro(
+  Math.max(0, (Number(parcela?.valor || 0) - pago) * proporcaoPadrao)
+ );
 }
 
 // ================================================
@@ -763,10 +804,7 @@ for (const docSnap of parcelasSnap.docs) {
 // o mapa de usuários que já foi buscado de uma vez só.
 const user = usuariosPorId[parcela.userId] || {};
 
- if(
-  parcela.status === "pago" ||
-  !parcela.vencimento
- ) continue;
+ if(!parcelaEmAberto(parcela) || !parcela.vencimento) continue;
 
  const emprestimoParcela = emprestimosPorId[parcela.emprestimoId] || {};
 
@@ -1493,7 +1531,7 @@ parcelasSnap.forEach((docSnap)=>{
 
  if(
   emprestimoDaParcela?.status === "ativo" &&
-  dados.status !== "pago" &&
+  parcelaEmAberto(dados) &&
   restanteContratado > 0
  ){
   if((dados.pais || "BR") === "PT"){
@@ -1506,40 +1544,10 @@ parcelasSnap.forEach((docSnap)=>{
  if(
   emprestimoDaParcela &&
   emprestimoDaParcela.status === "ativo" &&
-  dados.status !== "pago"
+  parcelaEmAberto(dados)
  ){
-  const principalContrato = Number(emprestimoDaParcela.valor || 0);
-  const totalContrato = Number(
-   emprestimoDaParcela.valorFinal || principalContrato || 0
-  );
-  const proporcaoPadrao = totalContrato > 0
-   ? Math.min(1, principalContrato / totalContrato)
-   : 1;
-
-  let principalPendenteParcela;
-
-  if(dados.acordoAtivo === true){
-   const principalNoAcordo = Number(
-    dados.principalPendenteAcordo ??
-    (Number(dados.valor || 0) * proporcaoPadrao)
-   );
-   const pagoDepoisAcordo = Math.max(
-    0,
-    pagoRegistrado - Number(dados.pagoAntesAcordo || 0)
-   );
-   const proporcaoAcordo = Number(
-    dados.proporcaoPrincipalAcordo ?? proporcaoPadrao
-   );
-   principalPendenteParcela = Math.max(
-    0,
-    principalNoAcordo - (pagoDepoisAcordo * proporcaoAcordo)
-   );
-  }else{
-   principalPendenteParcela = Math.max(
-    0,
-    (Number(dados.valor || 0) - pagoRegistrado) * proporcaoPadrao
-   );
-  }
+  const principalPendenteParcela =
+   calcularPrincipalPendenteParcela(emprestimoDaParcela,dados);
 
   if((emprestimoDaParcela.pais || "BR") === "PT"){
    dinheiroRuaPT += principalPendenteParcela;
@@ -1559,8 +1567,9 @@ if(dados.vencimento){
 const diasRestantes = Math.round(
     (vencimento.getTime() - hoje.getTime()) / 86400000
 );
+const emAberto = parcelaEmAberto(dados);
 
-if (dados.status !== "pago" && diasRestantes === 3) {
+if (emAberto && diasRestantes === 3) {
     vencemEm3Dias.push({
         ...dados,
         parcelaId: docSnap.id,
@@ -1568,7 +1577,7 @@ if (dados.status !== "pago" && diasRestantes === 3) {
     });
 }
 
-if (dados.status !== "pago" && diasRestantes === 2) {
+if (emAberto && diasRestantes === 2) {
     vencemEm2Dias.push({
         ...dados,
         parcelaId: docSnap.id,
@@ -1576,7 +1585,7 @@ if (dados.status !== "pago" && diasRestantes === 2) {
     });
 }
 
-if (dados.status !== "pago" && diasRestantes === 1) {
+if (emAberto && diasRestantes === 1) {
     vencemAmanha.push({
         ...dados,
         parcelaId: docSnap.id,
@@ -1584,7 +1593,7 @@ if (dados.status !== "pago" && diasRestantes === 1) {
     });
 }
 
-if (dados.status !== "pago" && diasRestantes === 0) {
+if (emAberto && diasRestantes === 0) {
     vencemHoje.push({
         ...dados,
         parcelaId: docSnap.id,
@@ -1592,7 +1601,7 @@ if (dados.status !== "pago" && diasRestantes === 0) {
     });
 }
 
-if (diasRestantes < 0 && dados.status !== "pago") {
+if (diasRestantes < 0 && emAberto) {
     const cobranca = calcularCobrancaParcela(dados, hoje);
 
     atrasados.push({
@@ -1612,7 +1621,7 @@ if (diasRestantes < 0 && dados.status !== "pago") {
 // "Esta Semana" = parcelas que vencem de hoje até os
 // próximos 7 dias (ainda não vencidas).
 if (
-    dados.status !== "pago" &&
+    emAberto &&
     diasRestantes >= 0 &&
     diasRestantes <= 7
 ) {
@@ -2143,8 +2152,8 @@ window.emitirFaturaSemEncargos = async function(parcelaId){
 
  const parcela = parcelaSnap.data();
 
- if(parcela.status === "pago"){
-  alert("Esta parcela já está paga.");
+ if(["pago","perdido"].includes(parcela.status)){
+  alert("Esta parcela já foi encerrada.");
   return;
  }
 
@@ -2185,8 +2194,8 @@ window.registrarAcordoParcela = async function(parcelaId){
 
  const parcela = parcelaSnap.data();
 
- if(parcela.status === "pago"){
-  alert("Esta parcela já está paga.");
+ if(["pago","perdido"].includes(parcela.status)){
+  alert("Esta parcela já foi encerrada.");
   return;
  }
 
@@ -2313,6 +2322,149 @@ window.registrarAcordoParcela = async function(parcelaId){
  location.reload();
 };
 
+// Encerra a dívida inteira como incobrável. Juros e multas deixam de ser
+// expectativa de receita; somente o principal ainda não recuperado vira perda.
+window.darEmprestimoComoPerdido = async function(emprestimoId){
+ const emprestimoRef = doc(db,"emprestimos",emprestimoId);
+ const emprestimoSnap = await getDoc(emprestimoRef);
+
+ if(!emprestimoSnap.exists()){
+  alert("Empréstimo não encontrado.");
+  return;
+ }
+
+ const emprestimo = emprestimoSnap.data();
+
+ if(registroTeste(emprestimo)){
+  alert("Registros de teste não entram na contabilidade.");
+  return;
+ }
+
+ if(emprestimo.status === "perdido"){
+  alert("Esta dívida já foi dada como perdida.");
+  return;
+ }
+
+ const parcelasSnap = await getDocs(query(
+  collection(db,"parcelas"),
+  where("emprestimoId","==",emprestimoId)
+ ));
+ const parcelasAbertas = parcelasSnap.docs.filter(
+  parcelaDoc => parcelaEmAberto(parcelaDoc.data())
+ );
+
+ if(parcelasAbertas.length === 0){
+  alert("Este empréstimo não possui parcelas em aberto.");
+  return;
+ }
+
+ let capitalPerdido = 0;
+ let valorRetiradoAReceber = 0;
+
+ for(const parcelaDoc of parcelasAbertas){
+  const parcela = parcelaDoc.data();
+  capitalPerdido += calcularPrincipalPendenteParcela(
+   emprestimo,
+   parcela
+  );
+  valorRetiradoAReceber += Math.max(
+   0,
+   Number(
+    parcela.restante ??
+    (Number(parcela.valor || 0) - Number(parcela.pago || 0))
+   )
+  );
+ }
+
+ capitalPerdido = arredondarDinheiro(capitalPerdido);
+ valorRetiradoAReceber = arredondarDinheiro(valorRetiradoAReceber);
+ const moeda = emprestimo.pais === "PT" ? "€" : "R$";
+ const nome = emprestimo.nomeCliente || "Cliente";
+ const confirmou = confirm(
+  "Dar como perdida a dívida inteira de " + nome + "?\n\n" +
+  "Capital que será registrado como prejuízo: " +
+  moeda + " " + capitalPerdido.toFixed(2) + "\n" +
+  "Valor retirado de A Receber: " +
+  moeda + " " + valorRetiradoAReceber.toFixed(2) + "\n\n" +
+  "Juros e multas não serão registrados como prejuízo. " +
+  "O Caixa não será alterado."
+ );
+
+ if(!confirmou) return;
+
+ const confirmacaoFinal = prompt(
+  "Para aceitar o prejuízo e encerrar a dívida, digite PERDIDO:"
+ );
+
+ if(String(confirmacaoFinal || "").trim().toUpperCase() !== "PERDIDO"){
+  alert("Operação cancelada. Nenhum valor foi alterado.");
+  return;
+ }
+
+ const lote = writeBatch(db);
+ const agora = new Date();
+
+ for(const parcelaDoc of parcelasAbertas){
+  const parcela = parcelaDoc.data();
+  const principalParcela = calcularPrincipalPendenteParcela(
+   emprestimo,
+   parcela
+  );
+  const restanteAntesPerda = arredondarDinheiro(
+   Math.max(
+    0,
+    Number(
+     parcela.restante ??
+     (Number(parcela.valor || 0) - Number(parcela.pago || 0))
+    )
+   )
+  );
+  const cobranca = calcularCobrancaParcela(parcela,new Date());
+
+  lote.update(parcelaDoc.ref,{
+   status: "perdido",
+   restante: 0,
+   perdidoEm: agora,
+   perdidoPor: "admin",
+   motivoBaixa: "divida_incobravel",
+   restanteAntesPerda,
+   valorAtualizadoAntesPerda: cobranca.totalAtualizado,
+   principalPerdido: principalParcela,
+   jurosMultaNaoRecebidos: arredondarDinheiro(
+    Math.max(0,cobranca.totalAtualizado - principalParcela)
+   )
+  });
+ }
+
+ lote.update(emprestimoRef,{
+  status: "perdido",
+  finalizado: false,
+  encerrado: true,
+  perdido: true,
+  perdidoEm: agora,
+  perdidoPor: "admin",
+  capitalPerdido,
+  valorRetiradoAReceber
+ });
+
+ if(capitalPerdido > 0){
+  acumularFinanceiroNoLote(
+   lote,
+   emprestimo.pais || "BR",
+   { lucroLiquido: -capitalPerdido }
+  );
+ }
+
+ await lote.commit();
+
+ alert(
+  "Dívida encerrada como perdida.\n\n" +
+  "Prejuízo de capital: " + moeda + " " + capitalPerdido.toFixed(2) +
+  "\nO Caixa não foi alterado."
+ );
+ location.reload();
+};
+
 document.getElementById("vencimentos3Dias").innerHTML =
 await montarListaVencimentos(
  vencemEm3Dias,
@@ -2402,6 +2554,7 @@ Number(
  ? "<button onclick=\"emitirFaturaSemEncargos('" + atraso.parcelaId + "')\" style=\"margin-top:8px;background:#16a34a;color:white;\">🤝 Acordo sem multa e juros</button>"
  : "") +
 " <button onclick=\"registrarAcordoParcela('" + atraso.parcelaId + "')\" style=\"margin-top:8px;background:#7c3aed;color:white;\">📝 Registrar acordo</button>" +
+" <button onclick=\"darEmprestimoComoPerdido('" + atraso.emprestimoId + "')\" style=\"margin-top:8px;background:#991b1b;color:white;\">⚠️ Dar como perdido</button>" +
 "<br><br>";
 
    }
@@ -2831,6 +2984,7 @@ const totalSolicitacoes = historicoCliente.length;
 const totalAprovados =
 historicoCliente.filter(e =>
 e.data().status === "ativo" ||
+e.data().status === "perdido" ||
 e.data().finalizado === true
 ).length;
 
@@ -3077,6 +3231,7 @@ totalRejeitados +
 historicoCliente
 .filter(e =>
 e.data().status === "ativo" ||
+e.data().status === "perdido" ||
 e.data().finalizado === true
 )
 .reduce(
@@ -3144,7 +3299,7 @@ for(const emprestimoDoc of emprestimosSnap.docs){
     parcelas.sort((a,b)=>a.numero-b.numero);
 
     const pagas = parcelas.filter(p=>p.status==="pago");
-    const pendentes = parcelas.filter(p=>p.status!=="pago");
+    const pendentes = parcelas.filter(parcelaEmAberto);
 
     const proximaParcela =
         pendentes.length>0
@@ -4780,6 +4935,7 @@ const totalLiberado =
 historicoCliente
 .filter(e =>
  e.data().status === "ativo" ||
+ e.data().status === "perdido" ||
  e.data().finalizado === true
 )
 .reduce(
@@ -4831,7 +4987,7 @@ parcelasCliente.forEach(p => {
  const parcela = p.data();
 
  if(
-  parcela.status !== "pago" &&
+  parcelaEmAberto(parcela) &&
   parcela.vencimento
  ){
 
@@ -4857,7 +5013,7 @@ parcelasCliente.filter(p => {
  const parcela = p.data();
 
  return (
-  parcela.status !== "pago" &&
+  parcelaEmAberto(parcela) &&
   parcela.vencimento &&
   parcela.vencimento.toDate() < hoje
  );
@@ -4875,6 +5031,7 @@ const totalLiberadoCliente =
 historicoCliente
 .filter(e =>
  e.data().status === "ativo" ||
+ e.data().status === "perdido" ||
  e.data().finalizado === true
 )
 .reduce(
@@ -5018,6 +5175,7 @@ Solicitações em Aberto: ${totalAbertos}<br>
 Aprovados: ${
 historicoCliente.filter(e =>
 e.data().status === "ativo" ||
+e.data().status === "perdido" ||
 e.data().finalizado === true
 ).length
 }<br>

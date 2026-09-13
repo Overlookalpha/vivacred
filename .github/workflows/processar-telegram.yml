@@ -7,12 +7,12 @@ on:
       - ".github/scripts/processar_telegram.py"
       - ".github/workflows/processar-telegram.yml"
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "17 * * * *"
   workflow_dispatch: {}
 
 concurrency:
   group: telegram-vivacred
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   enviar:
@@ -29,9 +29,13 @@ jobs:
       - name: Instalar dependências
         run: pip install -r .github/scripts/requirements.txt
 
-      - name: Enviar alertas pendentes
+      - name: Manter envio dos alertas ativo
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-        run: python .github/scripts/processar_telegram.py
+        run: |
+          for rodada in $(seq 1 330); do
+            python .github/scripts/processar_telegram.py
+            if [ "$rodada" -lt 330 ]; then sleep 60; fi
+          done

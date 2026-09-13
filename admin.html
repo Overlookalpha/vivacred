@@ -2590,8 +2590,15 @@ const firebaseConfig = {
 // usar uma função protegida, sem publicar a chave secreta do bot.
 // ================================================
 async function enviarTelegram(texto){
- console.log("Telegram direto desativado; aguardando envio protegido.");
- return false;
+ if(!auth.currentUser) throw new Error("Administrador não autenticado");
+ await addDoc(collection(db,"filaTelegram"),{
+  tipo: "admin_texto",
+  dados: { texto: texto },
+  criadoPor: auth.currentUser.uid,
+  criadoEm: new Date(),
+  status: "pendente"
+ });
+ return true;
 }
  // enviarTelegram("🚀 Teste VivaCred funcionando!");
 const app = initializeApp(firebaseConfig);

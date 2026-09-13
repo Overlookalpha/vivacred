@@ -1,0 +1,43 @@
+name: Publicar função protegida do Telegram
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "functions/**"
+      - "firebase.json"
+      - ".github/workflows/deploy-functions.yml"
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar projeto
+        uses: actions/checkout@v4
+
+      - name: Preparar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+
+      - name: Instalar dependências
+        working-directory: functions
+        run: npm ci
+
+      - name: Preparar credenciais e variáveis protegidas
+        shell: bash
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/firebase-service-account.json"
+          printf 'TELEGRAM_BOT_TOKEN=%s\nTELEGRAM_CHAT_ID=%s\n' "$TELEGRAM_BOT_TOKEN" "$TELEGRAM_CHAT_ID" > functions/.env
+
+      - name: Publicar função
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-service-account.json
+        run: npx --yes firebase-tools@latest deploy --only functions --project vivacred-5a5b8 --non-interactive

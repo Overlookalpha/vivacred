@@ -1,6 +1,11 @@
 name: Enviar alertas Telegram VivaCred
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/scripts/processar_telegram.py"
+      - ".github/workflows/processar-telegram.yml"
   schedule:
     - cron: "*/5 * * * *"
   workflow_dispatch: {}

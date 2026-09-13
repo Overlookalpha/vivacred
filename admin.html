@@ -2591,12 +2591,17 @@ const firebaseConfig = {
 // ================================================
 async function enviarTelegram(texto){
  if(!auth.currentUser) throw new Error("Administrador não autenticado");
- await addDoc(collection(db,"filaTelegram"),{
-  tipo: "admin_texto",
-  dados: { texto: texto },
+ await addDoc(collection(db,"notificacoes"),{
+  userId: auth.currentUser.uid,
+  titulo: "",
+  mensagem: "",
+  lida: true,
+  telegramInterno: true,
+  tipoTelegram: "admin_texto",
+  dadosTelegram: { texto: texto },
   criadoPor: auth.currentUser.uid,
-  criadoEm: new Date(),
-  status: "pendente"
+  data: new Date(),
+  statusTelegram: "pendente"
  });
  return true;
 }

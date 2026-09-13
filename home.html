@@ -1119,12 +1119,17 @@ const firebaseConfig = {
 };
 async function enviarTelegram(tipo, dados = {}){
  if(!auth.currentUser) throw new Error("Usuário não autenticado");
- await addDoc(collection(db,"filaTelegram"),{
-  tipo: tipo,
-  dados: dados,
+ await addDoc(collection(db,"notificacoes"),{
+  userId: auth.currentUser.uid,
+  titulo: "",
+  mensagem: "",
+  lida: true,
+  telegramInterno: true,
+  tipoTelegram: tipo,
+  dadosTelegram: dados,
   criadoPor: auth.currentUser.uid,
-  criadoEm: new Date(),
-  status: "pendente"
+  data: new Date(),
+  statusTelegram: "pendente"
  });
 }
 
@@ -2067,12 +2072,15 @@ const [
 ]);
 
 const lista = document.getElementById("listaNotificacoes");
+const notificacoesVisiveis = snapshotTodas.docs.filter(
+  item => item.data().telegramInterno !== true
+);
 
 if(lista){
 
   lista.innerHTML = "";
 
-  const ordenadas = snapshotTodas.docs.sort((a,b)=>{
+  const ordenadas = notificacoesVisiveis.sort((a,b)=>{
     return b.data().data?.seconds - a.data().data?.seconds;
   });
 
@@ -2107,7 +2115,7 @@ const timelineAtividade = document.getElementById("timelineAtividade");
 
 if(timelineAtividade){
 
-  const recentes = snapshotTodas.docs
+  const recentes = notificacoesVisiveis
     .sort((a,b) => b.data().data?.seconds - a.data().data?.seconds)
     .slice(0, 5);
 

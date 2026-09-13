@@ -117,7 +117,10 @@ def main():
     chat_id = os.environ["TELEGRAM_CHAT_ID"]
     url = f"https://api.telegram.org/bot{token}/sendMessage"
 
-    pendentes = db.collection("filaTelegram").where("status", "==", "pendente").limit(50).stream()
+    pendentes = list(db.collection("filaTelegram").where("status", "==", "pendente").limit(50).stream())
+    print(f"Alertas pendentes encontrados: {len(pendentes)}")
+    enviados = 0
+    erros = 0
     for snap in pendentes:
         ref = snap.reference
         try:
@@ -129,8 +132,11 @@ def main():
             if not retorno.get("ok"):
                 raise RuntimeError(retorno.get("description") or "Telegram recusou a mensagem")
             ref.update({"status": "enviado", "enviadoEm": firestore.SERVER_TIMESTAMP})
+            enviados += 1
         except Exception as erro:
             ref.update({"status": "erro", "erro": str(erro)[:300], "processadoEm": firestore.SERVER_TIMESTAMP})
+            erros += 1
+    print(f"Alertas enviados: {enviados}; alertas com erro: {erros}")
 
 
 if __name__ == "__main__":

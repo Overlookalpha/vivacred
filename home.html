@@ -1117,25 +1117,15 @@ const firebaseConfig = {
   messagingSenderId: "932933359706",
   appId: "1:932933359706:web:59fd16618feea3b2fa6063"
 };
-async function enviarTelegram(mensagem){
-
-const token = "8855201631:AAEm19qaN-OjFon9Pfb2KElLpfqSP4w2Qqs";
-const chatId = "7136900890";
-
-await fetch(
-`https://api.telegram.org/bot${token}/sendMessage`,
-{
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body: JSON.stringify({
-chat_id: chatId,
-text: mensagem
-})
-}
-);
-
+async function enviarTelegram(tipo, dados = {}){
+ if(!auth.currentUser) throw new Error("Usuário não autenticado");
+ await addDoc(collection(db,"filaTelegram"),{
+  tipo: tipo,
+  dados: dados,
+  criadoPor: auth.currentUser.uid,
+  criadoEm: new Date(),
+  status: "pendente"
+ });
 }
 
 document.addEventListener("click", async (event) => {
@@ -1171,21 +1161,7 @@ document.addEventListener("click", async (event) => {
       currency: moeda
     });
 
-    await enviarTelegram(
-`💬 SOLICITAÇÃO DE ATENDIMENTO ISACRED
-
-👤 Cliente: ${cliente.nome || usuarioLogado.email}
-📧 E-mail: ${usuarioLogado.email}
-📱 Telefone: ${cliente.telefone || "Não informado"}
-
-🌍 País: ${pais}
-⭐ Score: ${score}
-${nivel.emoji} Nível: ${nivel.nome}
-💳 Limite atual: ${limite}
-
-📌 Motivo:
-Cliente solicitou atendimento para alteração de renda ou revisão de limite.`
-    );
+    await enviarTelegram("atendimento");
 
     mostrarAviso(
       "✅ Solicitação enviada!\n\n" +
@@ -1642,7 +1618,7 @@ document.getElementById("negociarEnviar").addEventListener("click", async () => 
     const clienteSnap = await getDoc(doc(db, "usuarios", usuarioLogado.uid));
     const cliente = clienteSnap.exists() ? clienteSnap.data() : {};
 
-    await addDoc(collection(db, "negociacoes"), {
+    const negociacaoRef = await addDoc(collection(db, "negociacoes"), {
       userId: usuarioLogado.uid,
       nomeCliente: cliente.nome || usuarioLogado.email,
       telefoneCliente: cliente.telefone || "",
@@ -1653,13 +1629,7 @@ document.getElementById("negociarEnviar").addEventListener("click", async () => 
       criadoEm: new Date()
     });
 
-    await enviarTelegram(
-      "📞 PEDIDO DE NEGOCIAÇÃO\n\n" +
-      "👤 Cliente: " + (cliente.nome || usuarioLogado.email) + "\n" +
-      "📱 Telefone: " + (cliente.telefone || "Não informado") + "\n\n" +
-      "📄 Parcela: " + parcelaEmNegociacao.numero + "\n\n" +
-      "💬 Motivo:\n" + motivo
-    );
+    await enviarTelegram("negociacao", { id: negociacaoRef.id });
 
     mostrarAviso(
       "✅ Solicitação enviada! O atendimento vai entrar em contato.",
@@ -1988,7 +1958,7 @@ if(btnEnviarIndicacao){
       const clienteSnap = await getDoc(doc(db, "usuarios", usuarioLogado.uid));
       const cliente = clienteSnap.exists() ? clienteSnap.data() : {};
 
-      await addDoc(collection(db, "indicacoes"), {
+      const indicacaoRef = await addDoc(collection(db, "indicacoes"), {
         indicadoPor: usuarioLogado.uid,
         nomeIndicador: cliente.nome || usuarioLogado.email,
         nomeIndicado: nomeIndicado,
@@ -1997,12 +1967,7 @@ if(btnEnviarIndicacao){
         criadoEm: new Date()
       });
 
-      await enviarTelegram(
-        "👨‍👩‍👧 NOVA INDICAÇÃO\n\n" +
-        "Indicado por: " + (cliente.nome || usuarioLogado.email) + "\n\n" +
-        "👤 Nome do parente: " + nomeIndicado + "\n" +
-        "📱 Telefone: " + telefoneIndicado
-      );
+      await enviarTelegram("indicacao", { id: indicacaoRef.id });
 
       mostrarAviso(
         "✅ Indicação enviada! Se a conta for aberta, você ganha IsaCoins.",
@@ -3314,7 +3279,7 @@ if (cliente.bloqueadoSolicitacaoAte) {
   }
 }
 
-await addDoc(collection(db, "emprestimos"), {
+const emprestimoRef = await addDoc(collection(db, "emprestimos"), {
   userId: user.uid,
   email: user.email,
 
@@ -3343,27 +3308,7 @@ await addDoc(collection(db, "emprestimos"), {
 
 try{
 
-await enviarTelegram(`
-🚨 NOVA SOLICITAÇÃO ISA CRED
-
-👤 Cliente: ${nomeCliente}
-
-📧 Email: ${user.email}
-
-📱 Telefone: ${telefoneCliente}
-
-🌍 País: ${paisUsuarioGlobal}
-
-💰 Valor: ${paisUsuarioGlobal === "PT" ? "€" : "R$"}${valorFinal}
-
-📊 Parcelas: ${parcelasFinal}x
-
-👨 Avalista: ${nomeAvalista}
-
-📞 Avalista: ${telefoneAvalista}
-
-⏳ Status: AGUARDANDO ANÁLISE
-`);
+await enviarTelegram("emprestimo", { id: emprestimoRef.id });
 
 }catch(erro){
 console.log("Erro Telegram:", erro);
@@ -4144,18 +4089,7 @@ const cliente = clienteSnap.exists() ? clienteSnap.data() : {};
     currency: moeda
   });
 
- await enviarTelegram(
-`👀 CLIENTE ABRIU PAGAMENTO
-
-👤 Cliente: ${cliente.nome || usuarioLogado.email}
-📱 Telefone: ${cliente.telefone || "Não informado"}
-
-📄 Parcela: ${dados.numero}
-💰 Valor: ${valorFormatado}
-🌍 País: ${paisUsuarioGlobal}
-
-⏳ Status: abriu a tela de pagamento e pode estar efetuando o pagamento.`
-);
+ await enviarTelegram("pagamento_aberto", { id: parcelaId });
  const modalPagamento = document.createElement("div");
 
 modalPagamento.id = "modalPagamentoParcela";
@@ -4323,18 +4257,7 @@ document.getElementById("btnConfirmarPagamentoParcela").onclick = async function
 
         botaoConfirmar.innerText = "⏳ Enviando confirmação...";
 
-        await enviarTelegram(
-            "✅ CLIENTE CONFIRMOU PAGAMENTO\n\n" +
-            "👤 Cliente: " + (cliente.nome || usuarioLogado.email) + "\n" +
-            "📱 Telefone: " + (cliente.telefone || "Não informado") + "\n\n" +
-            "📄 Parcela: " + dados.numero + "\n" +
-            "💰 Valor: " + valorFormatado + "\n" +
-            "🌍 País: " + paisUsuarioGlobal + "\n\n" +
-            (comprovanteUrl
-                ? "📎 Comprovante: " + comprovanteUrl + "\n\n"
-                : "📎 Comprovante: não anexado\n\n") +
-            "⏳ Status: cliente informou que realizou o pagamento. Aguardando conferência."
-        );
+        await enviarTelegram("pagamento_confirmado", { id: parcelaId });
 
         await criarNotificacao(
             usuarioLogado.uid,

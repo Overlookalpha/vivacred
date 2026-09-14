@@ -784,43 +784,32 @@ Digite um valor para simular
 <h3>👨‍👩‍👧 Indique um parente</h3>
 
 <p style="font-size:13px;color:var(--text-soft);margin-top:6px;">
-  Indique alguém de confiança. Se a conta for aberta, você ganha IsaCoins.
+  Compartilhe seu código. Quando a pessoa criar a conta com ele e quitar o
+  primeiro empréstimo, vocês dois ganham 5.000 IsaCoins.
 </p>
 
-<input
-id="indicacaoNome"
-type="text"
-placeholder="Nome do parente"
+<div
+id="codigoIndicacaoTexto"
 style="
-width:100%;
-padding:12px;
+margin-top:14px;
+padding:14px;
 border-radius:8px;
-border:1px solid var(--border);
-margin-top:10px;
-box-sizing:border-box;
-font-size:15px;
-font-family:inherit;
+border:1px dashed var(--border);
+font-size:20px;
+font-weight:bold;
+letter-spacing:2px;
+text-align:center;
 color:var(--text);
 ">
+...
+</div>
 
-<input
-id="indicacaoTelefone"
-type="text"
-placeholder="Telefone (com DDD/indicativo)"
-style="
-width:100%;
-padding:12px;
-border-radius:8px;
-border:1px solid var(--border);
-margin-top:10px;
-box-sizing:border-box;
-font-size:15px;
-font-family:inherit;
-color:var(--text);
-">
+<button id="btnCopiarCodigoIndicacao" class="btn-credit" style="margin-top:10px;">
+  Copiar código
+</button>
 
-<button id="btnEnviarIndicacao" class="btn-credit">
-  Enviar indicação
+<button id="btnCompartilharIndicacao" class="btn-credit" style="margin-top:10px;background:#25D366;">
+  Compartilhar no WhatsApp
 </button>
 
 </div>
@@ -1929,72 +1918,82 @@ body{font-family:Arial,sans-serif;background:#F5F7FA;margin:0;padding:24px;color
 }
 
 // =========================================
-// INDICAÇÃO DE PARENTE
-// Como as contas são criadas manualmente por você, isso não abre
-// conta sozinho — só te avisa (Telegram + registro no sistema)
-// pra você decidir se cria a conta e credita os IsaCoins, do
-// mesmo jeito que já faz hoje.
+// INDIQUE UM PARENTE — código de indicação
+// Cada usuário tem um código próprio (gerado automaticamente na
+// primeira vez que essa tela carrega, se ainda não existir).
+// Quem se cadastra com esse código e quita o primeiro empréstimo
+// gera 5.000 IsaCoins pra ele e pra quem indicou (o crédito em si
+// acontece em admin.html, aqui só mostramos/compartilhamos o código).
 // =========================================
-const btnEnviarIndicacao = document.getElementById("btnEnviarIndicacao");
+function letraBaseDoNomeIndicacao(nome){
+  const semAcento = nome
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z]/g, "");
+  return (semAcento.slice(0, 6) || "USER");
+}
 
-if(btnEnviarIndicacao){
+async function gerarCodigoIndicacaoUnico(nome){
+  const base = letraBaseDoNomeIndicacao(nome);
 
-  btnEnviarIndicacao.addEventListener("click", async () => {
+  for(let tentativa = 0; tentativa < 5; tentativa++){
+    const sufixo = String(Math.floor(100 + Math.random() * 900));
+    const candidato = base + sufixo;
 
-    const nomeIndicado = document.getElementById("indicacaoNome").value.trim();
-    const telefoneIndicado = document.getElementById("indicacaoTelefone").value.trim();
+    const existenteSnap = await getDocs(
+      query(collection(db, "usuarios"), where("codigoIndicacao", "==", candidato))
+    );
 
-    if(!nomeIndicado || !telefoneIndicado){
-      mostrarAviso("Preencha o nome e o telefone do parente.", "error");
-      return;
+    if(existenteSnap.empty){
+      return candidato;
     }
+  }
 
-    if(!usuarioLogado){
-      mostrarAviso("Não foi possível identificar seu usuário. Atualize a página.", "error");
-      return;
-    }
+  return base + Date.now().toString().slice(-4);
+}
 
-    btnEnviarIndicacao.disabled = true;
-    const textoOriginal = btnEnviarIndicacao.innerText;
-    btnEnviarIndicacao.innerText = "Enviando...";
+async function carregarCartaoIndicacao(dadosUsuario, uid){
 
+  const elCodigo = document.getElementById("codigoIndicacaoTexto");
+  const btnCopiar = document.getElementById("btnCopiarCodigoIndicacao");
+  const btnCompartilhar = document.getElementById("btnCompartilharIndicacao");
+
+  if(!elCodigo) return;
+
+  let codigo = dadosUsuario.codigoIndicacao;
+
+  if(!codigo){
+    codigo = await gerarCodigoIndicacaoUnico(dadosUsuario.nome || "USER");
     try {
-
-      const clienteSnap = await getDoc(doc(db, "usuarios", usuarioLogado.uid));
-      const cliente = clienteSnap.exists() ? clienteSnap.data() : {};
-
-      const indicacaoRef = await addDoc(collection(db, "indicacoes"), {
-        indicadoPor: usuarioLogado.uid,
-        nomeIndicador: cliente.nome || usuarioLogado.email,
-        nomeIndicado: nomeIndicado,
-        telefoneIndicado: telefoneIndicado,
-        status: "pendente",
-        criadoEm: new Date()
-      });
-
-      await enviarTelegram("indicacao", { id: indicacaoRef.id });
-
-      mostrarAviso(
-        "✅ Indicação enviada! Se a conta for aberta, você ganha IsaCoins.",
-        "success"
-      );
-
-      document.getElementById("indicacaoNome").value = "";
-      document.getElementById("indicacaoTelefone").value = "";
-
+      await updateDoc(doc(db, "usuarios", uid), { codigoIndicacao: codigo });
     } catch (erro) {
-
-      console.error("Erro ao enviar indicação:", erro);
-      mostrarAviso("Não foi possível enviar a indicação agora. Tente novamente.", "error");
-
-    } finally {
-
-      btnEnviarIndicacao.disabled = false;
-      btnEnviarIndicacao.innerText = textoOriginal;
-
+      console.error("Erro ao salvar código de indicação:", erro);
     }
+  }
 
-  });
+  elCodigo.innerText = codigo;
+
+  if(btnCopiar){
+    btnCopiar.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(codigo);
+        mostrarAviso("Código copiado!", "success");
+      } catch (erro) {
+        mostrarAviso("Não foi possível copiar automaticamente. Seu código é: " + codigo, "info");
+      }
+    });
+  }
+
+  if(btnCompartilhar){
+    btnCompartilhar.addEventListener("click", () => {
+      const mensagem =
+        "Estou usando o IsaCred e recomendo! Use meu código de indicação ao criar sua conta: " +
+        codigo +
+        ". Cadastre-se aqui: https://overlookalpha.github.io/vivacred/cadastro.html — quando você quitar seu primeiro empréstimo, nós dois ganhamos 5.000 IsaCoins!";
+      window.open("https://wa.me/?text=" + encodeURIComponent(mensagem), "_blank");
+    });
+  }
 
 }
   const btnAtualizar = document.getElementById("btnAtualizar");
@@ -2638,6 +2637,8 @@ window.calcularNivel = calcularNivel;
     console.log("Usuário já existe");
 
  const data = userSnap.data();
+
+ carregarCartaoIndicacao(data, usuarioLogado.uid);
 
  const paisUsuario = data.pais || "BR";
 

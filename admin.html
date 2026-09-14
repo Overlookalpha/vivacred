@@ -4125,6 +4125,8 @@ bonusISC += bonusAntecipacao;
  const emprestimoSnapBonus =
  await getDoc(emprestimoRefBonus);
 
+ let estaQuitandoAgora = false;
+
  if(emprestimoSnapBonus.exists()){
 
    const emp = emprestimoSnapBonus.data();
@@ -4132,7 +4134,9 @@ bonusISC += bonusAntecipacao;
    const parcelasPagasDepois =
    (emp.parcelasPagas || 0) + 1;
 
-   if(parcelasPagasDepois >= emp.parcelas){
+   estaQuitandoAgora = parcelasPagasDepois >= emp.parcelas;
+
+   if(estaQuitandoAgora){
 
       bonusISC += 100;
 
@@ -4140,7 +4144,20 @@ bonusISC += bonusAntecipacao;
 
  }
 
-await updateDoc(userRef,{
+ // 🎁 Bônus de indicação: se este cliente foi cadastrado com o código de
+ // indicação de outro usuário, e é a primeira vez que ele termina de
+ // quitar um empréstimo, os dois ganham 5.000 ISC agora - o indicado
+ // (somado aqui no bonusISC) e quem indicou (creditado à parte abaixo).
+ const ganhaBonusIndicacao =
+ estaQuitandoAgora &&
+ !!userData.indicadoPor &&
+ userData.indicacaoPremiada !== true;
+
+ if(ganhaBonusIndicacao){
+   bonusISC += 5000;
+ }
+
+ const camposUsuario = {
    score: scoreAtual + 5,
 
    isaCoins: (userData.isaCoins || 0) + bonusISC,
@@ -4148,7 +4165,43 @@ await updateDoc(userRef,{
    pagamentosAdiantados:
    (userData.pagamentosAdiantados || 0) +
    (perfilPagamento === "adiantado" ? 1 : 0)
-});
+ };
+
+ if(ganhaBonusIndicacao){
+   camposUsuario.indicacaoPremiada = true;
+ }
+
+ const loteBonus = writeBatch(db);
+
+ loteBonus.update(userRef, camposUsuario);
+
+ if(ganhaBonusIndicacao){
+
+   loteBonus.update(doc(db,"usuarios",userData.indicadoPor),{
+     isaCoins: increment(5000)
+   });
+
+ }
+
+ await loteBonus.commit();
+
+ if(ganhaBonusIndicacao){
+
+   try{
+
+     await criarNotificacao(
+       userData.indicadoPor,
+       "🎉 Indicação premiada!",
+       "Quem você indicou quitou o primeiro empréstimo. Você ganhou 5.000 IsaCoins!"
+     );
+
+   } catch(erroNotificacao){
+
+     console.error("Erro ao notificar indicação premiada:", erroNotificacao);
+
+   }
+
+ }
 
 }
 
@@ -4161,8 +4214,7 @@ await updateDoc(userRef,{
     finalizado: finalizado,
     status: finalizado ? "finalizado" : "ativo"
 });
-
- const moeda = emprestimo.pais === "PT" ? "€" : "R$";
+const moeda = emprestimo.pais === "PT" ? "€" : "R$";
  const telefoneWhats = (emprestimo.telefoneCliente || "").replace(/\D/g,"");
 
  if(telefoneWhats){

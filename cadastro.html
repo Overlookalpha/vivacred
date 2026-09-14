@@ -159,6 +159,10 @@ text-align:left;
 <label>Data de nascimento</label>
 <input type="text" id="dataNascimento" placeholder="DD/MM/AAAA" maxlength="10">
 
+<label>Código de indicação</label>
+<input type="text" id="codigoIndicacao" placeholder="Código de quem te indicou (opcional)">
+<div class="aviso">Se alguém te indicou, coloque o código dela aqui. Vocês dois ganham IsaCoins quando você quitar seu primeiro empréstimo.</div>
+
 <button id="btnCadastrar">Criar conta</button>
 
 <a href="login.html" class="back">Já tem conta? Entrar</a>
@@ -234,6 +238,52 @@ const mensagens = {
 return mensagens[codigo] || "Não foi possível criar a conta (" + codigo + ").";
 }
 
+// Gera um código de indicação curto e único pra esse usuário poder
+// compartilhar com parentes/amigos. Tenta algumas vezes até achar um
+// código que ninguém mais esteja usando (chance de colisão é baixíssima,
+// mas confere mesmo assim).
+function letraBaseDoNome(nome){
+ const semAcento = nome
+ .normalize("NFD")
+ .replace(/[\u0300-\u036f]/g, "")
+ .toUpperCase()
+ .replace(/[^A-Z]/g, "");
+ return (semAcento.slice(0, 6) || "USER");
+}
+
+async function gerarCodigoIndicacao(nome){
+ const base = letraBaseDoNome(nome);
+
+ for(let tentativa = 0; tentativa < 5; tentativa++){
+  const sufixo = String(Math.floor(100 + Math.random() * 900));
+  const candidato = base + sufixo;
+
+  const existenteSnap = await getDocs(
+   query(collection(db, "usuarios"), where("codigoIndicacao", "==", candidato))
+  );
+
+  if(existenteSnap.empty){
+   return candidato;
+  }
+ }
+
+ // Extremamente improvável chegar aqui, mas garante que sempre volta algo.
+ return base + Date.now().toString().slice(-4);
+}
+
+async function buscarIndicadorPorCodigo(codigo){
+ const codigoNormalizado = codigo.trim().toUpperCase();
+ if(!codigoNormalizado) return null;
+
+ const snap = await getDocs(
+  query(collection(db, "usuarios"), where("codigoIndicacao", "==", codigoNormalizado))
+ );
+
+ if(snap.empty) return null;
+
+ return snap.docs[0].id;
+}
+
 // Trava pra evitar duplo clique/duplo envio enquanto o cadastro
 // ainda está em andamento (mesma lógica usada no Viralizar pra
 // evitar corrida entre o cadastro e o redirecionamento).
@@ -256,6 +306,7 @@ const pix = document.getElementById("pix").value.trim();
 const profissao = document.getElementById("profissao").value.trim();
 const cidade = document.getElementById("cidade").value.trim();
 const estado = document.getElementById("estado").value.trim();
+const codigoIndicacaoDigitado = document.getElementById("codigoIndicacao").value.trim();
 
 
 if (!nome || !email || !senha || !telefone || !documento || !dataNascimento) {
@@ -293,6 +344,15 @@ btnCadastrar.disabled = true;
 btnCadastrar.textContent = "Criando conta...";
 
 try {
+// Resolve o código de indicação (se algum foi digitado) e gera o código
+// próprio desse novo usuário ANTES de criar a conta - assim, se algo
+// der errado aqui, ainda não criamos usuário nenhum no Auth.
+const indicadoPor = codigoIndicacaoDigitado
+? await buscarIndicadorPorCodigo(codigoIndicacaoDigitado)
+: null;
+
+const codigoIndicacaoProprio = await gerarCodigoIndicacao(nome);
+
 const cred = await createUserWithEmailAndPassword(auth, email, senha);
 
 await setDoc(doc(db, "usuarios", cred.user.uid), {
@@ -313,6 +373,9 @@ limiteBase: 100,
 status: "ativo",
 isaCoins: 0,
 diasLembrete: 3,
+codigoIndicacao: codigoIndicacaoProprio,
+indicadoPor: indicadoPor,
+indicacaoPremiada: false,
 criadoEm: new Date()
 });
 

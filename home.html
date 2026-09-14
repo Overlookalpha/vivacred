@@ -1083,6 +1083,8 @@ import {
   collection,
   query,
   where,
+  orderBy,
+  limit,
   getDocs
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
 
@@ -1996,6 +1998,43 @@ async function carregarCartaoIndicacao(dadosUsuario, uid){
   }
 
 }
+
+// =========================================
+// ATIVIDADE RECENTE (prova social) — mostra em toasts, ao entrar, que
+// outros clientes quitaram empréstimos e ganharam IsaCoins. Os nomes já
+// chegam anonimizados do admin.html (ex: "Maria S."), então aqui só
+// exibimos o que veio, sem nunca guardar/mostrar nome completo de ninguém.
+// Nunca mostra uma atividade do próprio usuário logado.
+// =========================================
+async function mostrarAtividadesQuitacao(uidAtual){
+
+  try {
+
+    const snap = await getDocs(
+      query(collection(db, "atividadesQuitacao"), orderBy("criadoEm", "desc"), limit(15))
+    );
+
+    const atividades = snap.docs
+      .map(d => d.data())
+      .filter(a => a.userId !== uidAtual)
+      .slice(0, 5);
+
+    atividades.forEach((atividade, indice) => {
+      setTimeout(() => {
+        mostrarAviso(
+          "🎉 " + (atividade.nomeExibicao || "Um cliente") +
+          " acabou de quitar um empréstimo e ganhou " +
+          Math.round(atividade.isaCoinsGanhos || 0) + " IsaCoins!",
+          "info"
+        );
+      }, 3000 + indice * 5000);
+    });
+
+  } catch (erro) {
+    console.error("Erro ao carregar atividades de quitação:", erro);
+  }
+
+}
   const btnAtualizar = document.getElementById("btnAtualizar");
 
 if(btnAtualizar){
@@ -2639,6 +2678,7 @@ window.calcularNivel = calcularNivel;
  const data = userSnap.data();
 
  carregarCartaoIndicacao(data, usuarioLogado.uid);
+ mostrarAtividadesQuitacao(usuarioLogado.uid);
 
  const paisUsuario = data.pais || "BR";
 

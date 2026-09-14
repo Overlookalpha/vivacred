@@ -2638,6 +2638,19 @@ function arredondarDinheiro(valor){
  return Number(Number(valor || 0).toFixed(2));
 }
 
+// Usado no feed de "atividade recente" mostrado pros clientes em home.html:
+// nunca guardamos o nome completo de quem quitou nessa coleção, só o
+// primeiro nome + inicial do último sobrenome (ex: "Maria S."), pra dar
+// prova social sem expor a identidade completa de ninguém.
+function nomeExibicaoAnonimizado(nomeCompleto){
+ const partes = (nomeCompleto || "").trim().split(/\s+/).filter(Boolean);
+ if(partes.length === 0) return "Um cliente";
+ const primeiro = partes[0];
+ if(partes.length === 1) return primeiro;
+ const inicialSobrenome = partes[partes.length - 1].charAt(0).toUpperCase();
+ return primeiro + " " + inicialSobrenome + ".";
+}
+
 function calcularDistribuicaoPagamento(valorRecebido, emprestimo, parcela = null){
  const bruto = arredondarDinheiro(valorRecebido);
  const principal = Number(emprestimo?.valor || 0);
@@ -4179,6 +4192,20 @@ bonusISC += bonusAntecipacao;
 
    loteBonus.update(doc(db,"usuarios",userData.indicadoPor),{
      isaCoins: increment(5000)
+   });
+
+ }
+
+ // 📣 Feed de atividade recente (prova social em home.html): registra
+ // essa quitação de forma já anonimizada, pra outros clientes verem
+ // "Fulana S. acabou de quitar e ganhou X IsaCoins" sem saber quem é.
+ if(estaQuitandoAgora){
+
+   loteBonus.set(doc(collection(db,"atividadesQuitacao")), {
+     userId: dados.userId,
+     nomeExibicao: nomeExibicaoAnonimizado(userData.nome),
+     isaCoinsGanhos: bonusISC,
+     criadoEm: new Date()
    });
 
  }

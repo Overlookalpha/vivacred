@@ -685,14 +685,6 @@
   </div>
 </div>
 
-<div class="card" id="cardAtividade">
-  <h3>🕐 Atividade recente</h3>
-  <div id="timelineAtividade" style="margin-top:12px;">
-    <div class="skeleton" style="height:16px;width:80%;margin-bottom:8px;">.</div>
-    <div class="skeleton" style="height:16px;width:60%;">.</div>
-  </div>
-</div>
-
 <div class="card" id="cardLembrete">
   <h3>🔔 Lembrete de vencimento</h3>
   <p style="font-size:13px;color:var(--text-soft);margin-top:6px;">
@@ -2149,79 +2141,6 @@ if(lista){
 
 }
 
-// =========================================
-// TIMELINE DE ATIVIDADE
-// Reaproveita as mesmas notificações do sino — só mostra as 5
-// mais recentes, num formato mais visual, na tela principal.
-// =========================================
-const timelineAtividade = document.getElementById("timelineAtividade");
-
-if(timelineAtividade){
-
-  const recentes = notificacoesVisiveis
-    .sort((a,b) => b.data().data?.seconds - a.data().data?.seconds)
-    .slice(0, 5);
-
-  if(recentes.length === 0){
-
-    timelineAtividade.innerHTML =
-      "<div style='font-size:13px;color:var(--text-soft);'>Nenhuma atividade ainda.</div>";
-
-  } else {
-
-    function iconePorTitulo(titulo){
-      titulo = (titulo || "").toLowerCase();
-      if(titulo.includes("vencendo") || titulo.includes("vencimento")) return "📅";
-      if(titulo.includes("pago") || titulo.includes("pagamento")) return "✅";
-      if(titulo.includes("aprovad")) return "🎉";
-      if(titulo.includes("recusad") || titulo.includes("rejeitad")) return "⚠️";
-      return "🔔";
-    }
-
-    function dataRelativa(timestamp){
-
-      if(!timestamp || !timestamp.seconds) return "";
-
-      const data = new Date(timestamp.seconds * 1000);
-      const hoje = new Date();
-
-      const diffDias = Math.floor(
-        (new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()) -
-         new Date(data.getFullYear(), data.getMonth(), data.getDate())) /
-        (1000 * 60 * 60 * 24)
-      );
-
-      if(diffDias === 0) return "Hoje";
-      if(diffDias === 1) return "Ontem";
-      if(diffDias < 7) return "Há " + diffDias + " dias";
-
-      return data.toLocaleDateString("pt-BR");
-
-    }
-
-    timelineAtividade.innerHTML = "";
-
-    recentes.forEach((docSnap) => {
-
-      const dados = docSnap.data();
-
-      const item = document.createElement("div");
-      item.className = "timeline-item";
-
-      item.innerHTML =
-        "<div class='timeline-icone'>" + iconePorTitulo(dados.titulo) + "</div>" +
-        "<div>" +
-        "<div class='timeline-texto'>" + (dados.titulo || "") + "</div>" +
-        "<div class='timeline-data'>" + dataRelativa(dados.data) + "</div>" +
-        "</div>";
-
-      timelineAtividade.appendChild(item);
-
-    });
-
-  }
-
-}
 const contador = document.getElementById("contadorNotificacao");
 
 if(!snapshotNotificacoes.empty){

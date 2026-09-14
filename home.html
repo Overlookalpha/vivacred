@@ -746,12 +746,13 @@ style="
 width:100%;
 padding:12px;
 border-radius:8px;
-border:1px solid var(--border);
+border:2px solid var(--primary);
 margin-top:10px;
 box-sizing:border-box;
 font-size:15px;
 font-family:inherit;
 color:var(--text);
+background:var(--primary-soft);
 ">
 
 <br><br>
@@ -760,13 +761,15 @@ color:var(--text);
 margin-top:15px;
 line-height:1.8;
 font-size:15px;
-background:var(--bg);
-border:1px solid var(--border);
+background:var(--primary-soft);
+border:1.5px dashed var(--primary);
 padding:12px;
 border-radius:10px;
 min-height:80px;
 ">
-Digite um valor para simular
+<div style="text-align:center;color:var(--text-soft);font-weight:600;">
+👆 Digite um valor acima para simular
+</div>
 </div>
 
 </div>
@@ -3901,7 +3904,9 @@ lerValorMascarado(campoSimulacao);
 if(valor <= 0){
 
 resultadoSimulacao.innerHTML =
-"Digite um valor para simular";
+"<div style='text-align:center;color:var(--text-soft);font-weight:600;'>" +
+"👆 Digite um valor acima para simular" +
+"</div>";
 
 return;
 

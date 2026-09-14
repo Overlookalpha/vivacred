@@ -2021,12 +2021,17 @@ async function mostrarAtividadesQuitacao(uidAtual){
 
     atividades.forEach((atividade, indice) => {
       setTimeout(() => {
-        mostrarAviso(
-          "🎉 " + (atividade.nomeExibicao || "Um cliente") +
-          " acabou de quitar um empréstimo e ganhou " +
-          Math.round(atividade.isaCoinsGanhos || 0) + " IsaCoins!",
-          "info"
-        );
+        const nome = atividade.nomeExibicao || "Um cliente";
+        // Registros preenchidos a partir do histórico (antes dessa
+        // funcionalidade existir) não têm o valor exato de IsaCoins
+        // ganho naquela quitação, então a mensagem fica sem número em
+        // vez de inventar um.
+        const mensagem =
+          typeof atividade.isaCoinsGanhos === "number"
+            ? "🎉 " + nome + " acabou de quitar um empréstimo e ganhou " +
+              Math.round(atividade.isaCoinsGanhos) + " IsaCoins!"
+            : "🎉 " + nome + " acabou de quitar um empréstimo!";
+        mostrarAviso(mensagem, "info");
       }, 3000 + indice * 5000);
     });
 

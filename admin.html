@@ -2888,6 +2888,119 @@ window.classificarEmprestimosAtuais = async function(){
  }
 };
 
+// 📣 Preenchimento histórico do feed de atividade recente (prova social em
+// home.html): sem isso, o feed só teria mensagens a partir de agora - clientes
+// que já quitaram empréstimos antes dessa funcionalidade existir nunca
+// apareceriam. Roda uma única vez (documento de controle impede repetição),
+// igual ao padrão já usado em classificarEmprestimosAtuais() acima.
+// Como empréstimos antigos nunca guardaram quanto de IsaCoins foi ganho
+// especificamente na quitação, isso fica em branco (isaCoinsGanhos: null)
+// pra esses registros - home.html mostra uma mensagem sem valor nesse caso,
+// em vez de inventar um número.
+window.preencherAtividadesQuitacaoHistorico = async function(){
+
+ try{
+
+  const controleRef = doc(
+   db,
+   "configuracoes",
+   "backfillAtividadesQuitacao202609"
+  );
+  const controleSnap = await getDoc(controleRef);
+
+  if(controleSnap.exists() && controleSnap.data().concluida === true){
+   return;
+  }
+
+  const [emprestimosSnap, parcelasSnap, usuariosSnap] = await Promise.all([
+   getDocs(collection(db,"emprestimos")),
+   getDocs(collection(db,"parcelas")),
+   getDocs(collection(db,"usuarios"))
+  ]);
+
+  const usuariosPorId = new Map();
+  usuariosSnap.forEach(docSnap => {
+   usuariosPorId.set(docSnap.id, docSnap.data());
+  });
+
+  // Pra cada empréstimo, guarda a data da última parcela paga - é a
+  // aproximação mais próxima que temos de "quando ele quitou", já que
+  // empréstimos antigos nunca guardaram essa data separadamente.
+  const ultimaParcelaPagaPorEmprestimo = new Map();
+
+  parcelasSnap.forEach(docSnap => {
+   const parcela = docSnap.data();
+   if(parcela.status !== "pago" || !parcela.emprestimoId) return;
+
+   const dataPagamento = parcela.pagoEm?.toDate
+    ? parcela.pagoEm.toDate()
+    : null;
+
+   if(!dataPagamento) return;
+
+   const atual = ultimaParcelaPagaPorEmprestimo.get(parcela.emprestimoId);
+
+   if(!atual || dataPagamento > atual){
+    ultimaParcelaPagaPorEmprestimo.set(parcela.emprestimoId, dataPagamento);
+   }
+  });
+
+  let criadas = 0;
+  let loteAtual = writeBatch(db);
+  let operacoesNoLote = 0;
+
+  for(const emprestimoDoc of emprestimosSnap.docs){
+
+   const dados = emprestimoDoc.data();
+
+   if(dados.finalizado !== true) continue;
+   if(registroTeste(dados)) continue;
+   if(!dados.userId) continue;
+
+   const usuario = usuariosPorId.get(dados.userId);
+   if(!usuario) continue;
+
+   const dataQuitacao =
+    ultimaParcelaPagaPorEmprestimo.get(emprestimoDoc.id) ||
+    (dados.dataAprovacao?.toDate ? dados.dataAprovacao.toDate() : new Date());
+
+   loteAtual.set(doc(collection(db,"atividadesQuitacao")), {
+    userId: dados.userId,
+    nomeExibicao: nomeExibicaoAnonimizado(usuario.nome),
+    isaCoinsGanhos: null,
+    criadoEm: dataQuitacao,
+    origem: "backfillHistorico"
+   });
+
+   criadas++;
+   operacoesNoLote++;
+
+   if(operacoesNoLote >= 400){
+    await loteAtual.commit();
+    loteAtual = writeBatch(db);
+    operacoesNoLote = 0;
+   }
+
+  }
+
+  if(operacoesNoLote > 0){
+   await loteAtual.commit();
+  }
+
+  await setDoc(controleRef,{
+   concluida: true,
+   executadaEm: new Date(),
+   atividadesCriadas: criadas
+  });
+
+  console.log("Preenchimento histórico do feed de atividades concluído:", criadas);
+
+ }catch(erro){
+  console.error("Erro ao preencher histórico de atividades de quitação:", erro);
+ }
+
+};
+
 async function criarNotificacao(userId, titulo, mensagem){
   await addDoc(collection(db,"notificacoes"),{
     userId: userId,
@@ -2938,6 +3051,7 @@ if (!adminSnap.exists()) {
 // A limpeza aprovada é idempotente e roda uma única vez. O documento
 // de controle impede qualquer repetição depois que ela termina.
 await window.classificarEmprestimosAtuais();
+await window.preencherAtividadesQuitacaoHistorico();
   
 // O diagnóstico e o cálculo financeiro não dependem um do outro,
 // então rodam ao mesmo tempo em vez de um esperar o outro terminar.

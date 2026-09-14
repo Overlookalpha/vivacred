@@ -4649,9 +4649,6 @@ window.carregarSaques = async function(){
 
 window.marcarSaquePago = async (id)=>{
 
- const confirmar = confirm("Confirma que o pagamento deste saque já foi realizado?");
- if(!confirmar) return;
-
  const janela = window.open("","_blank");
 
  try{
@@ -4673,8 +4670,25 @@ window.marcarSaquePago = async (id)=>{
      return;
    }
 
+   const moeda = dados.pais === "PT" ? "€" : "R$";
+   const valorSaque = Number(dados.valor || 0);
+
+   const confirmar = confirm(
+     "Confirma que você já mandou " + moeda + " " + valorSaque.toFixed(2) +
+     " para " + (dados.nomeCliente || "o cliente") + "?\n\n" +
+     "Esse valor vai ser descontado do Caixa (" +
+     (dados.pais === "PT" ? "Portugal" : "Brasil") + ")."
+   );
+
+   if(!confirmar){
+     if(janela){ janela.close(); }
+     return;
+   }
+
    const userRef = doc(db,"usuarios",dados.userId);
    const userSnap = await getDoc(userRef);
+
+   const lote = writeBatch(db);
 
    if(userSnap.exists()){
 
@@ -4682,19 +4696,38 @@ window.marcarSaquePago = async (id)=>{
      const saldoAtual = userData.isaCoins || 0;
      const novoSaldo = Math.max(0, saldoAtual - (dados.isaCoins || 0));
 
-     await updateDoc(userRef,{
+     lote.update(userRef,{
        isaCoins: novoSaldo,
        isaCoinsSacadas: (userData.isaCoinsSacadas || 0) + (dados.isaCoins || 0)
      });
 
    }
 
-   await updateDoc(ref,{
+   lote.update(ref,{
      status: "pago",
      pagoEm: new Date()
    });
 
-   const moeda = dados.pais === "PT" ? "€" : "R$";
+   // Baixa do Caixa: esse dinheiro saiu de verdade pra pessoa, então desconta
+   // do Caixa Disponível do país correspondente - do mesmo jeito que um aporte
+   // soma e um novo empréstimo desembolsado subtrai.
+   acumularFinanceiroNoLote(lote, dados.pais || "BR", {
+     impactoCaixa: -valorSaque
+   });
+
+   lote.set(doc(collection(db,"movimentacoesCaixa")),{
+     tipo: "saqueIsaCoin",
+     pais: dados.pais || "BR",
+     moeda: moeda,
+     valor: -valorSaque,
+     motivo: "Saque Clube ISAcoin - " + (dados.nomeCliente || "Cliente"),
+     criadoEm: new Date(),
+     origem: "admin",
+     saqueId: id
+   });
+
+   await lote.commit();
+
    const telefone = (dados.telefoneCliente || "").replace(/\D/g,"");
 
    if(telefone){

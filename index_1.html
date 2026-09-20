@@ -1,0 +1,6448 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="var(--cor-fundo-1)">
+<title>Meta Viva</title>
+<link rel="icon" href="icons/icon-192-any.png">
+<link rel="apple-touch-icon" href="icons/icon-192-any.png">
+<script>
+  // Captura o evento de instalacao do PWA assim que possivel (precisa ser
+  // registrado cedo, antes do resto da pagina carregar, senao o navegador
+  // pode disparar o evento antes da gente conseguir escutar).
+  window.eventoInstalacaoPWA = null;
+  window.addEventListener("beforeinstallprompt", function(evento){
+    evento.preventDefault();
+    window.eventoInstalacaoPWA = evento;
+  });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<style>
+
+:root{
+  /* 🎨 Cores do tema — mudar aqui (ou pelo botão de tema no app) muda
+     o app inteiro, já que todo o resto usa essas variáveis. */
+  --cor-destaque: #00c896;
+  --cor-fundo-1: #0f2027;
+  --cor-fundo-2: #203a43;
+  --cor-fundo-3: #2c5364;
+}
+
+body{
+  margin:0;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(135deg,var(--cor-fundo-1),var(--cor-fundo-2),var(--cor-fundo-3));
+  color:white;
+  display:flex;
+  justify-content:center;
+  height:100vh;
+  overflow:hidden;
+}
+#temaIconeFundo{
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:min(60vw,55vh);
+  line-height:1;
+  opacity:0.07;
+  pointer-events:none;
+  user-select:none;
+  overflow:hidden;
+  text-align:center;
+}
+#fundoPersonalizado{
+  position:fixed;
+  inset:0;
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity 0.3s ease;
+}
+.app{
+  width:100%;
+  max-width:500px;
+  height:100vh;
+  padding:12px;
+  box-sizing:border-box;
+  position:relative;
+  overflow-y:auto;
+  overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+}
+
+.container{
+  width:90%;
+  max-width:500px;
+  text-align:center;
+  margin:0 auto;
+}
+
+h1{
+  font-size:32px;
+  margin-bottom:8px;
+}
+
+h2{
+  margin-top:20px;
+}
+
+*{
+  /* 🔥 Reforço global: nenhum elemento do app deve ser tratado como
+     texto selecionável pelo iOS (evita o menu "Copiar/Procurar"
+     aparecendo em vez do toque disparar o clique) */
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
+
+/* Campos de formulário PRECISAM permitir seleção/digitação normal */
+input, textarea, select{
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  -webkit-touch-callout: default !important;
+}
+
+button{
+  padding:12px 25px;
+  border:none;
+  border-radius:8px;
+  margin-top:20px;
+  cursor:pointer;
+  font-size:16px;
+  /* 🔥 Impede que o iOS trate o texto/emoji do botão como
+     conteúdo selecionável — sem isso, o toque às vezes abre
+     o menu "Copiar/Procurar" em vez de disparar o clique. */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+.btnAcao{
+  padding:10px 15px;
+  font-size:15px;
+  height:55px;
+}
+
+.primary{
+  background:var(--cor-destaque);
+  color:white;
+}
+
+.secondary{
+  background:#444;
+  color:white;
+  margin-left:10px;
+}
+
+.hidden{
+  display:none;
+}
+
+.optionItem{
+  display:block;
+  margin:10px 0;
+  text-align:left;
+  background:rgba(255,255,255,0.1);
+  padding:10px;
+  border-radius:6px;
+}
+
+#progressText{
+  font-size:14px;
+  opacity:0.7;
+}
+/* PADRÃO MENU LATERAL */
+
+.menuBtn {
+    background: none;
+    border: none;
+
+    width: 56px;
+    height: auto;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+
+    font-size: 28px;
+    padding: 2px 0;
+
+    /* 🔥 Corrige bug do iOS: emoji grande sendo tratado como texto
+       selecionável, abrindo o menu "Copiar/Procurar" em vez do clique */
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.menuLabel {
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1.1;
+  opacity: 0.85;
+  text-align: center;
+}
+
+.menuBtn:hover{
+  background:rgba(255,255,255,0.15);
+}
+
+.menuBtn:hover{
+  background:rgba(255,255,255,0.15);
+}
+
+.cardResumo{
+  background:rgba(255,255,255,0.1);
+  padding:12px;              /* antes era 25px */
+  border-radius:12px;
+  transition:0.2s;
+  min-height:115px;          /* controla altura */
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+
+.cardResumo:hover{
+  background:rgba(255,255,255,0.15);
+}
+
+.btnAcao{
+  padding:10px;
+  border-radius:8px;
+  border:none;
+  font-size:14px;
+  cursor:pointer;
+}
+
+.btnEntrada{
+  background:var(--cor-destaque);
+  color:white;
+}
+
+.btnSaida{
+  background:#ff3b30;
+  color:white;
+}
+/* TELAS QUE ABREM POR CIMA */
+
+.screen{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100vh;
+  background:linear-gradient(135deg,var(--cor-fundo-1),var(--cor-fundo-2),var(--cor-fundo-3));
+  padding:20px;
+  box-sizing:border-box;
+  display:none;
+  z-index:10;
+  overflow-y:auto;
+}
+
+.screen.active{
+  display:block;
+}
+  .fade-out {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.5s ease;
+}
+  @media (max-width:768px){
+  .cardResumo{
+    padding:10px;
+    min-height:70px;
+  }
+}
+ @media (max-width:768px){
+
+  #home > div{
+    flex-direction:row !important;
+  }
+
+  #home > div > div:first-child{
+    width:60px !important;
+  }
+
+  #home > div > div:last-child{
+    flex:1 !important;
+  }
+
+}
+  .tela{
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+  .cardResumo h3 {
+  font-size: clamp(16px, 4vw, 28px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#listaContas {
+  overflow-y: auto;
+  max-height: 60vh;
+}
+@media print {
+
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
+  html, body {
+    width: 500px !important;
+    margin: 0 auto !important;
+  }
+
+  body {
+    background: white !important;
+  }
+
+  button,
+  .voltar,
+  .no-print {
+    display: none !important;
+  }
+
+}
+.btnLogout{
+  position:absolute;
+  top:-20px;
+  right:40px;
+  background:#ff4d4f;
+  border:none;
+  padding:4px 8px;
+  border-radius:6px;
+  color:white;
+  cursor:pointer;
+  font-size:11px;
+  font-weight:bold;
+  z-index:1;
+}
+</style>
+</head>
+
+<body>
+
+<div id="temaIconeFundo" aria-hidden="true"></div>
+<div id="fundoPersonalizado" aria-hidden="true"></div>
+
+<!-- Bolha de ajuda flutuante - fica fixa no canto da tela, sempre visivel,
+independente de rolagem ou de qual tela do app esta aberta. -->
+<button onclick="abrirSuporteWhatsapp()" title="Ajuda" style="
+    position:fixed;
+    bottom:20px;
+    right:20px;
+    width:40px;
+    height:40px;
+    border-radius:50%;
+    background:#25D366;
+    border:none;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);
+    font-size:18px;
+    cursor:pointer;
+    z-index:999;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  ">
+  💬
+</button>
+
+<div class="app">
+
+<!-- LANDING -->
+<div id="landing" class="hidden" style="position:relative;">
+  <h1 style="
+      font-size:80px;
+      margin-bottom:15px;
+      letter-spacing:3px;
+      font-weight:800;
+  ">
+    Meta Viva
+  </h1>
+
+  <p style="
+      font-size:22px;
+      margin-bottom:10px;
+      font-weight:300;
+  ">
+    Transforme seus sonhos em metas alcançáveis.
+  </p>
+
+  <p style="
+      font-size:16px;
+      opacity:0.85;
+      max-width:420px;
+      margin:0 auto 35px auto;
+      line-height:1.5;
+  ">
+    Planeje sua vida financeira, crie objetivos reais,
+    acompanhe sua evolução e conquiste estabilidade
+    com clareza e direção.
+  </p>
+
+  <button class="primary"
+      onclick="start()"
+      style="
+        font-size:18px;
+        padding:16px 32px;
+        border-radius:10px;
+        box-shadow:0 4px 20px rgba(0,0,0,0.3);
+      ">
+      Criar Meu Plano Gratuito
+  </button>
+
+  <div style="margin-top:20px;">
+    <button onclick="irParaLogin()" style="
+        background:none;
+        border:none;
+        color:white;
+        opacity:0.7;
+        font-size:14px;
+        text-decoration:underline;
+        cursor:pointer;
+        padding:8px;
+      ">
+      Já tenho conta — Entrar
+    </button>
+  </div>
+
+  <div style="margin-top:10px;">
+    <button id="botaoInstalarApp" onclick="instalarApp()" style="
+        background:rgba(255,255,255,0.12);
+        border:1px solid rgba(255,255,255,0.3);
+        color:white;
+        font-size:14px;
+        border-radius:8px;
+        cursor:pointer;
+        padding:10px 18px;
+      ">
+      📲 Instalar app
+    </button>
+  </div>
+
+  <div style="
+      position:absolute;
+      bottom:-80px;
+      left:0;
+      right:0;
+      font-size:12px;
+      opacity:0.5;
+  ">
+      Produzido por <strong>Overlock</strong> (Isaías Rodrigues)
+      <br>
+      <a href="privacidade.html" style="color:white; opacity:0.8;">Privacidade</a>
+      &nbsp;·&nbsp;
+      <a href="termos.html" style="color:white; opacity:0.8;">Termos de Uso</a>
+  </div>
+
+</div>
+<!-- QUIZ -->
+<div id="quiz" class="hidden">
+
+  <div id="progressText"></div>
+  <h2 id="questionText"></h2>
+  <div id="options"></div>
+
+  <button class="primary" id="nextBtn" onclick="nextQuestion()">Próximo</button>
+  <button class="secondary" onclick="previousQuestion()">Anterior</button>
+
+</div>
+
+<!-- RESULTADO -->
+<div id="result" class="hidden">
+
+  <h1 style="font-size:42px; margin-bottom:10px;">
+    Seu Plano Está Pronto 🎯
+  </h1>
+
+  <p style="font-size:20px; opacity:0.9; margin-bottom:20px;">
+    Analisamos suas respostas e criamos uma estratégia personalizada
+    para transformar sua situação financeira passo a passo.
+  </p>
+
+  <div style="margin-top:30px; font-size:18px; line-height:1.6; opacity:0.85;">
+    ✔ Organização financeira clara<br>
+    ✔ Método de economia adaptado ao seu perfil<br>
+    ✔ Plano para sair da instabilidade<br>
+    ✔ Estratégia de crescimento consistente
+  </div>
+<div id="profileResult" style="margin-top:20px; font-size:18px;"></div>
+
+ <button class="primary"
+        style="margin-top:35px; font-size:18px; padding:14px 30px;"
+        onclick="goToLogin()">
+  Ir para Meu Painel
+</button>
+
+</div>
+
+<!-- LOGIN -->
+<div id="login" class="hidden">
+
+  <h2>Crie sua conta ou entre na já existente</h2>
+
+  <input type="text" id="name" placeholder="Seu nome (só se for criar conta nova)" style="width:100%; padding:10px; margin-top:15px; border-radius:6px; border:none;">
+
+  <input type="email" id="email" placeholder="Seu e-mail" style="width:100%; padding:10px; margin-top:10px; border-radius:6px; border:none;">
+
+  <input type="password" id="password" placeholder="Sua senha" style="width:100%; padding:10px; margin-top:10px; border-radius:6px; border:none;">
+
+  <button class="primary" style="margin-top:20px;" onclick="createAccount()">
+    Entrar / Criar Conta
+  </button>
+
+</div>
+
+<!-- PAYWALL: aparece quando o teste gratis de 24h acaba e a conta nao tem assinatura ativa -->
+<div id="paywall" class="hidden" style="text-align:center;">
+
+  <h2>Seu teste grátis de 24 horas terminou</h2>
+
+  <p style="opacity:0.85; font-size:15px; margin-top:12px; line-height:1.5;">
+    Espero que o Meta Viva já esteja te ajudando a organizar sua vida financeira 💚<br>
+    Pra continuar usando (incluindo a mentora Evelyn, temas extras e alertas no Telegram),
+    é só assinar o plano mensal.
+  </p>
+
+  <button class="primary" style="margin-top:24px;" onclick="iniciarAssinatura(event)">
+    Assinar agora
+  </button>
+
+  <p style="opacity:0.6; font-size:12.5px; margin-top:16px;">
+    Já assinou e ainda está vendo esta tela? <a href="#" onclick="location.reload(); return false;" style="color:inherit;">Atualize a página</a>.
+  </p>
+
+  <button onclick="logout()" style="margin-top:26px; background:none; border:none; color:inherit; opacity:0.6; text-decoration:underline; cursor:pointer; font-size:13px;">
+    Sair da conta
+  </button>
+
+</div>
+
+
+
+<!-- SETUP RENDA -->
+<div id="setupRenda" class="hidden">
+
+  <h2>Defina sua renda mensal base</h2>
+
+  <p style="opacity:0.8; font-size:14px; margin-top:10px;">
+    Essa informação será usada para montar sua estrutura financeira.
+  </p>
+
+  <input 
+    type="number" 
+    id="rendaInput" 
+    placeholder="Digite sua renda mensal"
+    style="width:100%; padding:10px; margin-top:15px; border-radius:6px; border:none;"
+  >
+  <p style="margin-top:15px;">Qual moeda você utiliza?</p>
+
+<select id="moedaSelect"
+  style="width:100%; padding:10px; border-radius:6px; border:none; margin-top:5px;">
+  
+  <option value="€">Euro (€)</option>
+  <option value="R$">Real (R$)</option>
+  <option value="$">Dólar ($)</option>
+  <option value="£">Libra (£)</option>
+
+</select>
+
+  <button 
+    class="primary" 
+    style="margin-top:20px;"
+    onclick="confirmarRenda()">
+    Confirmar e Montar Estrutura
+  </button>
+
+</div>
+
+
+<!-- HOME -->
+<div id="home" class="hidden" style="margin-top:15px; position:relative;">
+ <button onclick="logout()" class="btnLogout">
+  Sair
+</button>
+
+  <!-- 🔔 BANNER DO MENTOR (fica acima de tudo) -->
+  <div id="mentorBanner" 
+       style="display:none;
+              background:#111;
+              padding:15px;
+              border-radius:8px;
+              margin-bottom:15px;
+              font-size:14px;">
+  </div>
+
+  <div style="
+    width:100%;
+    display:flex;
+    gap:20px;
+    align-items:flex-start;
+  ">
+    <!-- COLUNA 1 - MENU -->
+    <div style="width:30%;">
+
+  <div style="display:flex; flex-direction:column; gap:6px;">
+
+  <button class="menuBtn"
+onclick="abrirTela('telaHome')">
+🧑‍🏫<span class="menuLabel">Painel</span>
+</button>
+
+<button class="menuBtn"
+onclick="abrirTela('telaDesafios');">
+🎯<span class="menuLabel">Desafios</span>
+</button>
+
+<button class="menuBtn" onclick="abrirTela('telaCategorias'); setTimeout(atualizarTelaCategorias, 10);">📁<span class="menuLabel">Categorias</span></button>
+
+<button class="menuBtn"
+onclick="abrirTela('telaRelatorio'); preencherFiltrosRelatorio(); gerarRelatorio();">
+📊<span class="menuLabel">Histórico</span>
+</button>
+
+<button class="menuBtn"
+onclick="abrirAba('reserva')">
+💰<span class="menuLabel">Reserva</span>
+</button>
+
+<button class="menuBtn"
+onclick="abrirAba('emprestimo')">
+🏦<span class="menuLabel">Empréstimo</span>
+</button>
+
+<button class="menuBtn"
+onclick="abrirAba('contas')">
+🧾<span class="menuLabel">Contas</span>
+</button>
+
+<button class="menuBtn"
+onclick="abrirAba('configuracoes')">
+⚙️<span class="menuLabel">Config</span>
+</button>
+
+  </div>
+
+</div>
+    <!-- COLUNA 2 - CONTEÚDO -->
+    <div style="width:60%;">
+
+     <!-- PERFIL -->
+<div style="
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:10px;
+">
+
+  <!-- BLOCO ESQUERDA (foto + infos) -->
+  <div style="display:flex; align-items:center; gap:15px;">
+
+   <!-- FOTO -->
+<img id="fotoPerfil"
+    src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Ccircle cx='30' cy='30' r='30' fill='%23cbd5e1'/%3E%3C/svg%3E"
+    style="
+        width:40px;
+        height:40px;
+        border-radius:50%;
+        object-fit:cover;
+        border:2px solid var(--cor-destaque);
+        position:relative;
+        top:-30px;
+    ">
+   <input type="file"
+       id="inputFoto"
+       accept="image/*"
+       style="display:none">
+    <!-- INFOS -->
+    <div>
+     <h3 id="nomeUsuario"
+     style="margin:0; font-size:14px; cursor:pointer;">
+     Nome do Usuário
+     </h3>
+      <input type="text"
+       id="inputNome"
+       style="display:none; font-size:14px; padding:2px; border-radius:4px; border:none;">
+
+      <p id="perfilTipo" style="margin:0; font-size:10px; opacity:0.7;">
+        Perfil: —
+      </p>
+
+      <p id="dividaHeader" style="margin:0; font-size:10px; color:#ff6b6b; display:none;">
+        💳 Dívida: 0
+      </p>
+
+      <p id="contasResumo"
+    onclick="abrirAba('contas')"
+    style="
+        margin:0;
+        font-size:10px;
+        cursor:pointer;
+        position:relative;
+        left:-50px;
+    ">
+    📋 Contas: 🟢 Nenhuma pendente
+   </p>
+    </div>
+
+  </div>
+
+  <!-- BLOCO DIREITA (ações) -->
+  <div style="display:flex; gap:12px;">
+    <!-- 🎨 TEMA -->
+  <button type="button" onclick="abrirTela('telaTema'); renderizarListaTemas();"
+  style="
+    background:transparent !important;
+    border:none;
+    cursor:pointer;
+    font-size:22px;
+    padding:0;
+  ">
+  🎨
+</button>
+    <!-- 🧠 MENTOR -->
+  <button onclick="diagnosticoHome(); analisarSituacaoFinanceira(true);"
+  style="
+    background:transparent !important;
+    border:none;
+    cursor:pointer;
+    font-size:30px;
+    padding:0;
+  ">
+  🧠
+</button>
+    <!-- 🔔 NOTIFICAÇÃO -->
+    <div style="position:relative;">
+  <button onclick="abrirTela('telaNotificacoes')"
+    style="
+      background:transparent !important;
+      border:none;
+      cursor:pointer;
+      font-size:18px;
+      padding:0;
+      position:relative;
+      top:-40px;
+    ">
+    🔔
+  </button>
+
+  <span id="badgeNotificacao"
+    style="
+      position:absolute;
+      top:-4px;
+      right:-4px;
+      background:#ff3b30;
+      color:white;
+      font-size:11px;
+      padding:3px 6px;
+      border-radius:12px;
+      display:none;
+    ">
+  </span>
+</div>
+</div>
+</div>
+      <!-- RESUMO -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:15px;">
+
+        <div class="cardResumo">
+          <p>Saldo</p>
+          <h3 id="saldoValor">0</h3>
+        </div>
+
+        <div class="cardResumo">
+          <p>Reserva</p>
+          <h3 id="reservaValor">0</h3>
+        </div>
+
+        <div class="cardResumo">
+          <p>Entradas</p>
+          <h3 id="entradaValor">0</h3>
+        </div>
+
+        <div class="cardResumo">
+          <p>Saídas</p>
+          <h3 id="saidaValor">0</h3>
+        </div>
+
+      </div>
+
+      <!-- BOTÕES -->
+      
+      <!-- META MENSAL -->
+<div style="margin-top:12px;">
+
+  <p style="margin:5px 0; font-size:14px; opacity:0.8;">
+    Meta do mês: <span id="moedaMeta"></span><span id="metaValor">0</span>
+  </p>
+
+  <div style="background:#333; border-radius:10px; height:18px; overflow:hidden;">
+    <div id="barraMeta" style="
+      height:18px;
+      width:0%;
+      background:var(--cor-destaque);
+      transition:0.4s;
+    "></div>
+  </div>
+
+  <p style="margin-top:5px; font-size:13px; opacity:0.7;">
+    Guardado este mês: <span id="moedaGuardado"></span><span id="guardadoValor">0</span>
+  </p>
+  </div>
+  <!-- BOTÕES -->
+<div style="display:flex; gap:15px; margin-top:8px;">
+
+  <button class="btnAcao btnEntrada" style="flex:1;" onclick="abrirTela('telaEntrada')">
+    + Entrada
+  </button>
+
+  <button class="btnAcao btnSaida" style="flex:1;" onclick="abrirTelaSaida()">
+  - Saída
+</button>
+ </div>
+
+    </div>
+
+  </div>
+
+</div>
+<!-- DESAFIOS -->
+<div id="desafios" class="hidden">
+  <h2>Desafios</h2>
+</div>
+
+<!-- NOVO DESAFIO -->
+<div id="novoDesafio" class="hidden">
+  <h2>Criar Novo Desafio</h2>
+</div>
+
+<!-- CATEGORIAS -->
+<!-- TELA CATEGORIAS -->
+<div id="telaCategorias" class="screen">
+
+  <button onclick="fecharTela('telaCategorias')" style="
+    background:none;
+    border:none;
+    color:white;
+    font-size:16px;
+    margin-bottom:20px;
+    cursor:pointer;
+  ">
+    ← Voltar
+  </button>
+
+  <h2 style="margin-top:0;">🗂️ Categorias</h2>
+
+  <div id="listaCategorias" style="margin-top:20px;"></div>
+
+</div>
+<!-- TELA ENTRADA -->
+<div id="telaEntrada" class="screen">
+
+  <button onclick="fecharTela('telaEntrada')" 
+    style="background:none;border:none;color:white;font-size:16px;margin-bottom:20px;cursor:pointer;">
+    ← Voltar
+  </button>
+
+  <h2>+ Registrar Entrada</h2>
+
+  <p>Nome do Cliente:</p>
+  <input type="text" id="nomeClienteInput"
+    style="width:100%;padding:8px;border-radius:6px;border:none;">
+
+  <p style="margin-top:15px;">Valor:</p>
+  <input type="number" id="valorEntradaInput"
+    style="width:100%;padding:8px;border-radius:6px;border:none;">
+
+  <button onclick="confirmarEntrada()"
+    style="margin-top:20px;background:var(--cor-destaque);border:none;padding:10px 15px;border-radius:8px;color:white;cursor:pointer;">
+    Confirmar Entrada
+  </button>
+
+</div>
+<!-- TELA SAÍDA -->
+<div id="telaSaida" class="screen">
+
+  <button onclick="fecharTela('telaSaida')" 
+    style="background:none;border:none;color:white;font-size:16px;margin-bottom:20px;cursor:pointer;">
+    ← Voltar
+  </button>
+
+  <h2>- Registrar Saída</h2>
+
+  <p>Categoria:</p>
+  <select id="selectCategoria" style="width:100%;padding:8px;border-radius:6px;border:none;"></select>
+
+  <p style="margin-top:15px;">Subcategoria:</p>
+  <select id="selectSubcategoria" style="width:100%;padding:8px;border-radius:6px;border:none;"></select>
+
+  <p style="margin-top:15px;">Valor:</p>
+  <input type="number" id="valorSaidaInput"
+    style="width:100%;padding:8px;border-radius:6px;border:none;">
+
+  <button onclick="confirmarSaida()"
+    style="margin-top:20px;background:#ff4d4d;border:none;padding:10px 15px;border-radius:8px;color:white;cursor:pointer;">
+    Confirmar Saída
+  </button>
+  
+  <div style="display:flex; gap:10px; margin-top:25px;">
+
+  <button
+    onclick="adicionarSubcategoria()"
+    style="flex:1;background:var(--cor-destaque);border:none;padding:10px;border-radius:8px;color:white;cursor:pointer;">
+    ➕ Adicionar Subcategoria
+  </button>
+
+  <button
+    onclick="excluirSubcategoria()"
+    style="flex:1;background:#ff4d4d;border:none;padding:10px;border-radius:8px;color:white;cursor:pointer;">
+    🗑️ Excluir Subcategoria
+  </button>
+
+</div>
+
+</div>
+  
+<!-- RELATORIOS -->
+<div id="relatorios" class="hidden">
+  <h2>Relatórios</h2>
+</div>
+
+<!-- RESERVA -->
+<!-- RESERVA -->
+<div id="reserva" class="hidden"
+     style="
+        position: fixed;
+        inset: 0;
+        background: linear-gradient(to bottom, var(--cor-fundo-1), var(--cor-fundo-2), var(--cor-fundo-3));
+        overflow-y: auto;
+        padding: 5px;
+        z-index: 1000;
+     ">
+  <h2>💰 Reserva Emergencial</h2>
+  <button onclick="abrirAba('home')"
+        style="background:none;
+               border:none;
+               color:white;
+               font-size:16px;
+               margin-bottom:20px;
+               cursor:pointer;">
+  ← Voltar
+</button>
+
+  <p style="margin-top:10px;">
+    Meta do mês: <span id="reservaMetaTexto">0</span>
+  </p>
+
+  <p>
+    Guardado neste mês: <span id="reservaGuardadoTexto">0</span>
+  </p>
+
+  <p>
+    Falta: <span id="reservaFaltaTexto">0</span>
+  </p>
+
+  <p style="opacity:0.7; font-size:13px;">
+    Total na reserva (todos os meses): <span id="reservaTotalTexto">0</span>
+  </p>
+
+  <!-- 🔹 BLOCO GUARDAR NORMAL (perfil) -->
+  <div style="margin-top:20px;">
+    <input 
+      type="number" 
+      id="valorGuardarInput" 
+      placeholder="Digite valor para guardar"
+      style="width:100%; padding:10px; border-radius:6px; border:none;">
+  </div>
+
+  <button class="primary" style="margin-top:15px;" onclick="guardarNaReserva()">
+    Guardar Valor
+  </button>
+
+  <!-- 🔹 BLOCO SISTEMA 10% -->
+  <div id="blocoSistema10" style="margin-top:25px; display:none;">
+
+    <hr style="opacity:0.2; margin-bottom:20px;">
+
+    <h3>📊 Separação 10%</h3>
+
+    <p>
+      📥 10% das Entradas: 
+      <span id="pendenteEntradasTexto">0.00</span>
+    </p>
+
+    <p>
+      📤 10% das Saídas: 
+      <span id="pendenteSaidasTexto">0.00</span>
+    </p>
+
+    <p>
+      <strong>Total a Separar: 
+        <span id="pendenteTotalTexto">0.00</span>
+      </strong>
+    </p>
+
+    <div style="margin-top:15px;">
+      <input 
+        type="number" 
+        id="valorSepararManualInput"
+        placeholder="Quanto você quer separar agora"
+        style="width:100%; padding:10px; border-radius:6px; border:none;">
+    </div>
+
+    <button class="primary" style="margin-top:10px;" onclick="separarManual10()">
+      Separar Agora
+    </button>
+
+  </div>
+
+</div>
+
+  <!-- TELA HOME -->
+<div id="telaHome" class="screen">
+
+  <button onclick="fecharTela('telaHome')" 
+    style="background:none;border:none;color:white;font-size:16px;margin-bottom:20px;cursor:pointer;">
+    ← Voltar
+  </button>
+
+  <h2>🧑‍🏫 Painel Principal</h2>
+
+ <div id="painelDiagnostico"
+     style="
+       background: rgba(255,255,255,0.08);
+       padding: 18px;
+       border-radius: 12px;
+       margin-top: 20px;
+       font-size: 14px;
+       line-height: 1.6;
+     ">
+
+  <div style="font-weight:600; margin-bottom:10px; opacity:0.7;">
+    🧠 RAIO-X FINANCEIRO
+  </div>
+
+  <div id="conteudoDiagnostico">
+    Analisando suas movimentações...
+  </div>
+
+</div>
+</div>
+
+<!-- EMPRESTIMO -->
+<div id="emprestimo" class="hidden"
+     style="
+        position: fixed;
+        inset: 0;
+        background: linear-gradient(to bottom, var(--cor-fundo-1), var(--cor-fundo-2), var(--cor-fundo-3));
+        overflow-y: auto;
+        padding: 20px;
+        z-index: 1000;
+     ">
+
+  <h2>🏦 Empréstimo Interno</h2>
+
+  <button onclick="abrirAba('home')"
+    style="background:none;border:none;color:white;font-size:16px;margin-bottom:20px;cursor:pointer;">
+    ← Voltar
+  </button>
+
+  <button onclick="abrirEmprestimoExterno()"
+    style="background:linear-gradient(135deg,#ffb300,#ff6f00);border:none;color:white;font-size:14px;font-weight:600;padding:9px 16px;border-radius:20px;margin-bottom:20px;margin-left:10px;cursor:pointer;">
+    ✨ Empréstimo Externo (IsaCred)
+  </button>
+
+  <p>Dívida Atual: <span id="dividaAtualTexto">0.00</span></p>
+
+  <p style="margin-top:20px;">Valor para pegar emprestado:</p>
+  <input type="number" id="valorEmprestimoInput"
+    style="width:100%;padding:8px;border-radius:6px;border:none;">
+
+  <button onclick="pegarEmprestimo()"
+    style="margin-top:15px;background:var(--cor-destaque);border:none;padding:10px 15px;border-radius:8px;color:white;cursor:pointer;">
+    Pegar Empréstimo
+  </button>
+
+  <p style="margin-top:30px;">Valor para pagar:</p>
+  <input type="number" id="valorPagamentoInput"
+    style="width:100%;padding:8px;border-radius:6px;border:none;">
+
+  <button onclick="pagarEmprestimo()"
+    style="margin-top:15px;background:#ff4d4d;border:none;padding:10px 15px;border-radius:8px;color:white;cursor:pointer;">
+    Pagar Empréstimo
+  </button>
+  <hr style="margin:30px 0; opacity:0.2;">
+
+<h3>🏦 Sacar da Reserva</h3>
+
+<p>Valor para sacar:</p>
+<input type="number" id="valorSaqueReservaInput"
+  style="width:100%;padding:8px;border-radius:6px;border:none;">
+
+<p style="margin-top:15px;">Motivo:</p>
+<select id="motivoSaqueSelect"
+  style="width:100%;padding:8px;border-radius:6px;border:none;">
+  <option value="investimento">📈 Investimento</option>
+  <option value="bem">🛍 Compra de Bem</option>
+  <option value="planejado">💼 Uso Planejado</option>
+</select>
+
+<button onclick="sacarDaReserva()"
+  style="margin-top:15px;background:#3b82f6;border:none;padding:10px 15px;border-radius:8px;color:white;cursor:pointer;">
+  Sacar da Reserva
+</button>
+
+</div>
+
+<!-- ISACRED: APRESENTACAO -->
+<div id="telaIsaCredIntro" class="hidden"
+     style="
+        position: fixed;
+        inset: 0;
+        overflow: hidden;
+        z-index: 1100;
+     ">
+
+  <style>
+    @keyframes isacredGradiente {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    @keyframes isacredSubir {
+      0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+      12% { opacity: 0.85; }
+      88% { opacity: 0.85; }
+      100% { transform: translateY(-640px) rotate(30deg); opacity: 0; }
+    }
+    .isacredFundoAnimado {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, #1a1005, #7a4a00, #ffb300, #7a4a00, #1a1005);
+      background-size: 300% 300%;
+      animation: isacredGradiente 16s ease infinite;
+    }
+    .isacredParticula {
+      position: absolute;
+      bottom: -60px;
+      font-size: 24px;
+      opacity: 0;
+      animation-name: isacredSubir;
+      animation-timing-function: ease-in;
+      animation-iteration-count: infinite;
+    }
+  </style>
+
+  <div class="isacredFundoAnimado"></div>
+
+  <span class="isacredParticula" style="left:8%; animation-duration:9s; animation-delay:0s;">🪙</span>
+  <span class="isacredParticula" style="left:22%; animation-duration:12s; animation-delay:2s;">✨</span>
+  <span class="isacredParticula" style="left:38%; animation-duration:10s; animation-delay:4s;">🪙</span>
+  <span class="isacredParticula" style="left:55%; animation-duration:13s; animation-delay:1s;">💰</span>
+  <span class="isacredParticula" style="left:70%; animation-duration:11s; animation-delay:5s;">✨</span>
+  <span class="isacredParticula" style="left:85%; animation-duration:14s; animation-delay:3s;">🪙</span>
+
+  <div style="position:relative; z-index:2; height:100%; overflow-y:auto; padding:24px; box-sizing:border-box; color:white;">
+
+    <button onclick="fecharTelaIsaCredIntro()"
+      style="background:none;border:none;color:white;font-size:16px;margin-bottom:16px;cursor:pointer;">
+      ← Voltar
+    </button>
+
+    <div style="text-align:center; margin-bottom:18px;">
+      <div style="font-size:42px;">💬</div>
+      <div style="font-weight:700; font-size:18px;">Evelyn está te contando sobre o IsaCred</div>
+    </div>
+
+    <div style="background:rgba(0,0,0,0.35); border-radius:14px; padding:18px; line-height:1.55; font-size:15px;">
+
+      <p>Oi! Eu sou a Evelyn 👋 — enquanto cuido das suas contas aqui no Meta Viva, também acompanho outra novidade que pode te interessar: o <b>IsaCred</b>.</p>
+
+      <p>O IsaCred é um clube de crédito de verdade — diferente do Empréstimo Interno daqui, que só move seu próprio dinheiro guardado, no IsaCred você pode solicitar um empréstimo externo, com dinheiro de verdade caindo na sua conta.</p>
+
+      <p><b>🪙 ISAcoin:</b> toda vez que você pega um empréstimo no IsaCred, ganha ISAcoins — e ganha ainda mais se pagar rapidinho. Ao juntar <b>10.000 ISAcoins</b>, você já pode sacar dinheiro de verdade no Clube ISAcoin.</p>
+
+      <p><b>🏅 Níveis:</b> conforme você paga em dia, seu score sobe e você sobe de nível — 🍀 Essencial, 🥉 Bronze, 🥈 Prata, 🥇 Ouro e 💎 Black — e cada nível libera um limite de crédito maior.</p>
+
+      <p>Se quiser, eu já te ajudo a criar sua conta agora mesmo, usando o mesmo e-mail que você já usa aqui no Meta Viva. Bora?</p>
+
+    </div>
+
+    <div style="display:flex; gap:10px; margin-top:22px;">
+      <button onclick="avancarParaFormularioIsaCred()"
+        style="flex:1; background:linear-gradient(135deg,#ffd54f,#ff8f00); border:none; color:#3a2100; font-weight:700; font-size:15px; padding:14px; border-radius:12px; cursor:pointer;">
+        Sim, quero criar minha conta
+      </button>
+      <button onclick="fecharTelaIsaCredIntro()"
+        style="flex:1; background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.4); color:white; font-weight:600; font-size:15px; padding:14px; border-radius:12px; cursor:pointer;">
+        Agora não
+      </button>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ISACRED: CADASTRO -->
+<div id="telaIsaCredForm" class="hidden"
+     style="
+        position: fixed;
+        inset: 0;
+        background: linear-gradient(160deg, #201405, #3d2405, #201405);
+        overflow-y: auto;
+        padding: 20px;
+        box-sizing: border-box;
+        z-index: 1100;
+        color: white;
+     ">
+
+  <button onclick="voltarParaIntroIsaCred()"
+    style="background:none;border:none;color:white;font-size:16px;margin-bottom:16px;cursor:pointer;">
+    ← Voltar
+  </button>
+
+  <h2 style="margin-top:0;">✨ Criar conta no IsaCred</h2>
+  <p style="opacity:0.8; font-size:13px; margin-top:-8px;">Pede só o essencial — leva menos de um minuto.</p>
+
+  <p style="margin-top:18px;">E-mail:</p>
+  <input type="email" id="isacredEmail" disabled
+    style="width:100%;padding:10px;border-radius:8px;border:none;opacity:0.7;">
+
+  <p style="margin-top:14px;">Nome completo:</p>
+  <input type="text" id="isacredNome" placeholder="Seu nome completo"
+    style="width:100%;padding:10px;border-radius:8px;border:none;">
+
+  <p style="margin-top:14px;">Telefone (com WhatsApp):</p>
+  <input type="tel" id="isacredTelefone" placeholder="(xx) xxxxx-xxxx"
+    style="width:100%;padding:10px;border-radius:8px;border:none;">
+
+  <p style="margin-top:14px;">País:</p>
+  <select id="isacredPais" onchange="atualizarCamposPorPaisIsaCred()"
+    style="width:100%;padding:10px;border-radius:8px;border:none;">
+    <option value="BR">🇧🇷 Brasil</option>
+    <option value="PT">🇵🇹 Portugal</option>
+  </select>
+
+  <p style="margin-top:14px;"><span id="isacredLabelDocumento">CPF:</span></p>
+  <input type="text" id="isacredDocumento" placeholder="000.000.000-00"
+    style="width:100%;padding:10px;border-radius:8px;border:none;">
+
+  <p style="margin-top:14px;"><span id="isacredLabelPix">Chave Pix:</span></p>
+  <input type="text" id="isacredPix" placeholder="Sua chave Pix"
+    style="width:100%;padding:10px;border-radius:8px;border:none;">
+
+  <p style="margin-top:14px;">Crie uma senha para entrar no IsaCred:</p>
+  <input type="password" id="isacredSenha" placeholder="Mínimo 6 caracteres"
+    style="width:100%;padding:10px;border-radius:8px;border:none;">
+
+  <button onclick="criarContaIsaCred()"
+    style="margin-top:22px;width:100%;background:linear-gradient(135deg,#ffd54f,#ff8f00);border:none;color:#3a2100;font-weight:700;font-size:15px;padding:14px;border-radius:12px;cursor:pointer;">
+    Criar minha conta no IsaCred
+  </button>
+
+  <p id="isacredStatusTexto" style="margin-top:14px; font-size:13px; opacity:0.85;"></p>
+
+</div>
+
+<!-- CONTAS A PAGAR -->
+<div id="contas" class="hidden">
+
+  <h2>🧾 Contas a Pagar</h2>
+
+  <button onclick="abrirAba('home')"
+    style="background:none;border:none;color:white;font-size:16px;margin-bottom:20px;cursor:pointer;">
+    ← Voltar
+  </button>
+  <button 
+  onclick="abrirTelaNovaConta()" 
+  style="
+    margin-bottom:15px;
+    background:var(--cor-destaque);
+    border:none;
+    padding:10px 15px;
+    border-radius:8px;
+    color:white;
+    cursor:pointer;">
+  ➕ Nova Conta
+</button>
+  <button
+  id="botaoTelegram"
+  onclick="conectarTelegram()"
+  style="
+    margin-bottom:15px;
+    margin-left:10px;
+    background:#229ED9;
+    border:none;
+    padding:10px 15px;
+    border-radius:8px;
+    color:white;
+    cursor:pointer;">
+  📨 Acompanhar no Telegram
+</button>
+ <div id="listaContas" class="areaRolavel"></div>
+
+</div>
+
+<!-- CONFIGURACOES -->
+<div id="configuracoes" class="hidden">
+
+  <h2>⚙️ Configurações</h2>
+
+  <button onclick="abrirAba('home')"
+    style="background:none;border:none;color:white;font-size:16px;margin-bottom:20px;cursor:pointer;">
+    ← Voltar
+  </button>
+  <div style="margin-top:20px;">
+  <label style="display:flex;align-items:center;gap:8px;font-size:14px;">
+    <input type="checkbox" id="mutarEvellyn">
+    Mutar Evellyn 🔇
+  </label>
+</div>
+
+  <h3 style="margin-top:20px;">🔧 Ajuste Manual de Saldo</h3>
+
+  <p style="opacity:0.8; font-size:14px;">
+    Use valores positivos para adicionar e negativos para remover.
+  </p>
+
+  <input 
+    type="number" 
+    id="ajusteSaldoInput"
+    placeholder="Ex: 200 ou -150"
+    style="width:100%; padding:10px; border-radius:6px; border:none; margin-top:10px;"
+  >
+
+  <button class="primary" style="margin-top:15px;" onclick="aplicarAjusteSaldo()">
+    Aplicar Ajuste
+  </button>
+  <hr style="margin:30px 0; opacity:0.2;">
+
+<h3>📊 Sistema de Separação 10%</h3>
+
+<label style="display:flex; align-items:center; gap:10px; margin-top:10px; cursor:pointer;">
+  <input type="checkbox" id="toggleSistema10" onchange="toggleSistema10()">
+  Ativar separação automática de 10% (Entradas + Saídas)
+</label>
+
+</div>
+
+<!-- TELA DESAFIOS (NOVA TELA) -->
+<div id="telaDesafios" class="screen">
+
+  <button onclick="fecharTela('telaDesafios')" style="
+    background:none;
+    border:none;
+    color:white;
+    font-size:16px;
+    margin-bottom:20px;
+    cursor:pointer;
+  ">
+    ← Voltar
+  </button>
+
+  <h2 style=";">🎯 Desafios</h2>
+ <button 
+  onclick="abrirTela('telaNovoDesafio')"
+  style="
+    margin-top:15px;
+    background:var(--cor-destaque);
+    border:none;
+    padding:10px 15px;
+    border-radius:8px;
+    color:white;
+    cursor:pointer;
+  ">
+  ➕ Criar Novo Desafio
+</button>
+
+  <div style="margin-top:20px; text-align:left;">
+  
+  <div id="listaDesafios" style="margin-top:20px;"></div>
+
+</div>
+
+</div>
+
+ <!-- TELA NOVO DESAFIO -->
+<div id="telaNovoDesafio" class="screen">
+
+  <button onclick="fecharTela('telaNovoDesafio')" style="
+    background:none;
+    border:none;
+    color:white;
+    font-size:16px;
+    margin-bottom:20px;
+    cursor:pointer;
+  ">
+    ← Voltar
+  </button>
+
+  <h2 style="margin-top:0;">✨ Criar Novo Desafio</h2>
+
+  <div style="margin-top:20px; text-align:left;">
+
+    <p>Nome do desafio:</p>
+    <input type="text" id="nomeDesafio" 
+      style="width:100%; padding:8px; border-radius:6px; border:none;">
+
+    <p style="margin-top:15px;">Valor total:</p>
+    <input type="number" id="valorDesafio" 
+      style="width:100%; padding:8px; border-radius:6px; border:none;">
+
+    <p style="margin-top:15px;">Dividir em quantas partes?</p>
+    <input type="number" id="partesDesafio" 
+      style="width:100%; padding:8px; border-radius:6px; border:none;">
+
+    <p style="margin-top:15px;">Escolha um emoji:</p>
+
+  <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+  
+
+    <div style="display:flex; gap:15px; flex-wrap:wrap; margin-top:10px;">
+
+<button type="button" onclick="selecionarEmoji('✈️')" style="font-size:40px; background:none; border:none; cursor:pointer;">✈️</button>
+
+<button type="button" onclick="selecionarEmoji('📱')" style="font-size:40px; background:none; border:none; cursor:pointer;">📱</button>
+
+<button type="button" onclick="selecionarEmoji('💻')" style="font-size:40px; background:none; border:none; cursor:pointer;">💻</button>
+
+<button type="button" onclick="selecionarEmoji('🚗')" style="font-size:40px; background:none; border:none; cursor:pointer;">🚗</button>
+
+<button type="button" onclick="selecionarEmoji('🎁')" style="font-size:40px; background:none; border:none; cursor:pointer;">🎁</button>
+
+<button type="button" onclick="selecionarEmoji('🐷')" style="font-size:40px; background:none; border:none; cursor:pointer;">🐷</button>
+
+<button type="button" onclick="selecionarEmoji('🎂')" style="font-size:40px; background:none; border:none; cursor:pointer;">🎂</button>
+
+<button type="button" onclick="selecionarEmoji('💰')" style="font-size:40px; background:none; border:none; cursor:pointer;">💰</button>
+
+<button type="button" onclick="selecionarEmoji('📦')" style="font-size:40px; background:none; border:none; cursor:pointer;">📦</button>
+
+<button type="button" onclick="selecionarEmoji('🎯')" style="font-size:40px; background:none; border:none; cursor:pointer;">🎯</button>
+
+</div>
+
+    <button type="button" onclick="criarDesafioPersonalizado()" 
+      style="
+        margin-top:20px;
+        background:var(--cor-destaque);
+        border:none;
+        padding:10px 15px;
+        border-radius:8px;
+        color:white;
+        cursor:pointer;
+      ">
+      Criar Desafio
+    </button>
+
+  </div>
+
+</div>
+
+</div>
+
+<!-- TELA DETALHE DESAFIO -->
+<div id="telaDetalheDesafio" class="screen">
+
+  <button onclick="fecharTela('telaDetalheDesafio')" style="
+    background:none;
+    border:none;
+    color:white;
+    font-size:16px;
+    margin-bottom:20px;
+    cursor:pointer;">
+    ← Voltar
+  </button>
+
+  <h2 id="tituloDetalhe"></h2>
+
+  <p>Total: <span id="valorTotalDetalhe"></span></p>
+  <p>Parcela: <span id="valorParcelaDetalhe"></span></p>
+
+  <div id="areaParcelas" style="margin-top:20px; font-size:28px;"></div>
+
+  <button type="button" onclick="pagarParcela()" style="
+    margin-top:25px;
+    background:var(--cor-destaque);
+    border:none;
+    padding:10px 15px;
+    border-radius:8px;
+    color:white;
+    cursor:pointer;">
+    💸 Pagar Parcela
+  </button>
+  <button type="button" onclick="encerrarDesafio()" style="
+  margin-top:15px;
+  background:#444;
+  border:none;
+  padding:10px 15px;
+  border-radius:8px;
+  color:white;
+  cursor:pointer;">
+  ✔ Encerrar Desafio
+</button>
+
+</div>
+  </div>
+
+<!-- TELA RELATÓRIO -->
+<div id="telaRelatorio" class="screen">
+
+  <button onclick="fecharTela('telaRelatorio')" 
+    style="background:none;border:none;color:white;font-size:16px;margin-bottom:20px;cursor:pointer;">
+    ← Voltar
+  </button>
+
+  <h2 style="margin-top:0;">📊 Relatório Financeiro</h2>
+  <div style="margin:15px 0; display:flex; gap:10px; flex-wrap:wrap;">
+
+  <select id="filtroMes" style="padding:6px;border-radius:6px;border:none;">
+    <option value="todos">Todos os Meses</option>
+  </select>
+
+  <select id="filtroCategoria" style="padding:6px;border-radius:6px;border:none;">
+    <option value="todas">Todas Categorias</option>
+  </select>
+
+  <button onclick="gerarRelatorio()"
+    style="background:var(--cor-destaque);border:none;padding:6px 10px;border-radius:6px;color:white;cursor:pointer;">
+    Aplicar Filtro
+  </button>
+  <button onclick="gerarPDF()"
+  style="background:#444;border:none;padding:6px 10px;border-radius:6px;color:white;cursor:pointer;">
+  Gerar PDF
+</button>
+
+</div>
+
+  <div id="conteudoRelatorio" style="margin-top:20px;"></div>
+
+</div>
+
+<!-- TELA NOTIFICAÇÕES -->
+<div id="telaNotificacoes" class="screen">
+
+  <button onclick="fecharTela('telaNotificacoes')" 
+    style="background:none;border:none;color:white;font-size:16px;margin-bottom:20px;cursor:pointer;">
+    ← Voltar
+  </button>
+
+  <h2 style="margin-top:0;">🔔 Notificações</h2>
+
+  <div id="listaNotificacoes" style="margin-top:20px;"></div>
+
+</div>
+
+<!-- TELA TEMA -->
+<div id="telaTema" class="screen">
+
+  <button type="button" onclick="fecharTela('telaTema')" 
+    style="background:none;border:none;color:white;font-size:16px;margin-bottom:20px;cursor:pointer;">
+    ← Voltar
+  </button>
+
+  <h2 style="margin-top:0;">🎨 Tema do App</h2>
+
+  <p style="opacity:0.8; font-size:14px; margin-top:10px;">
+    Escolha a cor de destaque e o fundo do app.
+  </p>
+
+  <div id="listaTemas" style="
+    margin-top:20px;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+  "></div>
+
+  <button
+    type="button"
+    onclick="escolherFotoFundo()"
+    style="
+      margin-top:15px;
+      width:100%;
+      background:rgba(255,255,255,0.08);
+      border:2px dashed rgba(255,255,255,0.3);
+      padding:14px;
+      border-radius:12px;
+      color:white;
+      cursor:pointer;
+      font-size:14px;
+      box-sizing:border-box;">
+    🖼️ Personalizar com foto da galeria
+  </button>
+  <input type="file"
+    id="inputFundoPersonalizado"
+    accept="image/*"
+    style="display:none">
+
+</div>
+
+<!-- TELA NOVA CONTA -->
+<div id="telaNovaConta" class="screen">
+
+  <button onclick="fecharTela('telaNovaConta')" 
+    style="background:none;border:none;color:white;font-size:16px;margin-bottom:20px;cursor:pointer;">
+    ← Voltar
+  </button>
+
+  <h2>➕ Nova Conta</h2>
+
+  <p>Nome da Conta:</p>
+  <input type="text" id="nomeContaInput"
+    style="width:100%;padding:8px;border-radius:6px;border:none;">
+
+  <p style="margin-top:15px;">Valor:</p>
+  <input type="number" id="valorContaInput"
+    style="width:100%;padding:8px;border-radius:6px;border:none;">
+
+  <p style="margin-top:15px;">Data de Vencimento:</p>
+  <input type="date" id="vencimentoContaInput"
+    style="width:100%;padding:8px;border-radius:6px;border:none;">
+
+  <p style="margin-top:15px;">Categoria:</p>
+  <select id="selectCategoriaConta" style="width:100%;padding:8px;border-radius:6px;border:none;"></select>
+
+  <p style="margin-top:15px;">Subcategoria:</p>
+  <select id="selectSubcategoriaConta" style="width:100%;padding:8px;border-radius:6px;border:none;"></select>
+
+  <label style="margin-top:10px;">Repetir por (meses):</label>
+  <input type="number" id="repetirMeses" min="1" value="1"
+       style="width:100%;padding:8px;margin-top:5px;border-radius:6px;border:none;">
+
+  <p style="margin-top:15px;">Como esta conta será paga?</p>
+  <div style="display:grid;grid-template-columns:1fr;gap:9px;">
+    <label style="display:flex;align-items:center;gap:8px;padding:11px 12px;border-radius:8px;background:rgba(255,255,255,0.14);cursor:pointer;">
+      <input type="radio" name="tipoPagamentoConta" value="manual" checked onchange="alternarTipoAnexoConta()">
+      👆 Pagamento manual
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;padding:11px 12px;border-radius:8px;background:rgba(255,255,255,0.14);cursor:pointer;">
+      <input type="radio" name="tipoPagamentoConta" value="debito_automatico" onchange="alternarTipoAnexoConta()">
+      🔄 Débito automático
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;padding:11px 12px;border-radius:8px;background:rgba(255,255,255,0.14);cursor:pointer;">
+      <input type="radio" name="tipoPagamentoConta" value="upload" onchange="alternarTipoAnexoConta()">
+      📎 Fazer upload da conta
+    </label>
+  </div>
+
+  <div id="areaUploadConta" style="display:none;margin-top:12px;">
+    <input
+      type="file"
+      id="arquivoContaInput"
+      accept="image/*,.pdf,application/pdf"
+      onchange="atualizarNomeArquivoConta()"
+      style="display:none;">
+    <button
+      type="button"
+      onclick="document.getElementById('arquivoContaInput').click()"
+      style="width:100%;background:#229ED9;border:none;padding:11px 15px;border-radius:8px;color:white;cursor:pointer;">
+      📄 Escolher foto ou PDF
+    </button>
+    <p id="nomeArquivoConta" style="margin:8px 0 0;font-size:13px;opacity:0.82;">
+      Nenhum arquivo selecionado.
+    </p>
+  </div>
+
+  <button id="botaoSalvarConta" onclick="salvarNovaConta()"
+    style="margin-top:20px;background:var(--cor-destaque);border:none;padding:10px 15px;border-radius:8px;color:white;cursor:pointer;">
+    Salvar Conta
+  </button>
+
+</div>
+
+<!-- LEITOR DE CONTA -->
+<div id="modalLeitorConta" class="screen" style="z-index:1200;background:linear-gradient(135deg,var(--cor-fundo-1),var(--cor-fundo-2),var(--cor-fundo-3));">
+  <button onclick="fecharLeitorConta()"
+    style="background:none;border:none;color:white;font-size:16px;margin-bottom:12px;cursor:pointer;">
+    ← Voltar
+  </button>
+
+  <h2 style="margin-top:0;">📄 Visualizar conta</h2>
+
+  <div id="previewAnexoConta" style="width:100%;height:42vh;min-height:280px;background:rgba(0,0,0,0.25);border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;"></div>
+
+  <button onclick="lerDadosDaConta()" id="botaoLerConta"
+    style="width:100%;margin-top:14px;background:#229ED9;border:none;padding:12px 15px;border-radius:8px;color:white;font-weight:700;cursor:pointer;">
+    🔎 Identificar dados para pagamento
+  </button>
+
+  <button onclick="abrirArquivoOriginalConta()"
+    style="width:100%;margin-top:10px;background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.3);padding:11px 15px;border-radius:8px;color:white;cursor:pointer;">
+    ↗️ Abrir arquivo original
+  </button>
+
+  <p id="statusLeituraConta" style="font-size:13px;opacity:0.85;margin:12px 0;"></p>
+  <div id="camposPagamentoConta" style="padding-bottom:30px;"></div>
+</div>
+  
+<script>
+
+let progresso = 0;
+let currentQuestion = 0;
+let answers = [];
+let userProfile = "";
+let emojiSelecionado = "🎯";
+let desafios = [];
+const mapaEmojis = {
+  "viagem": "✈️",
+  "viajar": "✈️",
+  "passagem": "✈️",
+
+  "celular": "📱",
+  "iphone": "📱",
+
+  "computador": "💻",
+  "notebook": "💻",
+
+  "carro": "🚗",
+  "automóvel": "🚗",
+
+  "presente": "🎁",
+  "natal": "🎁",
+  "aniversário": "🎂",
+  "páscoa": "🎁",
+
+  "dinheiro": "💰",
+  "reserva": "💰",
+
+  "meta": "🎯",
+  "objetivo": "🎯",
+
+  "caixa": "📦"
+};
+let saldo = 0;
+let appInicializado = false;
+let dividaAtual = 0;
+// ===== SISTEMA 10% OPCIONAL =====
+let sistema10Ativo = false;
+let estadoMentorAtual = "estavel";
+let pendenteEntradas = 0;
+let pendenteSaidas = 0;
+let usuarioUID = null;
+let saldoRealGlobal = 0;
+let estadoFinanceiroAtual = "neutro";
+let vozesDisponiveis = [];
+
+speechSynthesis.onvoiceschanged = function() {
+  vozesDisponiveis = speechSynthesis.getVoices();
+};
+// 🔔 SISTEMA DE NOTIFICAÇÕES
+let notificacoes = [];
+let evellynMutada = false;
+let notificacoesNaoLidas = 0;
+let desafioAtualIndex = null;
+// 🔊 CONTROLE DE VOZ
+let vozAtivada = true;
+let rendaMensalBase = 0;
+let moedaUsuario = "€";
+let categorias = [];
+let historicoSaidas = [];
+// 🔥 Histórico de movimentos da reserva (depósitos e saques, com data),
+// separado do saldo total da reserva (valorGuardado), que é vitalício.
+// É a partir daqui que a gente sabe quanto foi guardado SÓ neste mês,
+// pra comparar com a meta mensal.
+let historicoReserva = [];
+
+// 🔥 Foto e nome de perfil — fonte de verdade é o Firestore (campo
+// "foto"/"nome" do documento do usuário); localStorage é só um cache
+// rápido pra já mostrar algo antes do Firestore terminar de carregar.
+let fotoPerfilAtual = "";
+
+// 🔥 Temas de cor disponíveis. "destaque" é a cor dos botões/barras de
+// progresso; fundo1/2/3 formam o degradê de fundo do app inteiro.
+let nomeTemaAtual = "verde";
+let fundoPersonalizadoAtual = "";
+
+const temasDisponiveis = {
+  verde:  { nome: "Verde (padrão)", destaque: "#00c896", fundo1: "#0f2027", fundo2: "#203a43", fundo3: "#2c5364" },
+  azul:   { nome: "Azul",           destaque: "#3b82f6", fundo1: "#0f172a", fundo2: "#1e293b", fundo3: "#334155" },
+  roxo:   { nome: "Roxo",           destaque: "#a855f7", fundo1: "#1e1033", fundo2: "#2d1b4e", fundo3: "#3f2a5e" },
+  laranja:{ nome: "Laranja",        destaque: "#f97316", fundo1: "#1f1410", fundo2: "#2e1f18", fundo3: "#3e2a1f" },
+  rosa:   { nome: "Rosa",           destaque: "#ec4899", fundo1: "#1f1019", fundo2: "#2e1826", fundo3: "#3e2233" },
+  escuro: { nome: "Preto e Branco", destaque: "#e5e7eb", fundo1: "#000000", fundo2: "#111111", fundo3: "#1a1a1a" },
+  gatinho:{ nome: "Gatinho \uD83D\uDC31",        destaque: "#f472b6", fundo1: "#241620", fundo2: "#33202c", fundo3: "#402a38", icone: "🐱" },
+  carro:  { nome: "Carro \uD83C\uDFCE\uFE0F",         destaque: "#ef4444", fundo1: "#0a0a0a", fundo2: "#161616", fundo3: "#222222", icone: "🏎️" },
+  caveira:{ nome: "Caveira \uD83D\uDC80",       destaque: "#c7c7c7", fundo1: "#0d0d0d", fundo2: "#160f1a", fundo3: "#201526", icone: "💀" },
+  fogo:   { nome: "Fogo \uD83D\uDD25",          destaque: "#dc2626", fundo1: "#1a0a05", fundo2: "#2e0f08", fundo3: "#3d1810", icone: "🔥" },
+  animais:{ nome: "Animais \uD83D\uDC3E",       destaque: "#84cc16", fundo1: "#141a0f", fundo2: "#1f2915", fundo3: "#2b3a1d", icone: "🐾" }
+};
+
+// Aplica um tema (visual + salva a escolha). chave é uma chave de
+// temasDisponiveis (ex: "azul").
+function aplicarTema(chave, salvar = true){
+
+  const tema = temasDisponiveis[chave];
+  if(!tema) return;
+
+  const root = document.documentElement.style;
+  root.setProperty("--cor-destaque", tema.destaque);
+  root.setProperty("--cor-fundo-1", tema.fundo1);
+  root.setProperty("--cor-fundo-2", tema.fundo2);
+  root.setProperty("--cor-fundo-3", tema.fundo3);
+
+  const iconeFundo = document.getElementById("temaIconeFundo");
+  if(iconeFundo){
+    iconeFundo.textContent = tema.icone || "";
+  }
+
+  const camadaFoto = document.getElementById("fundoPersonalizado");
+  if(camadaFoto){
+    camadaFoto.style.backgroundImage = "none";
+    camadaFoto.style.opacity = "0";
+  }
+  fundoPersonalizadoAtual = "";
+
+  nomeTemaAtual = chave;
+
+  if(salvar){
+    if(typeof auth !== "undefined" && auth.currentUser){
+      localStorage.setItem("temaSalvo_" + auth.currentUser.uid, chave);
+    }
+    if(typeof salvarEstadoCompleto === "function"){
+      salvarEstadoCompleto();
+    }
+  }
+
+  renderizarListaTemas();
+}
+
+function renderizarListaTemas(){
+
+  const container = document.getElementById("listaTemas");
+  if(!container) return;
+
+  container.innerHTML = "";
+
+  Object.keys(temasDisponiveis).forEach(function(chave){
+
+    const tema = temasDisponiveis[chave];
+    const selecionado = chave === nomeTemaAtual;
+
+    const card = document.createElement("button");
+    card.type = "button";
+    card.onclick = function(){ aplicarTema(chave); };
+    card.style.cssText =
+      "display:flex; flex-direction:column; align-items:center; gap:8px;" +
+      "padding:15px; border-radius:12px; cursor:pointer;" +
+      "border:2px solid " + (selecionado ? tema.destaque : "transparent") + ";" +
+      "background:linear-gradient(135deg," + tema.fundo1 + "," + tema.fundo2 + "," + tema.fundo3 + ");";
+
+    card.innerHTML =
+      "<div style='width:32px;height:32px;border-radius:50%;background:" + tema.destaque + ";'></div>" +
+      "<span style='color:white;font-size:13px;'>" + tema.nome + (selecionado ? " ✓" : "") + "</span>";
+
+    container.appendChild(card);
+  });
+}
+
+// Carrega o tema salvo dessa conta (cache local rápido; o Firestore
+// sobrescreve depois em onAuthStateChanged, igual foto/nome)
+function carregarTemaLocalDoNavegador(uid){
+  const temaSalvo = localStorage.getItem("temaSalvo_" + uid);
+  aplicarTema(temaSalvo && temasDisponiveis[temaSalvo] ? temaSalvo : "verde", false);
+}
+
+let nomeUsuarioAtual = "";
+
+function registrarMovimentoReserva(valor){
+  const agora = new Date();
+  historicoReserva.push({
+    data: agora.toLocaleDateString("pt-PT"),
+    hora: agora.toLocaleTimeString("pt-PT"),
+    mes: agora.getMonth() + 1,
+    ano: agora.getFullYear(),
+    valor: valor
+  });
+}
+
+// 🔥 Quanto foi guardado (líquido) na reserva DESTE MÊS — é isso que deve
+// ser comparado com a meta mensal, não o total histórico (valorGuardado).
+function calcularGuardadoMesAtual(){
+  const agora = new Date();
+  const mesAtual = agora.getMonth() + 1;
+  const anoAtual = agora.getFullYear();
+
+  return historicoReserva
+    .filter(item => item.mes === mesAtual && item.ano === anoAtual)
+    .reduce((acc, item) => acc + item.valor, 0);
+}
+let contas = [];
+let contaLeituraAtualIndex = null;
+let urlAnexoContaAtual = "";
+let contaMetaVivaCriadaEm = null;
+let telegramChatIdAtual = null;
+// 🔥 Controle de qual mês está refletido nos totais de categoria
+// (mantido só pra referência/salvar no Firestore; a lógica de baixo
+// agora recalcula tudo do zero, não depende mais desse valor pra decidir
+// se reseta ou não)
+let mesReferenciaCategorias = new Date().getMonth() + 1;
+let anoReferenciaCategorias = new Date().getFullYear();
+
+// 🔥 Recalcula o gasto de cada subcategoria DO ZERO, direto do histórico
+// real de saídas filtrado pelo mês/ano atual. Substitui o modelo antigo
+// de "ir somando e zerar quando vira o mês", que podia ficar dessincronizado
+// (ex: contas antigas nunca zeradas corretamente). Chamando essa função,
+// o total sempre reflete a realidade, não importa o que aconteceu antes.
+function verificarResetMensalCategorias(){
+
+  const agora = new Date();
+  const mesAtual = agora.getMonth() + 1;
+  const anoAtual = agora.getFullYear();
+
+  // Zera tudo primeiro
+  categorias.forEach(function(cat){
+    cat.subcategorias.forEach(function(sub){
+      sub.total = 0;
+    });
+  });
+
+  // Soma de novo, só as saídas do mês/ano atual, direto do histórico real
+  historicoSaidas.forEach(function(item){
+
+    let ma = obterMesAno(item);
+    if(!ma || ma.mes !== mesAtual || ma.ano !== anoAtual) return;
+
+    let cat = categorias.find(c => c.nome === item.categoria);
+    if(!cat) return;
+
+    let sub = cat.subcategorias.find(s => s.nome === item.subcategoria);
+    if(sub){
+      sub.total += item.valor;
+    }
+  });
+
+  mesReferenciaCategorias = mesAtual;
+  anoReferenciaCategorias = anoAtual;
+}
+
+// 🔥 Totais de entradas/saídas SÓ do mês/ano atual (não é o valor vitalício).
+// Usado nos cards da Home e no diagnóstico da Evellyn, pra não misturar
+// meses/anos diferentes num número só.
+function calcularTotaisMesAtual(){
+
+  const agora = new Date();
+  const mesAtual = agora.getMonth() + 1;
+  const anoAtual = agora.getFullYear();
+
+  let entradas = historicoEntradas
+    .filter(item => { let ma = obterMesAno(item); return ma && ma.mes === mesAtual && ma.ano === anoAtual; })
+    .reduce((acc, item) => acc + item.valor, 0);
+
+  let saidas = historicoSaidas
+    .filter(item => { let ma = obterMesAno(item); return ma && ma.mes === mesAtual && ma.ano === anoAtual; })
+    .reduce((acc, item) => acc + item.valor, 0);
+
+  return { entradas, saidas };
+}
+
+// 🔥 Atualiza os cards "Entradas" e "Saídas" da Home com o total do MÊS ATUAL
+function atualizarCardsHome(){
+  const totais = calcularTotaisMesAtual();
+  const elEntrada = document.getElementById("entradaValor");
+  const elSaida = document.getElementById("saidaValor");
+  if(elEntrada) elEntrada.innerText = moedaUsuario + " " + totais.entradas.toFixed(2);
+  if(elSaida) elSaida.innerText = moedaUsuario + " " + totais.saidas.toFixed(2);
+}
+async function salvarEstadoCompleto(){
+
+  const user = auth.currentUser;
+  if(!user) return;
+
+  await updateDoc(doc(db, "usuarios", user.uid), {
+
+    saldo: saldo,
+    reserva: valorGuardado,
+    rendaBase: rendaMensalBase,
+    moeda: moedaUsuario,
+    perfil: userProfile,
+    meta: metaMensal,
+
+    entradas: historicoEntradas,
+    saidas: historicoSaidas,
+    categorias: categorias,
+    contas: contas,
+    desafios: desafios,
+
+    sistema10: {
+      ativo: sistema10Ativo,
+      pendenteEntradas: pendenteEntradas,
+      pendenteSaidas: pendenteSaidas
+    }
+
+  });
+
+}
+function selecionarEmoji(emoji){
+
+  emojiSelecionado = emoji;
+
+  const nomesPadrao = {
+    "✈️": "Viagem",
+    "📱": "Celular",
+    "💻": "Computador",
+    "🚗": "Carro",
+    "🎁": "Presente",
+    "🐷": "Reserva",
+    "🎂": "Aniversário",
+    "💰": "Dinheiro",
+    "📦": "Compra",
+    "🎯": "Meta"
+  };
+
+  if(nomesPadrao[emoji]){
+    document.getElementById("nomeDesafio").value = nomesPadrao[emoji];
+  }
+
+}
+/* ===== PLANOS POR PERFIL ===== */
+let metaMensal = 0;
+let valorGuardado = 0;
+const planosPerfil = {
+
+  "Crítico": {
+    porcentagem: 0.05,
+    titulo: "Plano de Reorganização Financeira",
+    etapas: [
+      "Guardar 5% de cada entrada.",
+      "Registrar todos os gastos por 30 dias.",
+      "Criar disciplina antes de aumentar a meta."
+    ]
+  },
+
+  "Iniciante": {
+    porcentagem: 0.08,
+    titulo: "Plano de Construção de Base",
+    etapas: [
+      "Guardar 8% de cada entrada.",
+      "Separar despesas fixas e variáveis.",
+      "Criar reserva equivalente a 1 mês."
+    ]
+  },
+
+  "Em Evolução": {
+    porcentagem: 0.10,
+    titulo: "Plano de Crescimento",
+    etapas: [
+      "Guardar 10% de cada entrada.",
+      "Eliminar desperdícios mensais.",
+      "Fortalecer reserva progressivamente."
+    ]
+  },
+
+  "Intermediário": {
+    porcentagem: 0.15,
+    titulo: "Plano de Consolidação",
+    etapas: [
+      "Guardar 15% de cada entrada.",
+      "Expandir reserva para 3 meses.",
+      "Criar metas de investimento."
+    ]
+  },
+
+  "Estável": {
+    porcentagem: 0.20,
+    titulo: "Plano de Independência",
+    etapas: [
+      "Guardar 20% de cada entrada.",
+      "Criar fundo estratégico.",
+      "Preparar capital para investimento."
+    ]
+  }
+
+};
+  
+const questions = [
+
+{
+  question: "Qual seu maior objetivo financeiro?",
+  multi: true,
+  options: [
+    "Criar reserva de emergência",
+    "Fazer uma viagem",
+    "Comprar um carro",
+    "Quitar dívidas",
+    "Ter maior estabilidade financeira"
+  ]
+},
+
+{
+  question: "Como está sua organização hoje?",
+  multi: false,
+  options: [
+    "Não consigo guardar nada",
+    "Guardo pouco, mas sem método",
+    "Já guardo, mas quero melhorar",
+    "Tenho controle total"
+  ]
+},
+
+{
+  question: "Você controla seus gastos mensalmente?",
+  multi: false,
+  options: [
+    "Não controlo",
+    "Controlo às vezes",
+    "Controlo quase tudo",
+    "Controlo tudo detalhadamente"
+  ]
+},
+
+{
+  question: "Você possui dívidas atualmente?",
+  multi: false,
+  options: [
+    "Sim, muitas",
+    "Algumas",
+    "Poucas",
+    "Nenhuma"
+  ]
+},
+
+{
+  question: "Quanto você consegue guardar por mês?",
+  multi: false,
+  options: [
+    "Nada",
+    "Até 5%",
+    "Entre 10% e 20%",
+    "Mais de 20%"
+  ]
+}
+
+];
+
+// 🔥 Zera TODA a memória do app (estado de um usuário/conta) — chamado
+// sempre que a autenticação muda (login, logout, ou nova conta), pra
+// nunca misturar dados de uma conta com o que sobrou de outra no mesmo
+// navegador. Se algum dia adicionar uma variável nova de dados do
+// usuário, ela também precisa ser zerada aqui.
+function resetarEstadoLocal(){
+
+  progresso = 0;
+  currentQuestion = 0;
+  answers = [];
+  userProfile = "";
+  emojiSelecionado = "🎯";
+  desafios = [];
+
+  saldo = 0;
+  dividaAtual = 0;
+  sistema10Ativo = false;
+  estadoMentorAtual = "estavel";
+  pendenteEntradas = 0;
+  pendenteSaidas = 0;
+  saldoRealGlobal = 0;
+  estadoFinanceiroAtual = "neutro";
+
+  notificacoes = [];
+  notificacoesNaoLidas = 0;
+  desafioAtualIndex = null;
+
+  rendaMensalBase = 0;
+  moedaUsuario = "€";
+  categorias = [];
+  historicoSaidas = [];
+  historicoReserva = [];
+  contas = [];
+
+  nomeUsuarioAtual = "";
+  fotoPerfilAtual = "";
+  aplicarTema("verde", false);
+
+  mesReferenciaCategorias = new Date().getMonth() + 1;
+  anoReferenciaCategorias = new Date().getFullYear();
+
+  metaMensal = 0;
+  valorGuardado = 0;
+
+  entradasTotal = 0;
+  saidasTotal = 0;
+  historicoEntradas = [];
+
+  mentorTotalEntradas = 0;
+  mentorTotalSaidas = 0;
+  mentorMaiorCategoria = null;
+  mentorMaiorValor = 0;
+  mentorSaldoReal = 0;
+  mentorContasVencendo = 0;
+  mentorTotalContasPendentes = 0;
+
+  // Limpa também qualquer coisa visível na tela que já tenha ficado
+  // da sessão anterior
+  const banner = document.getElementById("mentorBanner");
+  if(banner) banner.style.display = "none";
+}
+
+function start() {
+
+  if (appInicializado) return;
+
+  document.getElementById("landing").classList.add("hidden");
+  document.getElementById("quiz").classList.remove("hidden");
+  currentQuestion = 0;
+  loadQuestion();
+}
+
+function loadQuestion(){
+
+  const q = questions[currentQuestion];
+
+  document.getElementById("progressText").innerText =
+    "Pergunta " + (currentQuestion + 1) + " de " + questions.length;
+
+  document.getElementById("questionText").innerText = q.question;
+
+  const optionsDiv = document.getElementById("options");
+  optionsDiv.innerHTML = "";
+
+  q.options.forEach(option => {
+
+    const label = document.createElement("label");
+    label.className = "optionItem";
+
+    const input = document.createElement("input");
+    input.type = q.multi ? "checkbox" : "radio";
+    input.name = "option";
+    input.value = option;
+
+    label.appendChild(input);
+    label.appendChild(document.createTextNode(" " + option));
+
+    optionsDiv.appendChild(label);
+  });
+
+  if(currentQuestion === questions.length - 1){
+    document.getElementById("nextBtn").innerText = "Gerar Plano";
+  } else {
+    document.getElementById("nextBtn").innerText = "Próximo";
+  }
+
+}
+
+function nextQuestion(){
+
+  const selected = document.querySelectorAll("input[name='option']:checked");
+
+  if(selected.length === 0){
+    alert("Selecione pelo menos uma opção.");
+    return;
+  }
+
+  answers[currentQuestion] = [];
+
+  selected.forEach(el => {
+    answers[currentQuestion].push(el.value);
+  });
+
+  if(currentQuestion < questions.length - 1){
+    currentQuestion++;
+    loadQuestion();
+  } else {
+    showResult();
+  }
+
+}
+
+function previousQuestion(){
+  if(currentQuestion > 0){
+    currentQuestion--;
+    loadQuestion();
+  }
+}
+
+function generateProfile() {
+
+  const dividas = answers[3]?.[0] || "";
+  const guardar = answers[4]?.[0] || "";
+  console.log("Valor guardar:", guardar);
+  const controle = answers[2]?.[0] || "";
+
+  if (
+    dividas === "Sim, muitas" &&
+    guardar === "Nada" &&
+    controle === "Não controlo"
+  ) {
+    userProfile = "Crítico";
+  }
+
+  else if (
+    dividas === "Algumas" &&
+    (guardar === "Nada" || guardar === "Até 5%")
+  ) {
+    userProfile = "Iniciante";
+  }
+
+  else if (
+    guardar === "Entre 10% e 20%"
+  ) {
+    userProfile = "Intermediário";
+  }
+
+  else if (
+    guardar === "Mais de 20%" &&
+    dividas === "Nenhuma"
+  ) {
+    userProfile = "Estável";
+  }
+
+  else {
+    userProfile = "Em Evolução";
+  }
+
+}
+
+function showResult(){
+
+  generateProfile();
+  console.log(answers);
+  document.getElementById("quiz").classList.add("hidden");
+  document.getElementById("result").classList.remove("hidden");
+
+  document.getElementById("profileResult").innerHTML =
+    "<strong>Seu Perfil:</strong> " + userProfile;
+
+}
+  
+function goToLogin(){
+
+  document.getElementById("result").classList.add("hidden");
+  document.getElementById("login").classList.remove("hidden");
+
+}
+
+// 🔥 Pra quem já tem conta e só quer entrar, sem passar pelo questionário
+function irParaLogin(){
+
+  document.getElementById("landing").classList.add("hidden");
+  document.getElementById("login").classList.remove("hidden");
+
+}
+
+function goToHome(){
+
+  const plano = planosPerfil[userProfile];
+
+  if(plano){
+    metaMensal = rendaMensalBase * plano.porcentagem;
+  }
+
+  generateProfile();
+  console.log("Perfil gerado:", userProfile);
+
+  document.getElementById("setupRenda").classList.add("hidden");
+  document.getElementById("login").classList.add("hidden");
+  document.getElementById("result").classList.add("hidden");
+  document.getElementById("home").classList.remove("hidden");
+
+  document.getElementById("perfilTipo").innerText = "Perfil: " + userProfile;
+  document.getElementById("metaValor").innerText = metaMensal.toFixed(2);
+  document.getElementById("guardadoValor").innerText = valorGuardado.toFixed(2);
+  document.getElementById("saldoValor").innerText = moedaUsuario + " " + saldo.toFixed(2);
+  document.getElementById("reservaValor").innerText = moedaUsuario + " " + valorGuardado.toFixed(2);
+  document.getElementById("entradaValor").innerText =
+  moedaUsuario + " " + entradasTotal.toFixed(2);
+
+  document.getElementById("saidaValor").innerText =
+  moedaUsuario + " " + saidasTotal.toFixed(2);
+
+  atualizarCardsHome();
+
+  // 🔥 PROTEÇÃO PARA answers (evita erro quando não veio do quiz)
+  let objetivo = (typeof answers !== "undefined" && answers[0])
+    ? answers[0][0]
+    : null;
+
+  let desafio = "";
+  let estrategia = "";
+
+  if(objetivo === "Comprar um carro"){
+    estrategia = "Criar fundo específico para o carro e guardar 15% mensalmente.";
+  }
+  else if(objetivo === "Quitar dívidas"){
+    estrategia = "Priorizar pagamento das dívidas antes de iniciar novos objetivos.";
+  }
+  else if(objetivo === "Criar reserva de emergência"){
+    estrategia = "Construir reserva equivalente a 6 meses de despesas.";
+  }
+
+  if(userProfile === "Crítico"){
+    desafio = "Anotar todos os gastos por 7 dias.";
+  }
+  else if(userProfile === "Iniciante"){
+    desafio = "Guardar 5% da sua renda por 30 dias.";
+  }
+  else if(userProfile === "Intermediário"){
+    desafio = "Criar reserva de 3 meses.";
+  }
+  else if(userProfile === "Estável"){
+    desafio = "Investir para crescimento.";
+  }
+  else{
+    desafio = "Organizar despesas fixas.";
+  }
+
+  atualizarDividaHeader();
+  atualizarResumoContas();
+  atualizarProgresso();
+}
+function abrirDesafios(){
+  document.getElementById("areaDesafios").classList.remove("hidden");
+atualizarListaDesafios();
+  // Rola suavemente até a área de desafios
+  document.getElementById("areaDesafios").scrollIntoView({
+    behavior: "smooth"
+  });
+}
+  
+function concluirDesafio(){
+
+  if(progresso < 100){
+    progresso += 20;
+  }
+
+  if(progresso > 100){
+    progresso = 100;
+  }
+
+  document.getElementById("progressBar").style.width = progresso + "%";
+  document.getElementById("progressTextBar").innerText = "Progresso: " + progresso + "%";
+
+}
+
+let entradasTotal = 0;
+let saidasTotal = 0;
+let historicoEntradas = [];
+
+
+  // 🔥 Agora entra o cérebro do desafio
+
+   function adicionarEntrada(){
+
+  let valor = parseFloat(prompt("Digite o valor da entrada:"));
+
+  if(isNaN(valor) || valor <= 0){
+    alert("Valor inválido.");
+    return;
+  }
+
+  entradasTotal += valor;
+  saldo += valor;
+  // Atualiza meta baseada no perfil (apenas cálculo, não guarda dinheiro)
+
+  document.getElementById("metaValor").innerText = metaMensal.toFixed(2);
+
+
+  document.getElementById("entradaValor").innerText = moedaUsuario + " " + entradasTotal.toFixed(2);
+  document.getElementById("saldoValor").innerText = moedaUsuario + " " + saldo.toFixed(2);
+  atualizarProgresso();
+    const user = auth.currentUser;
+if (user) {
+  salvarDadosUsuario(user);
+}
+  }
+
+function adicionarSaida(){
+
+  if(categorias.length === 0){
+    alert("Nenhuma categoria criada.");
+    return;
+  }
+
+  // Escolher categoria
+  let nomesCategorias = categorias
+  .map((c, i) => `${i} - ${c.nome}`)
+  .join("\n");
+
+  let escolhaCategoria = prompt(
+    "Escolha a categoria digitando o número:\n\n" + nomesCategorias
+  );
+
+  if(escolhaCategoria === null) return;
+
+  let indexCategoria = parseInt(escolhaCategoria);
+
+  if(isNaN(indexCategoria) || !categorias[indexCategoria]){
+    alert("Categoria inválida.");
+    return;
+  }
+
+  let categoria = categorias[indexCategoria];
+
+  // Escolher subcategoria
+  let nomesSub = categoria.subcategorias
+  .map(function(s, i){
+    return i + " - " + s.nome;
+  })
+  .join("\n");
+
+  let escolhaSub = prompt(
+    `Escolha a subcategoria de ${categoria.nome}:\n\n` + nomesSub
+  );
+
+  if(escolhaSub === null) return;
+
+  let indexSub = parseInt(escolhaSub);
+
+  if(isNaN(indexSub) || !categoria.subcategorias[indexSub]){
+    alert("Subcategoria inválida.");
+    return;
+  }
+
+  let valor = parseFloat(prompt("Digite o valor da saída:"));
+
+  if(isNaN(valor) || valor <= 0){
+    alert("Valor inválido.");
+    return;
+  }
+
+  if(valor > saldo){
+    alert("Saldo insuficiente.");
+    return;
+  }
+
+  // Atualiza valores
+  saldo -= valor;
+  saidasTotal += valor;
+  categoria.subcategorias[indexSub].total += valor;
+
+  // Atualiza UI
+  document.getElementById("saldoValor").innerText = moedaUsuario + " " + saldo.toFixed(2);
+  document.getElementById("saidaValor").innerText = moedaUsuario + " " + saidasTotal.toFixed(2);
+
+  atualizarTelaCategorias();
+}
+
+function abrirAba(id){
+
+  // Esconde todas as abas
+  document.getElementById("home").classList.add("hidden");
+  document.getElementById("desafios").classList.add("hidden");
+  document.getElementById("novoDesafio").classList.add("hidden");
+  document.getElementById("relatorios").classList.add("hidden");
+  document.getElementById("reserva").classList.add("hidden");
+  document.getElementById("emprestimo").classList.add("hidden");
+  document.getElementById("telaIsaCredIntro").classList.add("hidden");
+  document.getElementById("telaIsaCredForm").classList.add("hidden");
+  document.getElementById("configuracoes").classList.add("hidden");
+  document.getElementById("contas").classList.add("hidden"); // 🔥 ESTA LINHA FALTAVA
+
+  if(id === "reserva"){
+
+    let guardadoMes = calcularGuardadoMesAtual();
+
+    document.getElementById("reservaGuardadoTexto").innerText = guardadoMes.toFixed(2);
+    document.getElementById("reservaMetaTexto").innerText = metaMensal.toFixed(2);
+    document.getElementById("reservaTotalTexto").innerText = moedaUsuario + " " + valorGuardado.toFixed(2);
+    if(sistema10Ativo){
+    document.getElementById("blocoSistema10").style.display = "block";
+    atualizarTelaSistema10();
+    } else {
+    document.getElementById("blocoSistema10").style.display = "none";
+    }
+    let falta = metaMensal - guardadoMes;
+    if(falta < 0) falta = 0;
+
+    document.getElementById("reservaFaltaTexto").innerText = falta.toFixed(2);
+    atualizarSistema10Visual();
+  }
+
+  // Mostra a aba clicada
+  document.getElementById(id).classList.remove("hidden");
+
+  if(id === "contas"){
+    atualizarListaContas();
+    atualizarBotaoTelegram();
+  }
+
+  atualizarResumoContas();
+}
+function guardarNaReserva(){
+
+  let valor = parseFloat(document.getElementById("valorGuardarInput").value);
+
+  if(isNaN(valor) || valor <= 0){
+    alert("Valor inválido.");
+    return;
+  }
+
+  if(valor > saldo){
+    alert("Você não tem saldo suficiente.");
+    return;
+  }
+
+  // Move dinheiro do saldo para reserva oficial
+  saldo -= valor;
+  valorGuardado += valor;
+  registrarMovimentoReserva(valor);
+
+  // Atualiza UI principal
+  document.getElementById("saldoValor").innerText = moedaUsuario + " " + saldo.toFixed(2);
+  document.getElementById("reservaValor").innerText = moedaUsuario + " " + valorGuardado.toFixed(2);
+
+  atualizarProgresso();
+
+  // Atualiza tela da reserva (com base no guardado SÓ deste mês, não o total vitalício)
+  let guardadoMes = calcularGuardadoMesAtual();
+  document.getElementById("reservaGuardadoTexto").innerText = guardadoMes.toFixed(2);
+
+  let falta = metaMensal - guardadoMes;
+  if(falta < 0) falta = 0;
+
+  document.getElementById("reservaMetaTexto").innerText = metaMensal.toFixed(2);
+  document.getElementById("reservaFaltaTexto").innerText = falta.toFixed(2);
+
+  document.getElementById("valorGuardarInput").value = "";
+  atualizarProgresso();
+  abrirAba("home");
+  salvarEstadoCompleto();
+}
+
+function abrirTela(id){
+
+  // 🔹 Limpa campos da tela de entrada
+  if(id === "telaEntrada"){
+    document.getElementById("nomeClienteInput").value = "";
+    document.getElementById("valorEntradaInput").value = "";
+  }
+
+  // 🔹 Limpa campos da tela nova conta
+  if(id === "telaNovaConta"){
+    document.getElementById("nomeContaInput").value = "";
+    document.getElementById("valorContaInput").value = "";
+    document.getElementById("vencimentoContaInput").value = "";
+  }
+
+  // 🔹 Limpa campos da tela saída
+  if(id === "telaSaida"){
+    document.getElementById("valorSaidaInput").value = "";
+  }
+
+  // 🔥 Só pode ter UMA tela ativa por vez — fecha qualquer outra que
+  // tenha ficado aberta (ex: navegou de um ícone do menu pra outro sem
+  // apertar "Voltar"), senão ela fica escondida por baixo cobrindo a
+  // tela nova, mesmo a nova estando 100% funcional.
+  document.querySelectorAll(".screen.active").forEach(function(tela){
+    if(tela.id !== id){
+      tela.classList.remove("active");
+    }
+  });
+
+  const elementoAlvo = document.getElementById(id);
+  if(!elementoAlvo) return;
+
+  elementoAlvo.classList.add("active");
+  if(id === "telaHome"){
+    diagnosticoHome();
+  }
+  if(id === "telaNotificacoes"){
+  renderizarNotificacoes();
+  notificacoesNaoLidas = 0;
+  atualizarIconeNotificacao();
+  }
+}
+
+function fecharTela(id){
+  document.getElementById(id).classList.remove("active");
+}
+
+function criarDesafioPersonalizado(){
+
+  const nome = document.getElementById("nomeDesafio").value;
+  let nomeLower = nome.toLowerCase();
+
+for (let palavra in mapaEmojis) {
+  if (nomeLower.includes(palavra)) {
+    emojiSelecionado = mapaEmojis[palavra];
+    break;
+  }
+}
+  const valor = parseFloat(document.getElementById("valorDesafio").value);
+  const partes = parseInt(document.getElementById("partesDesafio").value);
+
+  if(!nome || isNaN(valor) || isNaN(partes) || partes <= 0){
+    alert("Preencha todos os campos corretamente.");
+    return;
+  }
+
+  let novoDesafio = {
+    nome: nome,
+    valorTotal: valor,
+    partes: partes,
+    valorParcela: valor / partes,
+    parcelasPagas: 0,
+    emoji: emojiSelecionado
+  };
+
+  desafios.push(novoDesafio);
+
+  // Limpa campos
+  document.getElementById("nomeDesafio").value = "";
+  document.getElementById("valorDesafio").value = "";
+  document.getElementById("partesDesafio").value = "";
+
+  emojiSelecionado = "🎯";
+
+  fecharTela("telaNovoDesafio");
+
+  atualizarListaDesafios();
+  salvarEstadoCompleto();
+}
+  function atualizarListaDesafios(){
+
+  const container = document.getElementById("listaDesafios");
+  container.innerHTML = "";
+
+  desafios.forEach((desafio, index) => {
+
+    let porcentagem = 0;
+
+    if(desafio.partes > 0){
+      porcentagem = (desafio.parcelasPagas / desafio.partes) * 100;
+    }
+
+    const item = document.createElement("div");
+    item.style.marginBottom = "15px";
+    item.style.padding = "12px";
+    item.style.background = "rgba(255,255,255,0.08)";
+    item.style.borderRadius = "8px";
+
+    item.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <strong style="font-size:16px;">
+            ${desafio.emoji} ${desafio.nome}
+          </strong><br>
+          ${moedaUsuario} ${desafio.valorTotal.toFixed(2)}
+        </div>
+        <button type="button" onclick="abrirDesafio(${index})"
+          style="
+            background:var(--cor-destaque);
+            border:none;
+            padding:6px 10px;
+            border-radius:6px;
+            color:white;
+            cursor:pointer;
+          ">
+          Abrir →
+        </button>
+      </div>
+
+      <div style="
+        background:#333;
+        height:8px;
+        border-radius:5px;
+        margin-top:10px;
+      ">
+        <div style="
+          width:${porcentagem}%;
+          height:8px;
+          background:var(--cor-destaque);
+          border-radius:5px;
+        "></div>
+      </div>
+    `;
+
+    container.appendChild(item);
+   
+  });
+
+}
+ function abrirDesafio(index){
+
+  desafioAtualIndex = index;
+  const desafio = desafios[index];
+
+  // Atualiza textos
+  document.getElementById("tituloDetalhe").innerText =
+    desafio.emoji + " " + desafio.nome;
+
+  document.getElementById("valorTotalDetalhe").innerText =
+    moedaUsuario + " " + desafio.valorTotal.toFixed(2);
+
+  document.getElementById("valorParcelaDetalhe").innerText =
+    moedaUsuario + " " + desafio.valorParcela.toFixed(2);
+
+  // Desenha as parcelas
+  atualizarParcelasVisuais();
+
+  // Abre tela
+  abrirTela("telaDetalheDesafio");
+}
+function atualizarParcelasVisuais(){
+
+    const desafio = desafios[desafioAtualIndex];
+    const area = document.getElementById("areaParcelas");
+
+    area.innerHTML = "";
+
+    for(let i = 0; i < desafio.partes; i++){
+
+        const span = document.createElement("span");
+
+        if(i < desafio.parcelasPagas){
+            span.innerText = "🟢";
+        } else {
+            span.innerText = desafio.emoji;
+        }
+
+        area.appendChild(span);
+    }
+
+}
+ function pagarParcela(){
+
+  const desafio = desafios[desafioAtualIndex];
+
+  if(desafio.parcelasPagas >= desafio.partes){
+    alert("Todas as parcelas já foram pagas.");
+    return;
+  }
+
+  // 🔥 Verifica se tem saldo suficiente
+  if(saldo < desafio.valorParcela){
+    alert("Saldo insuficiente para pagar esta parcela.");
+    return;
+  }
+
+  // 💸 Desconta do saldo
+  saldo -= desafio.valorParcela;
+
+  // 🐷 Adiciona na reserva
+  valorGuardado += desafio.valorParcela;
+  registrarMovimentoReserva(desafio.valorParcela);
+
+  // Marca parcela como paga
+  desafio.parcelasPagas++;
+
+  // 🔄 Atualiza cards da Home
+  document.getElementById("saldoValor").innerText = moedaUsuario + " " + saldo.toFixed(2);
+  document.getElementById("reservaValor").innerText = moedaUsuario + " " + valorGuardado.toFixed(2);
+
+  // Atualiza visual das parcelas
+  atualizarParcelasVisuais();
+
+  // Atualiza lista principal
+  atualizarListaDesafios();
+  atualizarProgresso();
+  salvarEstadoCompleto();
+
+}
+  function encerrarDesafio(){
+
+  if(desafioAtualIndex === null) return;
+
+  if(!confirm("Encerrar este desafio? As parcelas pagas continuarão na sua reserva.")){
+    return;
+  }
+
+  // Remove da lista
+  desafios.splice(desafioAtualIndex, 1);
+
+  desafioAtualIndex = null;
+
+  fecharTela("telaDetalheDesafio");
+  atualizarListaDesafios();
+  salvarEstadoCompleto();
+}
+ async function confirmarRenda(){
+
+  let valor = parseFloat(document.getElementById("rendaInput").value);
+  moedaUsuario = document.getElementById("moedaSelect").value;
+
+  if(isNaN(valor) || valor <= 0){
+    alert("Digite um valor válido.");
+    return;
+  }
+
+  rendaMensalBase = valor;
+
+  // 🔥 Gera perfil se ainda não estiver gerado
+  if(!userProfile){
+    generateProfile();
+  }
+
+  const plano = planosPerfil[userProfile];
+
+  if(plano){
+    metaMensal = rendaMensalBase * plano.porcentagem;
+  }
+
+  gerarCategoriasBase();
+
+  // 🔥🔥🔥 SALVAR NO FIRESTORE AQUI 🔥🔥🔥
+  const user = auth.currentUser;
+
+  if(user){
+    await setDoc(doc(db, "usuarios", user.uid), {
+      rendaBase: rendaMensalBase,
+      saldo: saldo,
+      reserva: valorGuardado,
+      moeda: moedaUsuario,
+      perfil: userProfile,
+      meta: metaMensal
+    }, { merge: true });
+  }
+
+  document.getElementById("setupRenda").classList.add("hidden");
+
+  goToHome();
+}
+  function atualizarTelaCategorias(){
+
+  verificarResetMensalCategorias();
+
+  const container = document.getElementById("listaCategorias");
+  container.innerHTML = "";
+
+  categorias.forEach((categoria, index) => {
+    let totalCategoria = categoria.subcategorias.reduce(
+    (acc, sub) => acc + sub.total, 0
+    );
+    let porcentagem = 0;
+
+    if(categoria.piso > 0){
+      porcentagem = (totalCategoria / categoria.piso) * 100;
+    }
+
+    let corBarra = "var(--cor-destaque)"; // verde padrão
+
+    if(porcentagem >= 80 && porcentagem < 100){
+      corBarra = "#f4b400"; // amarelo
+  }
+    else if(porcentagem >= 100){
+      corBarra = "#ff4d4d"; // vermelho
+  }
+
+    const card = document.createElement("div");
+    card.style.marginBottom = "20px";
+    card.style.padding = "15px";
+    card.style.background = "rgba(255,255,255,0.08)";
+    card.style.borderRadius = "10px";
+
+    card.innerHTML = `
+      <div style="display:flex; justify-content:space-between;">
+        <strong>${categoria.nome}</strong>
+  <span>
+    ${moedaUsuario} ${totalCategoria.toFixed(2)} /
+    <span
+     style="
+       cursor:pointer;
+       text-decoration:underline;
+       font-weight:600;
+    "
+    title="Clique para editar o limite"
+    onclick="editarPiso(${index})">
+    ${moedaUsuario} ${categoria.piso.toFixed(2)} ✏️
+  </span>
+</span>
+      </div>
+
+      <div style="
+        background:#333;
+        height:10px;
+        border-radius:6px;
+        margin-top:10px;
+        overflow:hidden;
+      ">
+        <div style="
+          width:${porcentagem}%;
+          height:10px;
+          background:${corBarra};
+          transition:0.4s;
+        "></div>
+      </div>
+    `;
+
+    container.appendChild(card);
+
+  });
+
+}
+  function gerarCategoriasBase(){
+
+  categorias = []; // limpa se já existir algo
+
+  if(!rendaMensalBase || !userProfile) return;
+
+  let distribuicao = {};
+
+  if(userProfile === "Crítico"){
+    distribuicao = {
+      "Essencial": 0.60,
+      "Fixos": 0.25,
+      "Lazer": 0.05,
+      "Esporádicos": 0.05
+    };
+  }
+
+  else if(userProfile === "Iniciante"){
+    distribuicao = {
+      "Essencial": 0.50,
+      "Fixos": 0.25,
+      "Lazer": 0.10,
+      "Esporádicos": 0.07
+    };
+  }
+
+  else if(userProfile === "Intermediário"){
+    distribuicao = {
+      "Essencial": 0.40,
+      "Fixos": 0.25,
+      "Lazer": 0.10,
+      "Esporádicos": 0.10
+    };
+  }
+
+  else if(userProfile === "Estável"){
+    distribuicao = {
+      "Essencial": 0.35,
+      "Fixos": 0.25,
+      "Lazer": 0.10,
+      "Esporádicos": 0.10
+    };
+  }
+
+  else { // Em Evolução
+    distribuicao = {
+      "Essencial": 0.45,
+      "Fixos": 0.25,
+      "Lazer": 0.10,
+      "Esporádicos": 0.10
+    };
+  }
+
+  for (let nome in distribuicao){
+
+  let pisoCalculado = rendaMensalBase * distribuicao[nome];
+
+  let subcategoriasPadrao = [];
+
+  if(nome === "Essencial"){
+    subcategoriasPadrao = [
+      { nome: "Mercado", total: 0 },
+      { nome: "Farmácia", total: 0 }
+    ];
+  }
+
+  else if(nome === "Fixos"){
+    subcategoriasPadrao = [
+      { nome: "Aluguel", total: 0 },
+      { nome: "Luz", total: 0 },
+      { nome: "Água", total: 0 },
+      { nome: "Internet", total: 0 }
+    ];
+  }
+
+  else if(nome === "Lazer"){
+    subcategoriasPadrao = [
+      { nome: "Restaurante", total: 0 },
+      { nome: "Cinema", total: 0 }
+    ];
+  }
+
+  else if(nome === "Esporádicos"){
+    subcategoriasPadrao = [
+      { nome: "Roupas", total: 0 },
+      { nome: "Manutenção", total: 0 }
+    ];
+  }
+
+  else{
+    subcategoriasPadrao = [];
+  }
+
+  categorias.push({
+    nome: nome,
+    piso: pisoCalculado,
+    subcategorias: subcategoriasPadrao
+  });
+
+}
+}
+ function abrirTelaSaida(){
+
+  if(categorias.length === 0){
+    alert("Nenhuma categoria criada.");
+    return;
+  }
+
+  abrirTela("telaSaida");
+
+  const selectCategoria = document.getElementById("selectCategoria");
+  const selectSub = document.getElementById("selectSubcategoria");
+
+  selectCategoria.innerHTML = "";
+  selectSub.innerHTML = "";
+
+  categorias.forEach(function(cat, index){
+    let option = document.createElement("option");
+    option.value = index;
+    option.text = cat.nome;
+    selectCategoria.appendChild(option);
+  });
+
+  atualizarSubcategorias();
+}
+
+function atualizarSubcategorias(){
+
+  const indexCategoria = document.getElementById("selectCategoria").value;
+  const selectSub = document.getElementById("selectSubcategoria");
+
+  selectSub.innerHTML = "";
+
+  categorias[indexCategoria].subcategorias.forEach(function(sub, i){
+    let option = document.createElement("option");
+    option.value = i;
+    option.text = sub.nome;
+    selectSub.appendChild(option);
+  });
+}
+
+document.addEventListener("change", function(e){
+  if(e.target.id === "selectCategoria"){
+    atualizarSubcategorias();
+  }
+  if(e.target.id === "selectCategoriaConta"){
+    atualizarSubcategoriasConta();
+  }
+});
+
+function abrirTelaNovaConta(){
+
+  if(categorias.length === 0){
+    alert("Nenhuma categoria criada.");
+    return;
+  }
+
+  abrirTela("telaNovaConta");
+
+  const arquivoInput = document.getElementById("arquivoContaInput");
+  const nomeArquivo = document.getElementById("nomeArquivoConta");
+  const opcaoManual = document.querySelector('input[name="tipoPagamentoConta"][value="manual"]');
+  if(opcaoManual) opcaoManual.checked = true;
+  if(arquivoInput) arquivoInput.value = "";
+  if(nomeArquivo) nomeArquivo.innerText = "Nenhum arquivo selecionado.";
+  alternarTipoAnexoConta();
+
+  const selectCategoria = document.getElementById("selectCategoriaConta");
+  const selectSub = document.getElementById("selectSubcategoriaConta");
+
+  selectCategoria.innerHTML = "";
+  selectSub.innerHTML = "";
+
+  categorias.forEach(function(cat, index){
+    let option = document.createElement("option");
+    option.value = index;
+    option.text = cat.nome;
+    selectCategoria.appendChild(option);
+  });
+
+  atualizarSubcategoriasConta();
+}
+
+function atualizarSubcategoriasConta(){
+
+  const indexCategoria = document.getElementById("selectCategoriaConta").value;
+  const selectSub = document.getElementById("selectSubcategoriaConta");
+
+  selectSub.innerHTML = "";
+
+  if(!categorias[indexCategoria]) return;
+
+  categorias[indexCategoria].subcategorias.forEach(function(sub, i){
+    let option = document.createElement("option");
+    option.value = i;
+    option.text = sub.nome;
+    selectSub.appendChild(option);
+  });
+}
+
+function confirmarSaida(){
+
+  verificarResetMensalCategorias();
+
+  const indexCategoria = document.getElementById("selectCategoria").value;
+  const indexSub = document.getElementById("selectSubcategoria").value;
+  const valor = parseFloat(document.getElementById("valorSaidaInput").value);
+
+  if(isNaN(valor) || valor <= 0){
+    alert("Valor inválido.");
+    return;
+  }
+
+  if(valor > saldo){
+    alert("Saldo insuficiente.");
+    return;
+  }
+
+  saldo -= valor;
+  saidasTotal += valor;
+  // 🔥 SISTEMA 10%
+if(sistema10Ativo){
+  pendenteSaidas += valor * 0.10;
+}
+
+  categorias[indexCategoria].subcategorias[indexSub].total += valor;
+  // 🔥 Verificar limite da categoria
+  // 🔥 Registrar no histórico
+let agora = new Date();
+
+historicoSaidas.push({
+  data: agora.toLocaleDateString("pt-PT"),
+  hora: agora.toLocaleTimeString("pt-PT"),
+  categoria: categorias[indexCategoria].nome,
+  subcategoria: categorias[indexCategoria].subcategorias[indexSub].nome,
+  valor: valor,
+  mes: agora.getMonth() + 1,
+  ano: agora.getFullYear()
+});
+
+let categoria = categorias[indexCategoria];
+
+let totalCategoria = categoria.subcategorias.reduce(function(acc, sub){
+  return acc + sub.total;
+}, 0);
+
+let porcentagem = (totalCategoria / categoria.piso) * 100;
+
+if(porcentagem >= 120){
+  let excesso = totalCategoria - categoria.piso;
+  alert("🚨 Você ultrapassou o limite da categoria " 
+        + categoria.nome + 
+        " em " + moedaUsuario + " " + excesso.toFixed(2));
+}
+
+else if(porcentagem >= 100){
+  alert("🚨 Você atingiu o limite da categoria " 
+        + categoria.nome);
+}
+
+else if(porcentagem >= 80){
+  alert("⚠️ Atenção: você está próximo do limite da categoria " 
+        + categoria.nome);
+}
+
+  document.getElementById("saldoValor").innerText = moedaUsuario + " " + saldo.toFixed(2);
+  atualizarCardsHome();
+  // Atualiza estado financeiro antes da Evellyn falar (mesmo fluxo da entrada)
+  diagnosticoHome();
+  analisarSituacaoFinanceira(true);
+  fecharTela("telaSaida");
+  atualizarTelaCategorias();
+  salvarEstadoCompleto();
+}
+
+ function adicionarSubcategoria(){
+
+  const indexCategoria = document.getElementById("selectCategoria").value;
+
+  let nome = prompt("Digite o nome da nova subcategoria:");
+
+  if(!nome || nome.trim() === ""){
+    alert("Nome inválido.");
+    return;
+  }
+
+  categorias[indexCategoria].subcategorias.push({
+    nome: nome,
+    total: 0
+  });
+
+  atualizarSubcategorias();
+  salvarEstadoCompleto();
+}
+
+  function excluirSubcategoria(){
+
+  const indexCategoria = document.getElementById("selectCategoria").value;
+  const indexSub = document.getElementById("selectSubcategoria").value;
+
+  let sub = categorias[indexCategoria].subcategorias[indexSub];
+
+  if(!sub){
+    alert("Nenhuma subcategoria selecionada.");
+    return;
+  }
+
+  if(sub.total > 0){
+
+    let confirmar = confirm(
+      "Esta subcategoria possui " + moedaUsuario + " " + sub.total.toFixed(2)+ 
+      " registrados.\n\nOs valores continuarão contabilizados no saldo e relatórios.\n\nDeseja excluir mesmo assim?"
+    );
+
+    if(!confirmar) return;
+  }
+
+  categorias[indexCategoria].subcategorias.splice(indexSub, 1);
+
+  atualizarSubcategorias();
+  salvarEstadoCompleto();
+}
+
+  function confirmarEntrada(){
+  console.log("confirmarEntrada foi chamada");
+  const nome = document.getElementById("nomeClienteInput").value;
+  const valor = parseFloat(document.getElementById("valorEntradaInput").value);
+
+  if(!nome || isNaN(valor) || valor <= 0){
+    alert("Preencha nome e valor corretamente.");
+    return;
+  }
+
+  // Soma valores
+  entradasTotal += valor;
+  saldo += valor;
+  // 🔥 SISTEMA 10%
+if(sistema10Ativo){
+  pendenteEntradas += valor * 0.10;
+}
+  // 🔥 Criar registro com data e mês
+let agora = new Date();
+
+let registroEntrada = {
+  cliente: nome,
+  valor: valor,
+  data: agora.toLocaleDateString("pt-PT"),
+  hora: agora.toLocaleTimeString("pt-PT"),
+  mes: agora.getMonth() + 1,
+  ano: agora.getFullYear()
+};
+
+historicoEntradas.push(registroEntrada);
+  // 🔥 Atualiza meta baseada no perfil
+  // Atualiza UI principal
+  atualizarCardsHome();
+  document.getElementById("saldoValor").innerText = moedaUsuario + " " + saldo.toFixed(2);
+  if(!userProfile){
+  generateProfile();
+}
+ // Atualiza barra da meta
+atualizarProgresso();
+
+// Limpa campos
+document.getElementById("nomeClienteInput").value = "";
+document.getElementById("valorEntradaInput").value = "";
+
+// Atualiza estado financeiro (CÉREBRO PRINCIPAL)
+diagnosticoHome();
+
+// 🔥 Se essa foi a primeira entrada registrada, é um momento de início
+if(historicoEntradas.length === 1){
+  estadoFinanceiroAtual = "inicio";
+}
+
+// Agora sim a Evellyn fala com base no novo estado
+analisarSituacaoFinanceira(true);
+
+// Atualiza perfil se necessário
+verificarEvolucaoPerfil();
+
+// Fecha tela e volta para home
+fecharTela("telaEntrada");
+abrirAba("home");
+salvarEstadoCompleto();  
+}
+
+const nomesMeses = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+
+// Alguns lançamentos antigos foram salvos antes de existir o campo
+// mes/ano interno — pra esses, tenta extrair mês/ano direto da data em
+// texto ("DD/MM/YYYY"), que sempre existe. Sem essa rede de segurança,
+// esses lançamentos ficam invisíveis pra qualquer filtro por mês.
+function obterMesAno(item){
+  if(item.mes && item.ano) return { mes: item.mes, ano: item.ano };
+  if(item.data){
+    let partes = item.data.split("/");
+    if(partes.length === 3){
+      let mes = parseInt(partes[1]);
+      let ano = parseInt(partes[2]);
+      if(!isNaN(mes) && !isNaN(ano)){
+        return { mes: mes, ano: ano };
+      }
+    }
+  }
+  return null;
+}
+
+// Um item "passa" no filtro de mês só se bater mês E ano (evita misturar
+// setembro de anos diferentes). mesAnoSelecionado vem no formato "ano-mes".
+function itemPassaFiltroMes(item, mesAnoSelecionado){
+  if(mesAnoSelecionado === "todos") return true;
+  const partes = mesAnoSelecionado.split("-");
+  const anoSel = parseInt(partes[0]);
+  const mesSel = parseInt(partes[1]);
+  const ma = obterMesAno(item);
+  if(!ma) return false;
+  return ma.mes == mesSel && ma.ano == anoSel;
+}
+
+ function gerarRelatorio(){
+
+  let html = "";
+  let mesAnoSelecionado = document.getElementById("filtroMes").value;
+  let categoriaSelecionada = document.getElementById("filtroCategoria").value;
+
+  // 🔥 O filtro de categoria agora tem 3 modos:
+  // "todas"    -> mostra entradas E saídas de todas as categorias, normal
+  // "Entradas" -> mostra SÓ entradas, nada de saída/categoria de gasto junto
+  // qualquer outro valor -> é uma categoria de gasto específica (Essencial,
+  //                         Fixos, Lazer, Esporádicos...): mostra SÓ aquela
+  //                         categoria, sem entradas junto
+  let mostrarEntradas = (categoriaSelecionada === "todas" || categoriaSelecionada === "Entradas");
+  let mostrarSaidas = (categoriaSelecionada === "todas" || categoriaSelecionada !== "Entradas");
+
+  // 🔥 BLOCO DÍVIDA
+  if(dividaAtual > 0){
+    html += "<h3>Dívida Atual</h3>";
+    html += "💳 " + moedaUsuario + " " + dividaAtual.toFixed(2) + "<br><br>";
+  }
+
+  // 🔥 BLOCO PERFIL + META
+
+  let porcentagemMeta = 0;
+
+  if(metaMensal > 0){
+    porcentagemMeta = (valorGuardado / metaMensal) * 100;
+  }
+
+  if(porcentagemMeta > 100){
+    porcentagemMeta = 100;
+  }
+
+  html += "<h3>Perfil Financeiro</h3>";
+  html += "Perfil: " + userProfile + "<br>";
+  html += "Meta do Perfil: " + moedaUsuario + " " + metaMensal.toFixed(2) + "<br>";
+  html += "Guardado: " + moedaUsuario + " " + valorGuardado.toFixed(2) +
+          " (" + porcentagemMeta.toFixed(0) + "%)<br><br>";
+
+  // 🔥 Filtra entradas e saídas pelo período (mês+ano) E categoria selecionados.
+  // Esses dois arrays filtrados são a base de TODO o resto do relatório,
+  // pra não ter blocos que respeitam o filtro e blocos que ignoram.
+  let entradasFiltradas = !mostrarEntradas ? [] : historicoEntradas.filter(function(item){
+    return itemPassaFiltroMes(item, mesAnoSelecionado);
+  });
+
+  let saidasFiltradas = !mostrarSaidas ? [] : historicoSaidas.filter(function(item){
+    let passaMes = itemPassaFiltroMes(item, mesAnoSelecionado);
+    let passaCategoria = (categoriaSelecionada === "todas" || categoriaSelecionada === "Entradas" || item.categoria === categoriaSelecionada);
+    return passaMes && passaCategoria;
+  });
+
+  let totalEntradasFiltradas = entradasFiltradas.reduce((acc, item) => acc + item.valor, 0);
+  let totalSaidasFiltradas = saidasFiltradas.reduce((acc, item) => acc + item.valor, 0);
+
+  html += "<h3>Resumo do Período</h3>";
+  html += "Saldo atual: " + moedaUsuario + " " + saldo.toFixed(2) + "<br>";
+  if(mostrarEntradas){
+    html += "Entradas no período: " + moedaUsuario + " " + totalEntradasFiltradas.toFixed(2) + "<br>";
+  }
+  if(mostrarSaidas){
+    html += "Saídas no período: " + moedaUsuario + " " + totalSaidasFiltradas.toFixed(2) + "<br>";
+  }
+  html += "Reserva: " + moedaUsuario + " " + valorGuardado.toFixed(2) + "<br><br>";
+
+  if(mostrarEntradas){
+
+    html += "<h3>Histórico de Entradas</h3>";
+
+    if(entradasFiltradas.length === 0){
+      html += "Nenhuma entrada encontrada neste período.<br>";
+    } else {
+
+      entradasFiltradas.forEach(function(item){
+
+        html += item.data + " " + item.hora + " — " +
+                "Cliente: " + item.cliente +
+                " — " + moedaUsuario + " " + item.valor.toFixed(2) + "<br>";
+
+      });
+
+    }
+
+    html += "<br>";
+  }
+
+  if(mostrarSaidas){
+
+    html += "<h3>Gastos por Categoria (no período)</h3>";
+
+    // 🔥 Agrupa as saídas filtradas por categoria > subcategoria.
+    // Isso é calculado em cima do histórico (que já tem mês/ano/categoria
+    // de cada lançamento), então funciona pra qualquer mês, passado ou atual —
+    // diferente do card de "Categorias" da Home, que só mostra o mês corrente.
+    let totalPorCategoria = {};
+
+    saidasFiltradas.forEach(function(item){
+      if(!totalPorCategoria[item.categoria]){
+        totalPorCategoria[item.categoria] = { total: 0, subcategorias: {} };
+      }
+      totalPorCategoria[item.categoria].total += item.valor;
+
+      let sub = item.subcategoria || "(sem subcategoria)";
+      if(!totalPorCategoria[item.categoria].subcategorias[sub]){
+        totalPorCategoria[item.categoria].subcategorias[sub] = 0;
+      }
+      totalPorCategoria[item.categoria].subcategorias[sub] += item.valor;
+    });
+
+    let nomesCategoriasComGasto = Object.keys(totalPorCategoria);
+
+    if(nomesCategoriasComGasto.length === 0){
+      html += "Nenhum gasto encontrado neste período.<br>";
+    } else {
+
+      nomesCategoriasComGasto.forEach(function(nomeCat){
+
+        let dadosCat = totalPorCategoria[nomeCat];
+        html += "<strong>" + nomeCat + "</strong>: " + moedaUsuario + " " + dadosCat.total.toFixed(2) + "<br>";
+
+        Object.keys(dadosCat.subcategorias).forEach(function(nomeSub){
+          html += "&nbsp;&nbsp;↳ " + nomeSub + ": " + moedaUsuario + " " +
+                  dadosCat.subcategorias[nomeSub].toFixed(2) + "<br>";
+        });
+
+      });
+
+    }
+
+    html += "<br><h3>Histórico de Saídas</h3>";
+
+    if(saidasFiltradas.length === 0){
+      html += "Nenhuma saída encontrada neste período.<br>";
+    } else {
+
+      saidasFiltradas.forEach(item => {
+
+        html += `
+          ${item.data} ${item.hora} —
+          ${item.categoria} > ${item.subcategoria}
+          — ${moedaUsuario} ${item.valor.toFixed(2)}<br>
+        `;
+
+      });
+
+    }
+
+  }
+
+  // 🔥 BLOCO "TOTAIS POR MÊS" — quanto foi cada mês, e o total geral
+  // de tudo desde o início. Não usa o filtro de mês (senão só apareceria
+  // um mês), mas RESPEITA o filtro de categoria/entradas selecionado,
+  // pra ficar consistente com o resto do relatório.
+  html += "<br><h3>📅 Totais por Mês</h3>";
+
+  let entradasParaTotais = mostrarEntradas ? historicoEntradas : [];
+  let saidasParaTotais = !mostrarSaidas ? [] : historicoSaidas.filter(function(item){
+    return categoriaSelecionada === "todas" || categoriaSelecionada === "Entradas" || item.categoria === categoriaSelecionada;
+  });
+
+  let totaisPorMes = {};
+
+  entradasParaTotais.forEach(function(item){
+    let ma = obterMesAno(item);
+    if(!ma) return;
+    let chave = ma.ano + "-" + ma.mes;
+    if(!totaisPorMes[chave]){
+      totaisPorMes[chave] = { mes: ma.mes, ano: ma.ano, entradas: 0, saidas: 0 };
+    }
+    totaisPorMes[chave].entradas += item.valor;
+  });
+
+  saidasParaTotais.forEach(function(item){
+    let ma = obterMesAno(item);
+    if(!ma) return;
+    let chave = ma.ano + "-" + ma.mes;
+    if(!totaisPorMes[chave]){
+      totaisPorMes[chave] = { mes: ma.mes, ano: ma.ano, entradas: 0, saidas: 0 };
+    }
+    totaisPorMes[chave].saidas += item.valor;
+  });
+
+  let chavesOrdenadas = Object.keys(totaisPorMes).sort(function(a, b){
+    let ma = totaisPorMes[a], mb = totaisPorMes[b];
+    if(ma.ano !== mb.ano) return mb.ano - ma.ano;
+    return mb.mes - ma.mes;
+  });
+
+  let totalGeralEntradas = 0;
+  let totalGeralSaidas = 0;
+
+  if(chavesOrdenadas.length === 0){
+    html += "Nenhum lançamento encontrado ainda.<br>";
+  } else {
+
+    chavesOrdenadas.forEach(function(chave){
+
+      let m = totaisPorMes[chave];
+      totalGeralEntradas += m.entradas;
+      totalGeralSaidas += m.saidas;
+
+      html += "<strong>" + nomesMeses[m.mes - 1] + "/" + m.ano + "</strong>: ";
+
+      let partes = [];
+      if(mostrarEntradas) partes.push("Entradas " + moedaUsuario + " " + m.entradas.toFixed(2));
+      if(mostrarSaidas) partes.push("Saídas " + moedaUsuario + " " + m.saidas.toFixed(2));
+
+      html += partes.join(" | ") + "<br>";
+
+    });
+  }
+
+  html += "<br><strong>Total geral (todos os meses até agora)</strong>: ";
+  let partesGeral = [];
+  if(mostrarEntradas) partesGeral.push("Entradas " + moedaUsuario + " " + totalGeralEntradas.toFixed(2));
+  if(mostrarSaidas) partesGeral.push("Saídas " + moedaUsuario + " " + totalGeralSaidas.toFixed(2));
+  html += partesGeral.join(" | ") + "<br>";
+
+  html += "<br><h3>Desafios</h3>";
+
+  desafios.forEach(desafio => {
+
+    let porcentagem = 0;
+
+    if(desafio.partes > 0){
+      porcentagem = (desafio.parcelasPagas / desafio.partes) * 100;
+    }
+
+    html += desafio.emoji + " " + desafio.nome +
+      " — " + porcentagem.toFixed(0) + "% concluído<br>";
+  });
+
+  document.getElementById("conteudoRelatorio").innerHTML = html;
+}
+  function preencherFiltrosRelatorio(){
+
+  const selectMes = document.getElementById("filtroMes");
+  const selectCategoria = document.getElementById("filtroCategoria");
+
+  selectMes.innerHTML = '<option value="todos">Todos os Meses</option>';
+  selectCategoria.innerHTML = '<option value="todas">Todas Categorias</option><option value="Entradas">💰 Entradas</option>';
+
+  // Meses (chave "ano-mes", pra não misturar o mesmo mês em anos diferentes)
+  let mesesMap = new Map();
+
+  historicoEntradas.forEach(e => {
+    let ma = obterMesAno(e);
+    if(ma) mesesMap.set(ma.ano + "-" + ma.mes, ma);
+  });
+  historicoSaidas.forEach(s => {
+    let ma = obterMesAno(s);
+    if(ma) mesesMap.set(ma.ano + "-" + ma.mes, ma);
+  });
+
+  // Ordena do mais recente pro mais antigo
+  let mesesOrdenados = Array.from(mesesMap.values()).sort(function(a, b){
+    if(a.ano !== b.ano) return b.ano - a.ano;
+    return b.mes - a.mes;
+  });
+
+  mesesOrdenados.forEach(m => {
+    let option = document.createElement("option");
+    option.value = m.ano + "-" + m.mes;
+    option.text = nomesMeses[m.mes - 1] + "/" + m.ano;
+    selectMes.appendChild(option);
+  });
+
+  // Categorias
+  // 🔥 Junta as categorias "oficiais" (Essencial, Fixos, Lazer, Esporádicos...)
+  // com qualquer nome de categoria que já apareça nos lançamentos salvos
+  // (ex: contas antigas gravadas como "Contas"), pra nada ficar escondido
+  // do filtro por não ser uma das categorias padrão.
+  let nomesCategoriasSet = new Set();
+
+  categorias.forEach(cat => nomesCategoriasSet.add(cat.nome));
+  historicoSaidas.forEach(item => {
+    if(item.categoria) nomesCategoriasSet.add(item.categoria);
+  });
+
+  Array.from(nomesCategoriasSet).sort().forEach(nomeCat => {
+    let option = document.createElement("option");
+    option.value = nomeCat;
+    option.text = nomeCat;
+    selectCategoria.appendChild(option);
+  });
+
+}
+
+ function editarPiso(index){
+
+  let novoValor = prompt("Digite o novo limite para esta categoria:");
+
+  if(novoValor === null) return;
+
+  novoValor = parseFloat(novoValor);
+
+  if(isNaN(novoValor) || novoValor <= 0){
+    alert("Valor inválido.");
+    return;
+  }
+
+  categorias[index].piso = novoValor;
+
+  atualizarTelaCategorias();
+  salvarEstadoCompleto();
+}
+ function gerarPDF() {
+
+  const relatorio = document.getElementById("conteudoRelatorio");
+
+  if (!relatorio) {
+    alert("Relatório não encontrado.");
+    return;
+  }
+
+  const janela = window.open('', '', 'width=800,height=900');
+
+  janela.document.write(`
+    <html>
+      <head>
+        <title>Relatório Financeiro</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            color: #000;
+          }
+
+          h1 {
+            text-align: center;
+            margin-bottom: 40px;
+          }
+
+          h3 {
+            margin-top: 30px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+          }
+
+          .bloco {
+            margin-bottom: 20px;
+          }
+
+          .btnVoltarPdf {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 10px 18px;
+            background: var(--cor-destaque);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            cursor: pointer;
+          }
+
+          @media print {
+            .btnVoltarPdf {
+              display: none !important;
+            }
+          }
+
+        </style>
+      </head>
+      <body>
+        <button class="btnVoltarPdf" onclick="window.close()">← Voltar</button>
+        <h1>Relatório Financeiro</h1>
+        ${relatorio.innerHTML}
+      </body>
+    </html>
+  `);
+
+  janela.document.close();
+  janela.print();
+}
+  function pegarEmprestimo(){
+
+  let valor = parseFloat(document.getElementById("valorEmprestimoInput").value);
+
+  if(isNaN(valor) || valor <= 0){
+    alert("Valor inválido.");
+    return;
+  }
+
+  if(valor > valorGuardado){
+    alert("Você não tem reserva suficiente.");
+    return;
+  }
+
+  // Sai da reserva
+  valorGuardado -= valor;
+  registrarMovimentoReserva(-valor);
+
+  // Entra no saldo
+  saldo += valor;
+
+  // Aumenta dívida
+  dividaAtual += valor;
+
+  // Atualiza interface principal
+  document.getElementById("saldoValor").innerText = moedaUsuario + " " + saldo.toFixed(2);
+  document.getElementById("reservaValor").innerText = moedaUsuario + " " + valorGuardado.toFixed(2);
+
+  // Atualiza texto da dívida
+  document.getElementById("dividaAtualTexto").innerText = dividaAtual.toFixed(2);
+  atualizarDividaHeader();
+  // Limpa campo
+  document.getElementById("valorEmprestimoInput").value = "";
+  console.log("diagnosticoHome foi chamada após empréstimo");
+   diagnosticoHome();
+   analisarSituacaoFinanceira(true);
+  salvarEstadoCompleto();
+}
+  function pagarEmprestimo(){
+
+  let valor = parseFloat(document.getElementById("valorPagamentoInput").value);
+
+  if(isNaN(valor) || valor <= 0){
+    alert("Valor inválido.");
+    return;
+  }
+
+  if(valor > saldo){
+    alert("Você não tem saldo suficiente.");
+    return;
+  }
+
+  if(valor > dividaAtual){
+    alert("O valor é maior que a dívida atual.");
+    return;
+  }
+
+  // Sai do saldo
+  saldo -= valor;
+
+  // Volta para reserva
+  valorGuardado += valor;
+  registrarMovimentoReserva(valor);
+
+  // Reduz dívida
+  dividaAtual -= valor;
+  adicionarNotificacao(
+    "alerta",
+    "Você reduziu sua dívida em " + moedaUsuario + " " + valor.toFixed(2) +
+    ". Continue fortalecendo sua estrutura."
+  );
+
+  // Atualiza interface principal
+  document.getElementById("saldoValor").innerText = moedaUsuario + " " + saldo.toFixed(2);
+  document.getElementById("reservaValor").innerText = moedaUsuario + " " + valorGuardado.toFixed(2);
+
+  // Atualiza texto da dívida
+  document.getElementById("dividaAtualTexto").innerText = dividaAtual.toFixed(2);
+  atualizarDividaHeader();
+  // Limpa campo
+  document.getElementById("valorPagamentoInput").value = "";
+  diagnosticoHome();
+  analisarSituacaoFinanceira(true);
+  salvarEstadoCompleto();
+}
+  function sacarDaReserva(){
+
+  let valor = parseFloat(document.getElementById("valorSaqueReservaInput").value);
+  let motivo = document.getElementById("motivoSaqueSelect").value;
+    if(isNaN(valor) || valor <= 0){
+    alert("Digite um valor válido.");
+    return;
+  }
+
+  if(valor > valorGuardado){
+    alert("Você não tem esse valor disponível na reserva.");
+    return;
+  }
+
+  let reservaAntes = valorGuardado;
+  let reservaDepois = reservaAntes - valor;
+
+  // 🔐 Piso 30%
+  let pisoMinimo = reservaAntes * 0.30;
+
+  // ⚠️ Verificação de proteção
+  if(reservaDepois < pisoMinimo){
+
+    let confirmar = confirm(
+      "Atenção.\n\n" +
+      "Se confirmar, sua reserva ficará em " +
+      moedaUsuario + " " + reservaDepois.toFixed(2) + ".\n\n" +
+      "O mínimo recomendado para sua proteção é " +
+      moedaUsuario + " " + pisoMinimo.toFixed(2) + ".\n\n" +
+      "Deseja continuar mesmo assim?"
+    );
+
+    if(!confirmar){
+      return;
+    }
+  }
+
+  // 💸 Executa saque
+  valorGuardado -= valor;
+  registrarMovimentoReserva(-valor);
+
+  // 🔄 Atualiza interface
+  document.getElementById("reservaValor").innerText =
+    moedaUsuario + " " + valorGuardado.toFixed(2);
+
+  // 📝 Registrar no histórico como movimentação patrimonial
+  let agora = new Date();
+
+  historicoSaidas.push({
+    data: agora.toLocaleDateString("pt-PT"),
+    hora: agora.toLocaleTimeString("pt-PT"),
+    categoria: "Reserva",
+    subcategoria: "Saque - " + motivo,
+    valor: valor,
+    mes: agora.getMonth() + 1,
+    ano: agora.getFullYear()
+  });
+
+  // 🔔 Mensagem da Evelyn
+  mostrarMensagemMentor(
+    "Você retirou " + moedaUsuario + " " + valor.toFixed(2) +
+    " da sua reserva. Sua proteção atual é " +
+    moedaUsuario + " " + valorGuardado.toFixed(2) + "."
+  );
+
+  document.getElementById("valorSaqueReservaInput").value = "";
+  salvarEstadoCompleto();
+}
+  function atualizarDividaHeader(){
+
+  console.log("Atualizando header. Dívida atual:", dividaAtual);
+
+  if(dividaAtual > 0){
+
+    document.getElementById("dividaHeader").style.display = "block";
+    document.getElementById("dividaHeader").innerText =
+       "💳 Dívida: " + moedaUsuario + " " + dividaAtual.toFixed(2);
+
+  } else {
+
+    document.getElementById("dividaHeader").style.display = "none";
+
+  }
+
+}
+  function alternarTipoAnexoConta(){
+  const selecionado = document.querySelector('input[name="tipoPagamentoConta"]:checked');
+  const areaUpload = document.getElementById("areaUploadConta");
+  const arquivoInput = document.getElementById("arquivoContaInput");
+  const nomeArquivo = document.getElementById("nomeArquivoConta");
+  const usarUpload = selecionado && selecionado.value === "upload";
+
+  if(areaUpload) areaUpload.style.display = usarUpload ? "block" : "none";
+
+  if(!usarUpload){
+    if(arquivoInput) arquivoInput.value = "";
+    if(nomeArquivo) nomeArquivo.innerText = "Nenhum arquivo selecionado.";
+  }
+}
+
+  function atualizarNomeArquivoConta(){
+  const input = document.getElementById("arquivoContaInput");
+  const texto = document.getElementById("nomeArquivoConta");
+  const arquivo = input && input.files ? input.files[0] : null;
+
+  if(!texto) return;
+
+  if(!arquivo){
+    texto.innerText = "Nenhum arquivo selecionado. Você pode salvar sem anexar.";
+    return;
+  }
+
+  const tamanhoMB = arquivo.size / (1024 * 1024);
+  texto.innerText = "Selecionado: " + arquivo.name + " (" + tamanhoMB.toFixed(1) + " MB)";
+}
+
+async function abrirAnexoConta(index){
+  const conta = contas[index];
+
+  if(!conta || !conta.anexo || (!conta.anexo.caminho && !conta.anexo.url)){
+    alert("Esta conta não possui arquivo anexado.");
+    return;
+  }
+
+  contaLeituraAtualIndex = index;
+
+  const modal = document.getElementById("modalLeitorConta");
+  const preview = document.getElementById("previewAnexoConta");
+  const campos = document.getElementById("camposPagamentoConta");
+  const status = document.getElementById("statusLeituraConta");
+  const tipo = (conta.anexo.tipo || "").toLowerCase();
+  const nome = (conta.anexo.nome || "").toLowerCase();
+  const ehPdf = tipo.includes("pdf") || nome.endsWith(".pdf");
+
+  preview.innerHTML = "";
+  campos.innerHTML = "";
+  status.innerText = "⏳ Abrindo arquivo protegido...";
+  modal.classList.remove("hidden");
+  modal.style.display = "block";
+
+  try{
+    urlAnexoContaAtual = conta.anexo.url || await window.obterUrlArquivoConta(conta.anexo.caminho);
+
+    if(ehPdf){
+      const frame = document.createElement("iframe");
+      frame.src = urlAnexoContaAtual;
+      frame.title = "Conta anexada";
+      frame.style.cssText = "width:100%;height:100%;border:none;background:white;";
+      preview.appendChild(frame);
+    } else {
+      const imagem = document.createElement("img");
+      imagem.src = urlAnexoContaAtual;
+      imagem.alt = "Conta anexada";
+      imagem.style.cssText = "width:100%;height:100%;object-fit:contain;";
+      preview.appendChild(imagem);
+    }
+
+    status.innerText = "Confira o documento original ou toque em identificar dados.";
+  } catch(error){
+    console.log("Erro ao abrir a conta:", error);
+    preview.innerHTML = "<p style='padding:20px;text-align:center;'>Não foi possível abrir este arquivo.</p>";
+    status.innerText = "Falha ao acessar o arquivo protegido. Entre novamente no aplicativo e tente de novo.";
+  }
+}
+
+function fecharLeitorConta(){
+  const modal = document.getElementById("modalLeitorConta");
+  const preview = document.getElementById("previewAnexoConta");
+  if(preview) preview.innerHTML = "";
+  if(modal){
+    modal.classList.add("hidden");
+    modal.style.display = "";
+  }
+  contaLeituraAtualIndex = null;
+  urlAnexoContaAtual = "";
+}
+
+function abrirArquivoOriginalConta(){
+  if(!urlAnexoContaAtual) return;
+
+  const novaAba = window.open(urlAnexoContaAtual, "_blank", "noopener,noreferrer");
+  if(!novaAba) window.location.href = urlAnexoContaAtual;
+}
+
+async function copiarCampoPagamento(valor, botao){
+  try{
+    await navigator.clipboard.writeText(valor);
+  } catch(error){
+    const campo = document.createElement("textarea");
+    campo.value = valor;
+    campo.style.position = "fixed";
+    campo.style.opacity = "0";
+    document.body.appendChild(campo);
+    campo.select();
+    document.execCommand("copy");
+    campo.remove();
+  }
+
+  const textoOriginal = botao.innerText;
+  botao.innerText = "✅ Copiado";
+  setTimeout(function(){ botao.innerText = textoOriginal; }, 1600);
+}
+
+function adicionarCampoReconhecido(lista, rotulo, valor){
+  if(!valor) return;
+  const limpo = String(valor).replace(/\s+/g, " ").trim();
+  if(!limpo) return;
+  if(lista.some(function(item){ return item.rotulo === rotulo && item.valor === limpo; })) return;
+  lista.push({ rotulo: rotulo, valor: limpo });
+}
+
+function extrairDadosPagamento(texto, qrCodes){
+  const campos = [];
+  const textoLimpo = texto.replace(/\r/g, "");
+  let resultado;
+
+  qrCodes.forEach(function(codigo){
+    const ehPix = codigo.includes("BR.GOV.BCB.PIX") || codigo.startsWith("000201");
+    adicionarCampoReconhecido(campos, ehPix ? "Pix Copia e Cola" : "Conteúdo do QR Code", codigo);
+  });
+
+  resultado = textoLimpo.match(/entidade\s*[:\-]?\s*(\d{5})/i);
+  if(resultado) adicionarCampoReconhecido(campos, "Entidade", resultado[1]);
+
+  resultado = textoLimpo.match(/refer[eê]ncia(?:\s+multibanco|\s+mb)?\s*[:\-]?\s*([\d .]{9,20})/i);
+  if(resultado) adicionarCampoReconhecido(campos, "Referência", resultado[1].replace(/\D/g, ""));
+
+  resultado = textoLimpo.match(/\bPT50(?:[\s.-]*\d){21}\b/i);
+  if(resultado) adicionarCampoReconhecido(campos, "IBAN", resultado[0].replace(/[\s.-]/g, "").toUpperCase());
+
+  resultado = textoLimpo.match(/(?:chave\s+pix|pix\s+chave)\s*[:\-]?\s*([^\n]{5,100})/i);
+  if(resultado) adicionarCampoReconhecido(campos, "Chave Pix", resultado[1]);
+
+  const candidatosBoleto = textoLimpo.match(/[\d.\s-]{44,70}/g) || [];
+  candidatosBoleto.forEach(function(candidato){
+    const digitos = candidato.replace(/\D/g, "");
+    if(digitos.length === 44 || digitos.length === 47 || digitos.length === 48){
+      adicionarCampoReconhecido(campos, "Código do boleto", digitos);
+    }
+  });
+
+  resultado = textoLimpo.match(/(?:valor(?:\s+a\s+pagar)?|total)\s*[:\-]?\s*(?:(R\$|€|EUR)\s*)?([\d.]+[,]\d{2})/i);
+  if(resultado){
+    const moeda = resultado[1] ? resultado[1].toUpperCase().replace("EUR", "€") + " " : "";
+    adicionarCampoReconhecido(campos, "Valor", moeda + resultado[2]);
+  }
+
+  resultado = textoLimpo.match(/(?:vencimento|data\s+de\s+vencimento|vence\s+em)\s*[:\-]?\s*(\d{2}[\/.-]\d{2}[\/.-]\d{2,4})/i);
+  if(resultado) adicionarCampoReconhecido(campos, "Vencimento", resultado[1]);
+
+  return campos;
+}
+
+function mostrarCamposPagamento(campos){
+  const container = document.getElementById("camposPagamentoConta");
+  container.innerHTML = "";
+
+  if(campos.length === 0){
+    container.innerHTML =
+      "<div style='background:rgba(244,180,0,0.18);padding:13px;border-radius:9px;'>" +
+      "Não consegui identificar campos com segurança. Abra o arquivo original e confira os dados.</div>";
+    return;
+  }
+
+  const aviso = document.createElement("p");
+  aviso.innerText = "Confira cada número na conta original antes de pagar.";
+  aviso.style.cssText = "font-size:13px;color:#ffd166;margin:4px 0 10px;";
+  container.appendChild(aviso);
+
+  campos.forEach(function(campo){
+    const card = document.createElement("div");
+    card.style.cssText = "background:rgba(255,255,255,0.1);padding:12px;border-radius:9px;margin-bottom:9px;";
+
+    const titulo = document.createElement("strong");
+    titulo.innerText = campo.rotulo;
+
+    const valor = document.createElement("div");
+    valor.innerText = campo.valor;
+    valor.style.cssText = "font-size:15px;word-break:break-all;margin:7px 0;user-select:text;";
+
+    const botao = document.createElement("button");
+    botao.innerText = "📋 Copiar";
+    botao.style.cssText = "background:var(--cor-destaque);border:none;padding:7px 11px;border-radius:6px;color:white;cursor:pointer;";
+    botao.onclick = function(){ copiarCampoPagamento(campo.valor, botao); };
+
+    card.appendChild(titulo);
+    card.appendChild(valor);
+    card.appendChild(botao);
+    container.appendChild(card);
+  });
+}
+
+function carregarImagemNoCanvas(url){
+  return new Promise(function(resolve, reject){
+    const imagem = new Image();
+    imagem.crossOrigin = "anonymous";
+    imagem.onload = function(){
+      const canvas = document.createElement("canvas");
+      const limite = 1800;
+      const escala = Math.min(1, limite / Math.max(imagem.naturalWidth, imagem.naturalHeight));
+      canvas.width = Math.max(1, Math.round(imagem.naturalWidth * escala));
+      canvas.height = Math.max(1, Math.round(imagem.naturalHeight * escala));
+      canvas.getContext("2d").drawImage(imagem, 0, 0, canvas.width, canvas.height);
+      resolve(canvas);
+    };
+    imagem.onerror = reject;
+    imagem.src = url;
+  });
+}
+
+function lerQrDoCanvas(canvas){
+  if(typeof jsQR !== "function") return null;
+  const contexto = canvas.getContext("2d");
+  const imagem = contexto.getImageData(0, 0, canvas.width, canvas.height);
+  const resultado = jsQR(imagem.data, imagem.width, imagem.height, { inversionAttempts: "attemptBoth" });
+  return resultado && resultado.data ? resultado.data : null;
+}
+
+async function prepararPaginasDaConta(conta, urlArquivo){
+  const tipo = (conta.anexo.tipo || "").toLowerCase();
+  const nome = (conta.anexo.nome || "").toLowerCase();
+  const ehPdf = tipo.includes("pdf") || nome.endsWith(".pdf");
+
+  if(!ehPdf) return [await carregarImagemNoCanvas(urlArquivo)];
+
+  if(typeof pdfjsLib === "undefined") throw new Error("Leitor de PDF indisponível.");
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+  const pdf = await pdfjsLib.getDocument(urlArquivo).promise;
+  const paginas = [];
+  const total = Math.min(pdf.numPages, 3);
+
+  for(let numero = 1; numero <= total; numero++){
+    const pagina = await pdf.getPage(numero);
+    const viewportBase = pagina.getViewport({ scale: 1 });
+    const escala = Math.min(2, 1800 / Math.max(viewportBase.width, viewportBase.height));
+    const viewport = pagina.getViewport({ scale: escala });
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(viewport.width);
+    canvas.height = Math.round(viewport.height);
+    await pagina.render({ canvasContext: canvas.getContext("2d"), viewport: viewport }).promise;
+    paginas.push(canvas);
+  }
+
+  return paginas;
+}
+
+async function lerDadosDaConta(){
+  const conta = contas[contaLeituraAtualIndex];
+  if(!conta || !conta.anexo || (!conta.anexo.caminho && !conta.anexo.url)) return;
+  if(!urlAnexoContaAtual){
+    alert("Aguarde o arquivo terminar de abrir.");
+    return;
+  }
+
+  const botao = document.getElementById("botaoLerConta");
+  const status = document.getElementById("statusLeituraConta");
+  const camposContainer = document.getElementById("camposPagamentoConta");
+
+  botao.disabled = true;
+  botao.innerText = "⏳ Lendo a conta...";
+  status.innerText = "Procurando QR Code, Pix, Multibanco, boleto, valor e vencimento.";
+  camposContainer.innerHTML = "";
+
+  try{
+    const paginas = await prepararPaginasDaConta(conta, urlAnexoContaAtual);
+    const qrCodes = [];
+    let textoCompleto = "";
+
+    for(let i = 0; i < paginas.length; i++){
+      status.innerText = "Analisando página " + (i + 1) + " de " + paginas.length + "...";
+
+      const qr = lerQrDoCanvas(paginas[i]);
+      if(qr && !qrCodes.includes(qr)) qrCodes.push(qr);
+
+      if(typeof Tesseract === "undefined") throw new Error("Leitor de texto indisponível.");
+      const resultadoOcr = await Tesseract.recognize(paginas[i], "por");
+      textoCompleto += "\n" + (resultadoOcr.data.text || "");
+    }
+
+    const campos = extrairDadosPagamento(textoCompleto, qrCodes);
+    mostrarCamposPagamento(campos);
+    status.innerText = campos.length
+      ? "Dados encontrados. Use os botões Copiar abaixo."
+      : "Leitura concluída, mas nenhum campo foi reconhecido com segurança.";
+  } catch(error){
+    console.log("Erro ao ler a conta:", error);
+    status.innerText = "Não foi possível fazer a leitura automática deste arquivo.";
+    mostrarCamposPagamento([]);
+  } finally {
+    botao.disabled = false;
+    botao.innerText = "🔎 Identificar dados para pagamento";
+  }
+}
+
+  function atualizarListaContas(){
+
+  const container = document.getElementById("listaContas");
+  container.innerHTML = "";
+
+  if(contas.length === 0){
+    container.innerHTML = "Nenhuma conta cadastrada.";
+    return;
+  }
+
+  // 🔥 Ordena por data de vencimento (mais próxima primeiro), sem perder
+  // o índice original — os botões "Pagar"/"Excluir" precisam continuar
+  // apontando pra posição certa dentro do array `contas` de verdade.
+  let indicesOrdenados = contas.map((c, i) => i);
+
+  indicesOrdenados.sort(function(a, b){
+    return new Date(contas[a].vencimento) - new Date(contas[b].vencimento);
+  });
+
+  indicesOrdenados.forEach((index) => {
+
+    const conta = contas[index];
+    const div = document.createElement("div");
+
+    div.style.background = "rgba(255,255,255,0.08)";
+    div.style.padding = "15px";
+    div.style.borderRadius = "10px";
+    div.style.marginBottom = "15px";
+
+    
+  const hoje = new Date();
+const vencimento = new Date(conta.vencimento);
+
+const diffTime = vencimento - hoje;
+const diffDias = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+let statusTexto = "";
+let corStatus = "var(--cor-destaque)";
+
+if(diffDias < 0){
+  statusTexto = "🔴 Conta vencida";
+  corStatus = "#ff4d4d";
+}
+else if(diffDias <= 3){
+  statusTexto = "🟡 Vence em " + diffDias + " dias";
+  corStatus = "#f4b400";
+}
+else{
+  statusTexto = "🟢 Dentro do prazo";
+}
+
+div.innerHTML =
+ "<strong>" + conta.nome +
+(conta.totalParcelas > 1 ? " (" + conta.parcelaAtual + "/" + conta.totalParcelas + ")" : "") +
+"</strong><br>" +
+  "Valor: " + moedaUsuario + " " + conta.valor.toFixed(2) + "<br>" +
+  "Vencimento: " + conta.vencimento + "<br>" +
+  "<span style='color:" + corStatus + "; font-weight:600;'>" +
+  statusTexto +
+  "</span>" +
+  (conta.tipoPagamento === "debito_automatico"
+    ? "<br><span style='display:inline-block;margin-top:8px;color:#7dd3fc;font-weight:600;'>🔄 Débito automático</span>"
+    : conta.tipoPagamento === "manual"
+      ? "<br><span style='display:inline-block;margin-top:8px;color:#e5e7eb;font-weight:600;'>👆 Pagamento manual</span>"
+      : "") +
+  "<br><br>" +
+  (conta.anexo && (conta.anexo.caminho || conta.anexo.url)
+    ? "<button onclick='abrirAnexoConta(" + index + ")' " +
+      "style='background:#229ED9;border:none;padding:6px 10px;border-radius:6px;color:white;'>" +
+      "📎 Visualizar conta</button><br><br>"
+    : "") +
+  "<button onclick='pagarConta(" + index + ")' " +
+"style='background:var(--cor-destaque);border:none;padding:6px 10px;border-radius:6px;color:white;'>" +
+"✓ Marcar como Paga</button>" +
+"<br><br>" +
+"<button onclick='excluirConta(" + index + ")' " +
+"style='background:#ff4d4f;border:none;padding:6px 10px;border-radius:6px;color:white;'>" +
+"🗑 Excluir</button>";
+  container.appendChild(div);
+
+  });
+
+}
+
+  function atualizarResumoContas(){
+
+  const header = document.getElementById("contasResumo");
+
+  if(!header) return;
+
+  if(contas.length === 0){
+    header.innerHTML = "🧾 Contas: 🟢 Nenhuma pendente";
+    return;
+  }
+
+  let vencidas = 0;
+  let vencendo = 0;
+
+  const hoje = new Date();
+
+  contas.forEach(conta => {
+
+    if(conta.paga) return;
+
+    const vencimento = new Date(conta.vencimento);
+    const diffTime = vencimento - hoje;
+    const diffDias = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if(diffDias < 0){
+      vencidas++;
+    }
+    else if(diffDias <= 3){
+      vencendo++;
+    }
+
+  });
+
+  if(vencidas > 0){
+    header.innerHTML = "🧾 Contas: 🔴 " + vencidas + " vencida(s)";
+  }
+  else if(vencendo > 0){
+    header.innerHTML = "🧾 Contas: 🟡 " + vencendo + " vencendo";
+  }
+  else{
+    header.innerHTML = "🧾 Contas: 🟢 Nenhuma pendente";
+  }
+
+}
+async function salvarNovaConta(){
+
+  console.log("Repetir meses:", document.getElementById("repetirMeses").value);
+
+  const nome = document.getElementById("nomeContaInput").value;
+  const valor = parseFloat(document.getElementById("valorContaInput").value);
+  const vencimento = document.getElementById("vencimentoContaInput").value;
+  const repetirMeses = parseInt(document.getElementById("repetirMeses").value) || 1;
+  const indexCategoria = document.getElementById("selectCategoriaConta").value;
+  const indexSub = document.getElementById("selectSubcategoriaConta").value;
+
+  if(!nome || isNaN(valor) || !vencimento){
+    alert("Preencha todos os campos corretamente.");
+    return;
+  }
+
+  if(indexCategoria === "" || indexSub === "" || !categorias[indexCategoria]){
+    alert("Selecione a categoria da conta.");
+    return;
+  }
+
+  const nomeCategoria = categorias[indexCategoria].nome;
+  const nomeSubcategoria = categorias[indexCategoria].subcategorias[indexSub].nome;
+  const tipoSelecionado = document.querySelector('input[name="tipoPagamentoConta"]:checked');
+  const tipoPagamento = tipoSelecionado ? tipoSelecionado.value : "manual";
+  const arquivoInput = document.getElementById("arquivoContaInput");
+  const arquivo = arquivoInput && arquivoInput.files ? arquivoInput.files[0] : null;
+  const botaoSalvar = document.getElementById("botaoSalvarConta");
+  let anexo = null;
+
+  if(tipoPagamento === "upload" && !arquivo){
+    alert("Escolha a foto ou o PDF da conta antes de salvar.");
+    return;
+  }
+
+  if(arquivo){
+    if(arquivo.size > 10 * 1024 * 1024){
+      alert("O arquivo é muito grande. Escolha uma foto ou PDF de até 10 MB.");
+      return;
+    }
+
+    try{
+      if(botaoSalvar){
+        botaoSalvar.disabled = true;
+        botaoSalvar.innerText = "⏳ Enviando conta...";
+      }
+      anexo = await window.uploadArquivoConta(arquivo);
+    } catch(error){
+      console.log("Erro ao enviar a conta:", error);
+      const detalheErro =
+        (error && (error.message || error.error || error.code || error.statusCode))
+          ? String(error.message || error.error || error.code || error.statusCode)
+          : "Erro desconhecido";
+      alert(
+        "Não foi possível enviar o arquivo. A conta ainda não foi salva.\n\n" +
+        "Motivo: " + detalheErro
+      );
+      return;
+    } finally {
+      if(botaoSalvar){
+        botaoSalvar.disabled = false;
+        botaoSalvar.innerText = "Salvar Conta";
+      }
+    }
+  }
+
+  for(let i = 0; i < repetirMeses; i++){
+
+    const dataBase = new Date(vencimento);
+    dataBase.setMonth(dataBase.getMonth() + i);
+
+   contas.push({
+    nome: nome,
+    valor: valor,
+    vencimento: dataBase.toISOString().split("T")[0],
+    paga: false,
+    categoria: nomeCategoria,
+    subcategoria: nomeSubcategoria,
+    tipoPagamento: tipoPagamento,
+    anexo: anexo,
+    alertas: {
+    d3: false,
+    d2: false,
+    d1: false,
+    hoje: false,
+    vencida: false
+  }
+  });
+
+  }
+
+  if(arquivoInput) arquivoInput.value = "";
+  const nomeArquivo = document.getElementById("nomeArquivoConta");
+  if(nomeArquivo) nomeArquivo.innerText = "Nenhum arquivo selecionado.";
+
+  alert("Conta(s) adicionada(s) com sucesso!");
+
+  atualizarListaContas();
+  atualizarResumoContas();
+
+  fecharTela("telaNovaConta");
+  salvarEstadoCompleto();
+}
+ function pagarConta(index){
+console.log("clicou pagarConta");
+
+  verificarResetMensalCategorias();
+
+  const conta = contas[index];
+
+  if(conta.valor > saldo){
+    alert("Saldo insuficiente para pagar esta conta.");
+    return;
+  }
+
+  // 💸 Baixa do saldo
+  saldo -= conta.valor;
+  saidasTotal += conta.valor;
+  // 🔥 SISTEMA 10%
+if(sistema10Ativo){
+  pendenteSaidas += conta.valor * 0.10;
+  atualizarSistema10Visual();
+}
+
+  document.getElementById("saldoValor").innerText =
+    moedaUsuario + " " + saldo.toFixed(2);
+
+  // 🔥 Dá baixa na categoria/subcategoria certa, pra contar no relatório
+  const nomeCategoriaConta = conta.categoria || "Contas";
+  const nomeSubcategoriaConta = conta.subcategoria || conta.nome;
+
+  let categoriaConta = categorias.find(c => c.nome === nomeCategoriaConta);
+  if(categoriaConta){
+    let subConta = categoriaConta.subcategorias.find(s => s.nome === nomeSubcategoriaConta);
+    if(subConta){
+      subConta.total += conta.valor;
+    }
+  }
+
+  // 📊 Registra no histórico
+  let agora = new Date();
+
+  historicoSaidas.push({
+    data: agora.toLocaleDateString("pt-PT"),
+    hora: agora.toLocaleTimeString("pt-PT"),
+    categoria: nomeCategoriaConta,
+    subcategoria: nomeSubcategoriaConta,
+    valor: conta.valor,
+    mes: agora.getMonth() + 1,
+    ano: agora.getFullYear()
+  });
+
+  atualizarTelaCategorias();
+  atualizarCardsHome();
+  diagnosticoHome();
+  analisarSituacaoFinanceira(true);
+
+  // 🔁 Se for conta recorrente, cria próxima automaticamente
+  if(conta.recorrente){
+
+    const novaData = new Date(conta.vencimento);
+    novaData.setMonth(novaData.getMonth() + 1);
+
+    contas.push({
+      nome: conta.nome,
+      valor: conta.valor,
+      vencimento: novaData.toISOString().split("T")[0],
+      paga: false,
+      recorrente: true
+    });
+
+  }
+
+  // 🗑 Remove a conta atual (paga)
+  const anexoRemovido = conta.anexo || null;
+  contas.splice(index, 1);
+  excluirAnexoSeNaoUsado(anexoRemovido);
+
+  atualizarListaContas();
+  atualizarResumoContas();
+  salvarEstadoCompleto();
+}
+  function excluirAnexoSeNaoUsado(anexo){
+  if(!anexo || anexo.provedor !== "supabase" || !anexo.caminho) return;
+
+  const aindaUsado = contas.some(function(item){
+    return item.anexo && item.anexo.caminho === anexo.caminho;
+  });
+
+  if(aindaUsado || typeof window.excluirArquivoConta !== "function") return;
+
+  window.excluirArquivoConta(anexo.caminho).catch(function(error){
+    console.log("Não foi possível apagar o anexo:", error);
+  });
+}
+
+  function excluirConta(index){
+  console.log("Excluir index:", index);
+
+  if(confirm("Tem certeza que deseja excluir esta conta?")){
+    const anexoRemovido = contas[index] ? contas[index].anexo : null;
+    contas.splice(index, 1);
+    excluirAnexoSeNaoUsado(anexoRemovido);
+    atualizarListaContas();
+    atualizarResumoContas();
+    salvarEstadoCompleto();
+  }
+}
+  function atualizarProgresso(){
+
+  // Atualiza texto da meta na Home — com base no que foi guardado SÓ
+  // neste mês, não o total vitalício da reserva (esse já aparece no
+  // card "Reserva" separado).
+  let guardadoMes = calcularGuardadoMesAtual();
+
+  document.getElementById("guardadoValor").innerText = guardadoMes.toFixed(2);
+  document.getElementById("metaValor").innerText = metaMensal.toFixed(2);
+  document.getElementById("moedaMeta").innerText = moedaUsuario + " ";
+  document.getElementById("moedaGuardado").innerText = moedaUsuario + " ";
+  let porcentagem = 0;
+
+  if(metaMensal > 0){
+    porcentagem = (guardadoMes / metaMensal) * 100;
+    if(porcentagem > 100){
+      porcentagem = 100;
+    }
+    if(porcentagem < 0){
+      porcentagem = 0;
+    }
+  }
+
+  document.getElementById("barraMeta").style.width = porcentagem + "%";
+}
+  function aplicarAjusteSaldo(){
+
+  let valor = parseFloat(document.getElementById("ajusteSaldoInput").value);
+
+  if(isNaN(valor) || valor === 0){
+    alert("Digite um valor válido.");
+    return;
+  }
+
+  // Verifica se vai deixar saldo negativo
+  if(saldo + valor < 0){
+    alert("O ajuste deixaria o saldo negativo.");
+    return;
+  }
+
+  // Aplica ajuste
+  saldo += valor;
+
+  // Atualiza card da Home
+  document.getElementById("saldoValor").innerText =
+    moedaUsuario + " " + saldo.toFixed(2);
+
+  // Limpa campo
+  document.getElementById("ajusteSaldoInput").value = "";
+
+  alert("Saldo ajustado com sucesso!");
+  salvarEstadoCompleto();
+}
+  function toggleSistema10(){
+
+  const check = document.getElementById("toggleSistema10");
+
+  sistema10Ativo = check.checked;
+
+  if(sistema10Ativo){
+    alert("Sistema 10% ativado.");
+  } else {
+    alert("Sistema 10% desativado.");
+    salvarEstadoCompleto();
+  }
+
+}
+
+  function atualizarSistema10Visual(){
+
+  const bloco = document.getElementById("blocoSistema10");
+
+  if(!bloco) return;
+
+  if(sistema10Ativo){
+
+    bloco.style.display = "block";
+
+    document.getElementById("pendenteEntradasTexto").innerText =
+      moedaUsuario + " " + pendenteEntradas.toFixed(2);
+
+    document.getElementById("pendenteSaidasTexto").innerText =
+      moedaUsuario + " " + pendenteSaidas.toFixed(2);
+
+    let total = pendenteEntradas + pendenteSaidas;
+
+    document.getElementById("pendenteTotalTexto").innerText =
+      moedaUsuario + " " + total.toFixed(2);
+
+  } else {
+
+    bloco.style.display = "none";
+
+  }
+
+}
+  function separarManual10(){
+
+  let valor = parseFloat(document.getElementById("valorSepararManualInput").value);
+
+  if(isNaN(valor) || valor <= 0){
+    alert("Digite um valor válido.");
+    return;
+  }
+
+  let totalPendente = pendenteEntradas + pendenteSaidas;
+
+  if(valor > totalPendente){
+    alert("Você está tentando separar mais do que o acumulado.");
+    return;
+  }
+
+  if(valor > saldo){
+    alert("Saldo insuficiente.");
+    return;
+  }
+
+  // 🔥 Move dinheiro do saldo para reserva
+  saldo -= valor;
+  valorGuardado += valor;
+
+  // 🔥 Desconta proporcionalmente dos pendentes
+  if(valor <= pendenteEntradas){
+    pendenteEntradas -= valor;
+  } else {
+    let restante = valor - pendenteEntradas;
+    pendenteEntradas = 0;
+    pendenteSaidas -= restante;
+  }
+
+  if(pendenteSaidas < 0){
+    pendenteSaidas = 0;
+  }
+
+  // 🔥 Atualiza interface
+  document.getElementById("saldoValor").innerText = moedaUsuario + " " + saldo.toFixed(2);
+  document.getElementById("reservaValor").innerText = moedaUsuario + " " + valorGuardado.toFixed(2);
+
+  atualizarSistema10Visual();
+  document.getElementById("valorSepararManualInput").value = "";
+  salvarEstadoCompleto();
+}
+  function atualizarTelaSistema10(){
+
+  document.getElementById("pendenteEntradasTexto").innerText =
+    moedaUsuario + " " + pendenteEntradas.toFixed(2);
+
+  document.getElementById("pendenteSaidasTexto").innerText =
+    moedaUsuario + " " + pendenteSaidas.toFixed(2);
+
+  document.getElementById("pendenteTotalTexto").innerText =
+    moedaUsuario + " " + (pendenteEntradas + pendenteSaidas).toFixed(2);
+
+}
+  function adicionarNotificacao(tipo, mensagem){
+
+  const agora = new Date();
+
+  notificacoes.unshift({
+    tipo: tipo,
+    mensagem: mensagem,
+    data: agora.toLocaleDateString("pt-PT"),
+    hora: agora.toLocaleTimeString("pt-PT"),
+    lida: false
+  });
+
+  notificacoesNaoLidas++;
+
+  mostrarNotificacaoTemporaria(tipo, mensagem);
+  falar(mensagem);
+  atualizarIconeNotificacao();
+}
+  function mostrarNotificacaoTemporaria(tipo, mensagem){
+
+  let cor = "var(--cor-destaque)"; // sucesso padrão
+
+  if(tipo === "alerta") cor = "#f4b400";
+  if(tipo === "erro") cor = "#ff4d4d";
+  if(tipo === "info") cor = "#3b82f6";
+
+  const div = document.createElement("div");
+
+  div.style.position = "absolute";
+  div.style.top = "30px";
+  div.style.left = "50%";
+  div.style.transform = "translateX(-50%)";
+  div.style.width = "90%";
+  div.style.background = cor;
+  div.style.padding = "15px 20px";
+  div.style.borderRadius = "10px";
+  div.style.boxShadow = "0 4px 20px rgba(0,0,0,0.3)";
+  div.style.zIndex = "999";
+  div.style.color = "white";
+  div.style.fontSize = "14px";
+  div.style.maxWidth = "80%";
+  div.style.textAlign = "center";
+  div.innerText = mensagem;
+
+  const app = document.querySelector(".app");
+  app.appendChild(div);
+  autoRemoverNotificacao(div, 4000);
+}
+  function atualizarIconeNotificacao(){
+
+  const badge = document.getElementById("badgeNotificacao");
+
+  if(!badge) return;
+
+  if(notificacoesNaoLidas > 0){
+    badge.style.display = "inline-block";
+    badge.innerText = notificacoesNaoLidas;
+  } else {
+    badge.style.display = "none";
+  }
+}
+function falar(texto){
+
+  // 🔇 Se estiver mutado, não fala
+  if(document.getElementById("mutarEvellyn")?.checked){
+    speechSynthesis.cancel();
+    return;
+  }
+
+  if(!('speechSynthesis' in window)) return;
+
+  const mensagem = new SpeechSynthesisUtterance(texto);
+
+  // 🔎 Procura voz pt-BR já carregada
+  const vozBR = vozesDisponiveis.find(v => v.lang === "pt-BR");
+
+  // Se não encontrar, não deixa cair para pt-PT
+  if(!vozBR){
+    console.log("Voz pt-BR ainda não carregada");
+    return;
+  }
+
+  mensagem.voice = vozBR;
+  mensagem.lang = "pt-BR";
+  mensagem.rate = 0.95;
+  mensagem.pitch = 1.05;
+  mensagem.volume = 1;
+
+  speechSynthesis.cancel();
+  speechSynthesis.speak(mensagem);
+}
+  function calcularEstadoMentor(){
+
+  if(entradasTotal === 0){
+    return "neutro";
+  }
+
+  let consumoPercent = (saidasTotal / entradasTotal) * 100;
+  let reservaPercent = metaMensal > 0 ? (valorGuardado / metaMensal) * 100 : 0;
+  let dividaPercent = rendaMensalBase > 0 ? (dividaAtual / rendaMensalBase) * 100 : 0;
+
+  // 🔴 RISCO
+  if(
+    consumoPercent >= 95 ||
+    saldoRealGlobal <= 0 ||
+    dividaPercent > 60
+  ){
+    return "risco";
+  }
+
+  // 🟣 INÍCIO
+  if(
+    entradasTotal > 0 &&
+    saidasTotal === 0 &&
+    valorGuardado === 0 &&
+    dividaAtual === 0
+  ){
+    return "inicio";
+  }
+
+  // 🟢 CRESCIMENTO
+  if(
+    reservaPercent >= 100 &&
+    consumoPercent < 70 &&
+    dividaAtual === 0
+  ){
+    return "crescimento";
+  }
+
+  // 🔵 CONSOLIDANDO
+  if(
+    reservaPercent >= 60 &&
+    consumoPercent < 80 &&
+    dividaAtual === 0
+  ){
+    return "consolidando";
+  }
+
+  // ⚪ NEUTRO
+  if(
+    saldo > 0 &&
+    dividaAtual === 0 &&
+    consumoPercent < 80
+  ){
+    return "neutro";
+  }
+
+  // 🟡 ATENÇÃO
+  return "atencao";
+}
+// 🔥 Variáveis que guardam o último cálculo financeiro do mês (feito em
+// diagnosticoHome), pra Evellyn poder montar um parecer com números reais
+// em vez de sortear frases genéricas.
+let mentorTotalEntradas = 0;
+let mentorTotalSaidas = 0;
+let mentorMaiorCategoria = null;
+let mentorMaiorValor = 0;
+let mentorSaldoReal = 0;
+let mentorContasVencendo = 0;
+let mentorTotalContasPendentes = 0;
+
+// 🔥 Monta um parecer financeiro com os números reais do mês, no tom de
+// uma assessora financeira: observação objetiva + leitura da situação +
+// recomendação prática. Nunca repete igual, porque os números mudam.
+function gerarParecerFinanceiro(estado){
+
+  let pctSaidasSobreEntradas = mentorTotalEntradas > 0
+    ? (mentorTotalSaidas / mentorTotalEntradas) * 100
+    : 0;
+
+  let pctMeta = metaMensal > 0 ? (calcularGuardadoMesAtual() / metaMensal) * 100 : 0;
+  if(pctMeta > 999) pctMeta = 999;
+
+  let partes = [];
+
+  if(estado === "inicio"){
+
+    partes.push("Entrada registrada. Seu saldo atual é " + moedaUsuario + " " + saldo.toFixed(2) + ".");
+    partes.push("Este é o ponto de partida da sua organização financeira.");
+    partes.push("Recomendo destinar uma parte desta entrada à reserva antes de novos gastos.");
+
+  }
+
+  else if(estado === "risco"){
+
+    partes.push("Sua margem real está negativa em " + moedaUsuario + " " + Math.abs(mentorSaldoReal).toFixed(2) + " neste mês.");
+
+    if(mentorMaiorCategoria && mentorTotalEntradas > 0){
+      let pctCategoria = (mentorMaiorValor / mentorTotalEntradas) * 100;
+      partes.push("O maior peso vem de " + mentorMaiorCategoria + ", que já representa " + pctCategoria.toFixed(0) + "% das suas entradas.");
+    }
+
+    if(dividaAtual > 0){
+      partes.push("Some a isso " + moedaUsuario + " " + dividaAtual.toFixed(2) + " em dívida ativa pesando na sua margem.");
+    }
+
+    partes.push("Recomendo suspender novas saídas até estabilizar o saldo.");
+
+  }
+
+  else if(estado === "atencao"){
+
+    partes.push("Sua margem real neste mês é de " + moedaUsuario + " " + mentorSaldoReal.toFixed(2) +
+      ", com suas saídas já consumindo " + pctSaidasSobreEntradas.toFixed(0) + "% das entradas.");
+
+    if(mentorContasVencendo > 0){
+      partes.push("Você tem " + mentorContasVencendo + " conta(s) vencendo nos próximos dias.");
+    }
+
+    if(dividaAtual > 0){
+      partes.push("A dívida ativa de " + moedaUsuario + " " + dividaAtual.toFixed(2) + " também está reduzindo sua margem.");
+    }
+
+    partes.push("Recomendo revisar despesas variáveis antes do fechamento do mês.");
+
+  }
+
+  else if(estado === "neutro"){
+
+    partes.push("Sua margem real está positiva em " + moedaUsuario + " " + mentorSaldoReal.toFixed(2) + " neste mês.");
+    partes.push("Suas saídas representam " + pctSaidasSobreEntradas.toFixed(0) + "% das entradas — dentro de um padrão saudável.");
+    partes.push("Bom momento para reforçar sua reserva ou avançar em algum desafio.");
+
+  }
+
+  else if(estado === "consolidando"){
+
+    partes.push("Sua reserva está em " + pctMeta.toFixed(0) + "% da meta mensal, sem dívidas ativas.");
+    partes.push("Esse padrão de acumulação consistente reduz sua exposição a imprevistos.");
+    partes.push("Mantenha o ritmo — é o que sustenta a evolução do seu perfil financeiro.");
+
+  }
+
+  else if(estado === "crescimento"){
+
+    partes.push("Sua reserva superou a meta mensal (" + pctMeta.toFixed(0) + "% cumprido) e você está sem dívidas ativas.");
+    partes.push("Esse é um perfil financeiro sólido, acima da média.");
+    partes.push("Considere direcionar o excedente para metas de médio prazo ou investimentos.");
+
+  }
+
+  else{
+    partes.push("Sua situação financeira está estável no momento.");
+  }
+
+  return partes.join(" ");
+}
+
+ function analisarSituacaoFinanceira(forcar = false){
+   
+  let novoEstado = estadoFinanceiroAtual;
+
+  // Se não for forçado e o estado não mudou, não fala
+  if(!forcar && novoEstado === estadoMentorAtual){
+    return;
+  }
+
+  let mensagem = gerarParecerFinanceiro(novoEstado);
+
+  estadoMentorAtual = novoEstado;
+
+  mostrarMensagemMentor(mensagem);
+}
+ function mostrarMensagemMentor(texto){
+
+  const banner = document.getElementById("mentorBanner");
+  if(!banner) return;
+
+  banner.innerHTML = `
+    <div style="font-weight:600; font-size:13px; margin-bottom:8px; opacity:0.8;">
+      🤖 EVELLYN // ANÁLISE FINANCEIRA
+    </div>
+    <div style="font-size:14px; line-height:1.5;">
+      ${texto}
+    </div>
+  `;
+
+  banner.style.display = "block";
+
+  // Voz — sempre em Português do Brasil, igual as outras falas da Evellyn
+  if ('speechSynthesis' in window && !document.getElementById("mutarEvellyn")?.checked) {
+    const fala = new SpeechSynthesisUtterance(texto);
+    const vozBR = vozesDisponiveis.find(v => v.lang === "pt-BR");
+    if(vozBR) fala.voice = vozBR;
+    fala.lang = 'pt-BR';
+    fala.rate = 0.95;
+    fala.pitch = 0.9; // mais robótico
+    speechSynthesis.cancel();
+    speechSynthesis.speak(fala);
+  }
+
+  // Enviar para notificações
+  adicionarNotificacao("analise", texto);
+
+  setTimeout(() => {
+    banner.style.display = "none";
+  }, 8000);
+}
+  function renderizarNotificacoes(){
+
+  const container = document.getElementById("listaNotificacoes");
+
+  if(!container) return;
+
+  container.innerHTML = "";
+
+  if(notificacoes.length === 0){
+    container.innerHTML = "Nenhuma notificação.";
+    return;
+  }
+
+  notificacoes.forEach((n, index) => {
+
+    const div = document.createElement("div");
+
+    div.style.background = "rgba(255,255,255,0.08)";
+    div.style.padding = "12px";
+    div.style.borderRadius = "8px";
+    div.style.marginBottom = "10px";
+
+   div.innerHTML =
+  "<div style='display:flex; justify-content:space-between; align-items:flex-start;'>" +
+
+    "<div style='flex:1;'>" +
+      "<strong>" + n.mensagem + "</strong><br>" +
+      "<span style='font-size:12px;opacity:0.6;'>" +
+        n.data + " " + n.hora +
+      "</span>" +
+    "</div>" +
+
+    "<button onclick='excluirNotificacao(" + index + ")' " +
+      "style='background:#ff4d4d;border:none;color:white;padding:4px 8px;border-radius:6px;cursor:pointer;margin-left:10px;'>" +
+      "✕" +
+    "</button>" +
+
+  "</div>";
+
+    container.appendChild(div);
+
+  });
+
+}
+  window.excluirNotificacao = function(index){
+  notificacoes.splice(index, 1);
+  renderizarNotificacoes();
+}
+  function autoRemoverNotificacao(elemento, tempo = 8000) {
+  setTimeout(() => {
+    elemento.classList.add("fade-out");
+
+    setTimeout(() => {
+      elemento.remove();
+    }, 500);
+
+  }, tempo);
+}
+function verificarEvolucaoPerfil(){
+
+  const ordemPerfis = [
+    "Crítico",
+    "Iniciante",
+    "Em Evolução",
+    "Intermediário",
+    "Estável"
+  ];
+
+  if(!userProfile) return;
+
+  const nivelAtualIndex = ordemPerfis.indexOf(userProfile);
+  if(nivelAtualIndex === -1) return;
+
+  const proximoNivel = nivelAtualIndex + 1;
+
+  if(proximoNivel >= ordemPerfis.length) return;
+
+  // 🔎 Verificações estruturais
+
+  let temDivida = dividaAtual > 0;
+  let saldoNegativo = saldo < 0;
+
+  // Verificar contas vencidas
+  let contasVencidas = false;
+  const hoje = new Date();
+
+  contas.forEach(conta => {
+    if(conta.paga) return;
+
+    const vencimento = new Date(conta.vencimento);
+    if(vencimento < hoje){
+      contasVencidas = true;
+    }
+  });
+
+  // Verificar se já guardou pelo menos 1 meta completa
+  let metaCumprida = metaMensal > 0 && calcularGuardadoMesAtual() >= metaMensal;
+
+  // ✅ Condição de evolução
+  if(
+    !temDivida &&
+    !saldoNegativo &&
+    !contasVencidas &&
+    metaCumprida
+  ){
+
+    const perfilAntigo = userProfile;
+
+    userProfile = ordemPerfis[proximoNivel];
+
+    const plano = planosPerfil[userProfile];
+    if(plano){
+      metaMensal = rendaMensalBase * plano.porcentagem;
+    }
+
+    document.getElementById("perfilTipo").innerText =
+      "Perfil: " + userProfile;
+
+    atualizarProgresso();
+
+    // 💛 Mensagem no tom amiga
+    let mensagemEvolucao =
+      "Olha você evoluindo 💛 Eu sabia que você ia chegar aqui. Agora você está no perfil " +
+      userProfile +
+      ". Continua assim, você está construindo algo forte.";
+
+    // 🔥 Só isso — não chamar notificação nem voz separadamente
+    mostrarMensagemMentor(mensagemEvolucao);
+
+    console.log("Evoluiu de", perfilAntigo, "para", userProfile);
+  }
+
+}
+  function verificarContasVencendo(){
+
+  const hoje = new Date();
+
+  contas.forEach(conta => {
+
+    if(conta.paga) return;
+
+    const vencimento = new Date(conta.vencimento);
+    const diffTime = vencimento - hoje;
+    const diffDias = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    // 🔵 3 dias
+    if(diffDias === 3 && !conta.alertas.d3){
+      adicionarNotificacao("info",
+        "📅 A conta " + conta.nome + " vence em 3 dias."
+      );
+      conta.alertas.d3 = true;
+    }
+
+    // 🟡 2 dias
+    if(diffDias === 2 && !conta.alertas.d2){
+      adicionarNotificacao("alerta",
+        "⚠️ A conta " + conta.nome + " vence em 2 dias."
+      );
+      conta.alertas.d2 = true;
+    }
+
+    // 🟠 1 dia
+    if(diffDias === 1 && !conta.alertas.d1){
+      adicionarNotificacao("alerta",
+        "⏳ A conta " + conta.nome + " vence amanhã."
+      );
+      conta.alertas.d1 = true;
+    }
+
+    // 🔴 Hoje
+    if(diffDias === 0 && !conta.alertas.hoje){
+      adicionarNotificacao("erro",
+        "🚨 A conta " + conta.nome + " vence hoje!"
+      );
+      conta.alertas.hoje = true;
+    }
+
+    // ☠️ Vencida
+    if(diffDias < 0 && !conta.alertas.vencida){
+      adicionarNotificacao("erro",
+        "❌ A conta " + conta.nome + " está vencida!"
+      );
+      conta.alertas.vencida = true;
+    }
+
+  });
+
+}
+  // 🔔 ATIVAR VERIFICAÇÃO AUTOMÁTICA
+setInterval(verificarContasVencendo, 60000);
+verificarContasVencendo();
+  document.addEventListener("DOMContentLoaded", function(){
+
+  const checkbox = document.getElementById("mutarEvellyn");
+
+  if(checkbox){
+    checkbox.addEventListener("change", function(){
+
+      if(this.checked){
+        speechSynthesis.cancel();   // para imediatamente qualquer fala
+      }
+
+    });
+  }
+
+});
+  // torna a foto clicável
+const foto = document.getElementById("fotoPerfil");
+const input = document.getElementById("inputFoto");
+
+foto.addEventListener("click", function(){
+  input.click();
+});
+
+input.addEventListener("change", function(event){
+  const arquivo = event.target.files[0];
+  if(!arquivo) return;
+
+  const leitor = new FileReader();
+
+  leitor.onload = function(e){
+
+    // 🔥 Redimensiona/comprime a imagem antes de salvar — uma foto de
+    // câmera direto pode passar de 1MB, que é o limite de um documento
+    // inteiro no Firestore. Reduzindo pra no máximo 200x200px em JPEG,
+    // fica bem pequena e ainda com qualidade boa pro tamanho exibido (40px).
+    const img = new Image();
+    img.onload = function(){
+
+      const tamanhoMax = 200;
+      let largura = img.width;
+      let altura = img.height;
+
+      if(largura > altura && largura > tamanhoMax){
+        altura = Math.round(altura * (tamanhoMax / largura));
+        largura = tamanhoMax;
+      } else if(altura > tamanhoMax){
+        largura = Math.round(largura * (tamanhoMax / altura));
+        altura = tamanhoMax;
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = largura;
+      canvas.height = altura;
+      canvas.getContext("2d").drawImage(img, 0, 0, largura, altura);
+
+      const dataUrlComprimido = canvas.toDataURL("image/jpeg", 0.7);
+
+      foto.src = dataUrlComprimido;
+      fotoPerfilAtual = dataUrlComprimido;
+
+      if(auth.currentUser){
+        localStorage.setItem("fotoPerfilSalva_" + auth.currentUser.uid, dataUrlComprimido);
+      }
+
+      salvarEstadoCompleto();
+    };
+    img.src = e.target.result;
+  };
+
+  leitor.readAsDataURL(arquivo);
+});
+
+  const nomeEl = document.getElementById("nomeUsuario");
+const inputNome = document.getElementById("inputNome");
+
+// clicar no nome vira input
+nomeEl.addEventListener("click", function(){
+  inputNome.value = nomeEl.textContent;
+  nomeEl.style.display = "none";
+  inputNome.style.display = "inline-block";
+  inputNome.focus();
+});
+
+// ao sair do input salva
+inputNome.addEventListener("blur", function(){
+  const novoNome = inputNome.value.trim();
+  if(novoNome !== ""){
+    nomeEl.textContent = novoNome;
+    nomeUsuarioAtual = novoNome;
+    // 🔥 Salva o nome amarrado ao UID da conta logada (cache local) e
+    // no Firestore (fonte de verdade de verdade)
+    if(auth.currentUser){
+      localStorage.setItem("nomeUsuarioSalvo_" + auth.currentUser.uid, novoNome);
+    }
+    salvarEstadoCompleto();
+  }
+  inputNome.style.display = "none";
+  nomeEl.style.display = "block";
+});
+
+// 🔥 Carrega foto/nome — primeiro tenta o cache local (rápido, evita tela
+// em branco), o valor real do Firestore é aplicado depois em
+// onAuthStateChanged assim que o documento carrega.
+function carregarPerfilLocalDoNavegador(uid){
+
+  const fotoSalva = localStorage.getItem("fotoPerfilSalva_" + uid);
+  foto.src = fotoSalva || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Ccircle cx='30' cy='30' r='30' fill='%23cbd5e1'/%3E%3C/svg%3E";
+  fotoPerfilAtual = fotoSalva || "";
+
+  const nomeSalvo = localStorage.getItem("nomeUsuarioSalvo_" + uid);
+  nomeEl.textContent = nomeSalvo || "Nome do Usuário";
+  nomeUsuarioAtual = nomeSalvo || "";
+}
+
+  const frasesDiagnostico = {
+
+  critico: [
+    "Sua estrutura está comprometida.",
+    "Seu caixa entrou em zona de risco.",
+    "O saldo disponível não cobre seus compromissos."
+  ],
+
+  pressaoMeta: [
+    "Sua margem está totalmente direcionada para bater a meta.",
+    "Neste momento, qualquer gasto extra compromete seu objetivo mensal.",
+    "Seu foco precisa estar na meta antes de novos consumos."
+  ],
+
+  saudavel: [
+    "Sua estrutura financeira está equilibrada.",
+    "Você mantém margem segura neste momento.",
+    "Seu caixa está organizado e sob controle.",
+    "Há espaço para movimentação consciente."
+  ]
+
+};
+
+function diagnosticoHome(){
+
+  // 📅 Data atual (usada no sistema inteiro)
+  const hoje = new Date();
+  const mesAtual = hoje.getMonth();
+  const anoAtual = hoje.getFullYear();
+
+  // 1️⃣ Somar entradas do MÊS ATUAL (antes somava o histórico inteiro)
+  let totalEntradas = 0;
+
+  // 🔥 Calcular principal origem de receita (mês atual)
+  let mapaEntradas = {};
+  let principalOrigem = null;
+  let maiorEntrada = 0;
+
+  historicoEntradas.forEach(item => {
+
+    const ma = obterMesAno(item);
+    if(!ma) return;
+
+    if(ma.mes === (mesAtual + 1) && ma.ano === anoAtual){
+
+      totalEntradas += item.valor;
+
+      if(!mapaEntradas[item.cliente]){
+        mapaEntradas[item.cliente] = 0;
+      }
+
+      mapaEntradas[item.cliente] += item.valor;
+    }
+  });
+
+  for(let nome in mapaEntradas){
+    if(mapaEntradas[nome] > maiorEntrada){
+      maiorEntrada = mapaEntradas[nome];
+      principalOrigem = nome;
+    }
+  }
+
+  // 2️⃣ Somar saídas do MÊS ATUAL (antes somava o histórico inteiro)
+  let totalSaidas = 0;
+
+  // 3️⃣ Agrupar saídas por categoria, também só do mês atual
+  let mapaCategorias = {};
+
+  historicoSaidas.forEach(item => {
+
+    const ma = obterMesAno(item);
+    if(!ma || ma.mes !== (mesAtual + 1) || ma.ano !== anoAtual) return;
+
+    totalSaidas += item.valor;
+
+    if(!mapaCategorias[item.categoria]){
+      mapaCategorias[item.categoria] = 0;
+    }
+    mapaCategorias[item.categoria] += item.valor;
+  });
+
+  let maiorCategoria = null;
+  let maiorValor = 0;
+
+  for(let categoria in mapaCategorias){
+    if(mapaCategorias[categoria] > maiorValor){
+      maiorValor = mapaCategorias[categoria];
+      maiorCategoria = categoria;
+    }
+  }
+
+  // 4️⃣ Somar contas pendentes DO MÊS ATUAL
+  let totalContasPendentes = 0;
+  let contasVencendo = 0;
+
+  contas.forEach(conta => {
+
+    if(conta.paga) return;
+
+    const vencimento = new Date(conta.vencimento);
+
+    const mesConta = vencimento.getMonth();
+    const anoConta = vencimento.getFullYear();
+
+    if(mesConta === mesAtual && anoConta === anoAtual){
+
+      totalContasPendentes += conta.valor;
+
+      const diffTime = vencimento - hoje;
+      const diffDias = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if(diffDias <= 3 && diffDias >= 0){
+        contasVencendo++;
+      }
+    }
+  });
+
+  // 5️⃣ Saldo real do mês
+  let saldoReal = saldo - totalContasPendentes;
+  saldoRealGlobal = saldoReal;
+
+  // 🔥 Alimenta as variáveis que a Evellyn usa pra montar o parecer com
+  // números reais (ver gerarParecerFinanceiro)
+  mentorTotalEntradas = totalEntradas;
+  mentorTotalSaidas = totalSaidas;
+  mentorMaiorCategoria = maiorCategoria;
+  mentorMaiorValor = maiorValor;
+  mentorSaldoReal = saldoReal;
+  mentorContasVencendo = contasVencendo;
+  mentorTotalContasPendentes = totalContasPendentes;
+
+  let percentualMetaAtual = metaMensal > 0 ? (calcularGuardadoMesAtual() / metaMensal) * 100 : 0;
+
+  if (dividaAtual > 0 && saldoReal <= 0) {
+    estadoFinanceiroAtual = "risco";
+  }
+  else if (saldoReal <= 0) {
+    estadoFinanceiroAtual = "risco";
+  }
+  else if (dividaAtual > 0) {
+    estadoFinanceiroAtual = "atencao";
+  }
+  else if (saldoReal < totalEntradas * 0.3) {
+    estadoFinanceiroAtual = "atencao";
+  }
+  else if (percentualMetaAtual >= 100) {
+    estadoFinanceiroAtual = "crescimento";
+  }
+  else if (percentualMetaAtual >= 50) {
+    estadoFinanceiroAtual = "consolidando";
+  }
+  else {
+    estadoFinanceiroAtual = "neutro";
+  }
+
+  // 6️⃣ Analisar desafios
+  let totalFaltaDesafios = 0;
+
+  if(desafios && desafios.length > 0){
+    desafios.forEach(desafio => {
+      let total = desafio.valorParcela * desafio.partes;
+      let pago = desafio.valorParcela * desafio.parcelasPagas;
+      let falta = total - pago;
+      if(falta < 0) falta = 0;
+      totalFaltaDesafios += falta;
+    });
+  }
+
+  // 7️⃣ Montar mensagem
+  let mensagem = "";
+
+  mensagem += "💰 Entradas neste mês: " + moedaUsuario + " " + totalEntradas.toFixed(2) + "<br>";
+
+  if(principalOrigem){
+    mensagem += "🏆 Principal origem de receita neste mês: <strong>" 
+                + principalOrigem + "</strong> — "
+                + moedaUsuario + " " + maiorEntrada.toFixed(2) + "<br>";
+  }
+
+  mensagem += "📉 Saídas neste mês: " + moedaUsuario + " " + totalSaidas.toFixed(2) + "<br><br>";
+
+  if(maiorCategoria){
+    mensagem += "📊 Maior gasto do mês: <strong>" + maiorCategoria + "</strong> — "
+                + moedaUsuario + " " + maiorValor.toFixed(2) + "<br>";
+  }
+
+  if(totalContasPendentes > 0){
+    mensagem += "🧾 Contas a pagar neste mês: " + moedaUsuario + " " + totalContasPendentes.toFixed(2) + "<br>";
+  }
+
+  if(contasVencendo > 0){
+    mensagem += "⚠️ Você tem " + contasVencendo + " conta(s) vencendo nos próximos dias.<br>";
+  }
+
+  mensagem += "<br>📌 Saldo real disponível neste mês após compromissos: "
+              + moedaUsuario + " " + saldoReal.toFixed(2);
+
+  // 🧠 ORIENTAÇÃO INTELIGENTE
+  let orientacao = "";
+
+  if(saldoReal <= 0){
+    orientacao += "Sua estrutura está pressionada. ";
+  } else {
+    orientacao += "Sua estrutura mantém margem positiva. ";
+  }
+
+  if(maiorCategoria && maiorValor > totalEntradas * 0.4){
+    orientacao += "A categoria " + maiorCategoria + 
+    " está consumindo uma parte relevante da sua renda. ";
+  }
+
+  if(totalContasPendentes > saldoReal){
+    orientacao += "As contas do mês estão comprometendo sua segurança financeira. ";
+  }
+
+  let faltaMeta = metaMensal - valorGuardado;
+  if(faltaMeta < 0) faltaMeta = 0;
+
+  if(faltaMeta > saldoReal){
+    orientacao += "Sua meta mensal corre risco no ritmo atual. ";
+  }
+
+  if(totalFaltaDesafios > 0){
+    if(totalFaltaDesafios > saldoReal){
+      orientacao += "Se não houver ajuste, seus desafios podem atrasar. ";
+    } else {
+      orientacao += "Seus desafios estão viáveis dentro da sua estrutura atual. ";
+    }
+  }
+
+  orientacao += "<br><br><strong>Direcionamento:</strong><br>";
+
+  if(saldoReal <= 0){
+    orientacao += "Reduza despesas variáveis e vá até a aba 💰 Reserva para fortalecer sua base.";
+  }
+  else if(maiorCategoria && maiorValor > totalEntradas * 0.4){
+    orientacao += "Revise essa categoria ou ajuste seus limites para proteger seus 🎯 Desafios.";
+  }
+  else if(totalFaltaDesafios > 0){
+    orientacao += "Priorize seus 🎯 Desafios antes de ampliar gastos variáveis.";
+  }
+  else{
+    orientacao += "Sua estrutura está saudável. Considere reforçar sua 💰 Reserva ou acelerar seus 🎯 Desafios.";
+  }
+
+  mensagem += "<br><br><strong>🧠 Diagnóstico Estratégico:</strong><br>" + orientacao;
+
+  document.getElementById("conteudoDiagnostico").innerHTML = mensagem;
+}
+</script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function() {
+      navigator.serviceWorker.register("service-worker.js")
+        .then(function(registration) {
+          console.log("Service Worker registrado com sucesso:", registration.scope);
+        })
+        .catch(function(error) {
+          console.log("Erro ao registrar Service Worker:", error);
+        });
+    });
+  }
+</script>
+  <script type="module">
+
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  onAuthStateChanged,
+  setPersistence,
+  browserLocalPersistence,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  updateDoc,
+  getDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC1LKzVFQgGhn7D58wrf8PiimVKXAh_YlM",
+  authDomain: "meta-viva.firebaseapp.com",
+  projectId: "meta-viva",
+  storageBucket: "meta-viva.firebasestorage.app",
+  messagingSenderId: "1074879232126",
+  appId: "1:1074879232126:web:547c2c867e3a9e677b402f"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+await setPersistence(auth, browserLocalPersistence);
+const db = getFirestore(app);
+
+const supabaseStorageClient = window.supabase.createClient(
+  "https://gmvvubhgokrvlirjefra.supabase.co",
+  "sb_publishable_zIe4KAbKD-tift2NGcwyAw_GIa6OUM5",
+  {
+    accessToken: async function(){
+      return auth.currentUser ? await auth.currentUser.getIdToken(false) : null;
+    }
+  }
+);
+
+async function uploadArquivoConta(arquivo){
+  const user = auth.currentUser;
+  if(!user) throw new Error("Usuário não autenticado.");
+
+  const nomeSeguro = arquivo.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const caminho = user.uid + "/" + Date.now() + "_" + nomeSeguro;
+
+  const resultado = await supabaseStorageClient.storage
+    .from("contas")
+    .upload(caminho, arquivo, {
+      contentType: arquivo.type || "application/octet-stream",
+      upsert: false
+    });
+
+  if(resultado.error) throw resultado.error;
+
+  return {
+    provedor: "supabase",
+    nome: arquivo.name,
+    tipo: arquivo.type || "",
+    tamanho: arquivo.size,
+    caminho: resultado.data.path
+  };
+}
+
+async function obterUrlArquivoConta(caminho){
+  const resultado = await supabaseStorageClient.storage
+    .from("contas")
+    .createSignedUrl(caminho, 600);
+
+  if(resultado.error) throw resultado.error;
+  return resultado.data.signedUrl;
+}
+
+async function excluirArquivoConta(caminho){
+  const resultado = await supabaseStorageClient.storage
+    .from("contas")
+    .remove([caminho]);
+
+  if(resultado.error) throw resultado.error;
+}
+
+window.uploadArquivoConta = uploadArquivoConta;
+window.obterUrlArquivoConta = obterUrlArquivoConta;
+window.excluirArquivoConta = excluirArquivoConta;
+window.auth = auth;
+window.db = db;
+window.setDoc = setDoc;
+window.updateDoc = updateDoc;
+window.getDoc = getDoc;
+window.doc = doc;
+async function salvarEstadoCompleto(){
+
+  const user = auth.currentUser;
+  if(!user) return;
+
+  try{
+
+    await updateDoc(doc(db, "usuarios", user.uid), {
+
+      saldo: saldo,
+      reserva: valorGuardado,
+      rendaBase: rendaMensalBase,
+      moeda: moedaUsuario,
+      perfil: userProfile,
+      meta: metaMensal,
+
+      nome: nomeUsuarioAtual,
+      foto: fotoPerfilAtual,
+      tema: nomeTemaAtual,
+      fundoPersonalizado: fundoPersonalizadoAtual,
+
+      entradas: historicoEntradas,
+      saidas: historicoSaidas,
+      reservaHistorico: historicoReserva,
+      categorias: categorias,
+      contas: contas,
+      desafios: desafios,
+
+      sistema10: {
+        ativo: sistema10Ativo,
+        pendenteEntradas: pendenteEntradas,
+        pendenteSaidas: pendenteSaidas
+      },
+
+      divida: dividaAtual,
+
+      mesReferenciaCategorias: mesReferenciaCategorias,
+      anoReferenciaCategorias: anoReferenciaCategorias
+
+    });
+
+    console.log("🔥 Estado salvo no Firestore");
+
+  } catch(error){
+    console.log("Erro ao salvar:", error);
+  }
+}
+
+window.salvarEstadoCompleto = salvarEstadoCompleto;
+onAuthStateChanged(auth, async (user) => {
+
+  if (user) {
+
+    appInicializado = true;
+
+    // 🔥 Sempre que uma conta autentica, começa do zero na memória —
+    // evita que dados de uma conta anterior usada neste mesmo navegador
+    // vazem pra essa sessão (ex: sair de uma conta e entrar/criar outra
+    // sem recarregar a página).
+    resetarEstadoLocal();
+
+    carregarPerfilLocalDoNavegador(user.uid);
+    carregarTemaLocalDoNavegador(user.uid);
+
+    const userRef = doc(db, "usuarios", user.uid);
+    const snap = await getDoc(userRef);
+
+    if (!snap.exists()) {
+
+      // 🔥 Documento não existe → precisa configurar
+      document.getElementById("login").classList.add("hidden");
+      document.getElementById("home").classList.add("hidden");
+      document.getElementById("setupRenda").classList.remove("hidden");
+      return;
+    }
+
+    const dados = snap.data();
+
+    // 🔥 Documento existe mas ainda não tem renda/perfil
+    if (!dados.rendaBase || !dados.perfil) {
+
+      document.getElementById("login").classList.add("hidden");
+      document.getElementById("home").classList.add("hidden");
+      document.getElementById("setupRenda").classList.remove("hidden");
+      return;
+    }
+
+    // 🔥 Teste gratis de 24h - so vale pra quem criou conta A PARTIR desse
+    // corte (contas antigas, de antes da cobranca existir, nunca sao
+    // bloqueadas por aqui, pra ninguem que ja usa o Meta Viva ser
+    // prejudicado). Ajuste essa data pro dia real em que a assinatura
+    // entrar no ar, se nao for hoje.
+    const CORTE_INICIO_COBRANCA = new Date("2026-09-06T21:32:46Z");
+
+    const criadoEmBruto = dados.criadoEm;
+    const dataCriacao = criadoEmBruto && criadoEmBruto.toDate ? criadoEmBruto.toDate() : new Date(criadoEmBruto || Date.now());
+    const horasDesdeCriacao = (Date.now() - dataCriacao.getTime()) / (1000 * 60 * 60);
+    let assinaturaAtiva = dados.assinaturaAtiva === true;
+    const contaAnterioresAoCorte = dataCriacao.getTime() < CORTE_INICIO_COBRANCA.getTime();
+
+    // 🔥 Quem acabou de voltar do pagamento no Stripe: o webhook pode levar
+    // alguns segundos pra gravar assinaturaAtiva no Firestore, entao da uma
+    // segunda checada antes de mostrar o paywall de novo (evita susto de
+    // "paguei e continua bloqueado").
+    const voltouDoPagamento = new URLSearchParams(window.location.search).get("assinatura") === "sucesso";
+    if (!contaAnterioresAoCorte && !assinaturaAtiva && voltouDoPagamento) {
+      await new Promise(function(resolve){ setTimeout(resolve, 4000); });
+      const snapAtualizado = await getDoc(userRef);
+      if (snapAtualizado.exists() && snapAtualizado.data().assinaturaAtiva === true) {
+        assinaturaAtiva = true;
+        dados.assinaturaAtiva = true;
+      }
+    }
+
+    if (!contaAnterioresAoCorte && !assinaturaAtiva && horasDesdeCriacao >= 24) {
+      document.getElementById("login").classList.add("hidden");
+      document.getElementById("setupRenda").classList.add("hidden");
+      document.getElementById("home").classList.add("hidden");
+      document.getElementById("paywall").classList.remove("hidden");
+      if (voltouDoPagamento) {
+        alert("Recebemos seu pagamento e ja estamos ativando sua assinatura. Se a tela nao liberar em alguns segundos, atualize a pagina.");
+      }
+      return;
+    }
+
+    
+
+    // 🔥 Documento completo → carregar memória
+    saldo = dados.saldo || 0;
+    valorGuardado = dados.reserva || 0;
+    console.log("CARREGOU DO FIREBASE:", valorGuardado);
+    rendaMensalBase = dados.rendaBase;
+    moedaUsuario = dados.moeda || "€";
+    userProfile = dados.perfil;
+    metaMensal = dados.meta || 0;
+    dividaAtual = dados.divida || 0;
+    desafios = dados.desafios || [];
+    atualizarListaDesafios();
+
+    historicoEntradas = dados.entradas || [];
+    historicoSaidas = dados.saidas || [];
+    historicoReserva = dados.reservaHistorico || [];
+
+    // 🔥 Nome e foto — Firestore é a fonte de verdade, sobrescreve
+    // qualquer coisa que o cache local (localStorage) tenha mostrado
+    // primeiro enquanto isso carregava.
+    nomeUsuarioAtual = dados.nome || "";
+    fotoPerfilAtual = dados.foto || "";
+    document.getElementById("nomeUsuario").textContent = nomeUsuarioAtual || "Nome do Usuário";
+    document.getElementById("fotoPerfil").src = fotoPerfilAtual || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Ccircle cx='30' cy='30' r='30' fill='%23cbd5e1'/%3E%3C/svg%3E";
+
+    // 🔥 Tema — mesma lógica: Firestore é a fonte de verdade
+    if(dados.tema === "personalizado" && dados.fundoPersonalizado){
+      aplicarFundoPersonalizado(dados.fundoPersonalizado, false);
+    } else {
+      aplicarTema(dados.tema && temasDisponiveis[dados.tema] ? dados.tema : "verde", false);
+    }
+
+    entradasTotal = historicoEntradas.reduce((acc, item) => acc + item.valor, 0);
+    saidasTotal = historicoSaidas.reduce((acc, item) => acc + item.valor, 0);
+    categorias = dados.categorias || [];
+    if(categorias.length === 0 && rendaMensalBase && userProfile){
+    gerarCategoriasBase();
+   await salvarEstadoCompleto();
+  }
+    // 🔥 Se mudou o mês desde o último acesso, zera o gasto do mês nas categorias
+    mesReferenciaCategorias = dados.mesReferenciaCategorias || (new Date().getMonth() + 1);
+    anoReferenciaCategorias = dados.anoReferenciaCategorias || new Date().getFullYear();
+    verificarResetMensalCategorias();
+    atualizarTelaCategorias();
+    contas = dados.contas || [];
+    contaMetaVivaCriadaEm = dados.criadoEm || null;
+    telegramChatIdAtual = dados.telegramChatId || null;
+    desafios = dados.desafios || [];
+
+    if (dados.sistema10) {
+      sistema10Ativo = dados.sistema10.ativo || false;
+      pendenteEntradas = dados.sistema10.pendenteEntradas || 0;
+      pendenteSaidas = dados.sistema10.pendenteSaidas || 0;
+    }
+
+    document.getElementById("login").classList.add("hidden");
+    document.getElementById("setupRenda").classList.add("hidden");
+    document.getElementById("home").classList.remove("hidden");
+    goToHome();
+
+  } else {
+
+    // 🔥 Saiu da conta (ou nunca logou) — limpa a memória também aqui,
+    // pra landing/quiz/login sempre começarem do zero.
+    resetarEstadoLocal();
+
+    document.getElementById("home").classList.add("hidden");
+    document.getElementById("setupRenda").classList.add("hidden");
+    document.getElementById("login").classList.add("hidden");
+    document.getElementById("landing").classList.remove("hidden");
+
+  }
+
+});
+    
+async function createAccount(){
+
+  const name = document.getElementById("name").value;
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  // 🔥 Nome só é obrigatório pra quem está criando conta nova — quem já
+  // tem conta e só quer entrar (via "Já tenho conta — Entrar") não
+  // precisa preencher esse campo de novo.
+  if(!email || !password){
+    alert("Preencha e-mail e senha.");
+    return;
+  }
+
+  try {
+
+    const userCredential =
+      await createUserWithEmailAndPassword(auth, email, password);
+
+    const user = userCredential.user;
+
+    await setDoc(doc(db, "usuarios", user.uid), {
+      nome: name || "Usuário",
+      email: email,
+      criadoEm: new Date()
+    });
+
+    alert("Conta criada com sucesso!");
+
+  } catch(error) {
+
+    if(error.code === "auth/email-already-in-use"){
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        alert("Login realizado com sucesso!");
+      } catch(loginError){
+        alert("Essa conta já existe, mas a senha digitada está incorreta. Verifique a senha e tente novamente.");
+        return;
+      }
+
+    } else if(error.code === "auth/weak-password"){
+      alert("Senha muito curta. Use pelo menos 6 caracteres.");
+      return;
+    } else if(error.code === "auth/invalid-email"){
+      alert("E-mail inválido. Confira e tente novamente.");
+      return;
+    } else {
+      alert("Erro: " + error.message);
+      return;
+    }
+  }
+
+  document.getElementById("login").classList.add("hidden");
+  document.getElementById("setupRenda").classList.remove("hidden");
+}
+
+window.createAccount = createAccount;
+async function logout(){
+  await signOut(auth);
+  resetarEstadoLocal();
+}
+
+window.logout = logout;
+
+function gerarCodigoTelegram(){
+  const caracteres = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let codigo = "";
+  for(let i = 0; i < 8; i++){
+    codigo += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
+  }
+  return codigo;
+}
+
+async function conectarTelegram(){
+  const user = auth.currentUser;
+  if(!user) return;
+
+  if(telegramChatIdAtual){
+    alert("Sua conta ja esta ligada ao Telegram! Voce recebe avisos automaticos sobre contas a vencer.");
+    return;
+  }
+
+  const codigo = gerarCodigoTelegram();
+
+  try{
+    await updateDoc(doc(db, "usuarios", user.uid), {
+      telegramLinkCode: codigo
+    });
+  } catch(error){
+    alert("Nao foi possivel gerar o codigo agora. Tente novamente em instantes.");
+    return;
+  }
+
+  const linkBot = "https://t.me/Meta_Viva_bot?start=" + codigo;
+  aguardarConexaoTelegram(user.uid);
+  alert("Voce vai ser levado para o Telegram agora. Se nao for levado automaticamente, procure por Meta_Viva_bot na busca do Telegram e abra a conversa. Toque no botao Iniciar (Start) por la. Se o botao Iniciar nao aparecer (porque voce ja usou o bot antes), copie e envie esta mensagem para o bot, exatamente assim e sem adicionar mais nada: /start " + codigo);
+  window.location.href = linkBot;
+}
+
+function aguardarConexaoTelegram(uid){
+  const botao = document.getElementById("botaoTelegram");
+  if(botao) botao.innerText = "⏳ Aguardando conexao...";
+
+  let tentativas = 0;
+  const intervalo = setInterval(async () => {
+    tentativas++;
+
+    try{
+      const snap = await getDoc(doc(db, "usuarios", uid));
+      const dados = snap.data() || {};
+
+      if(dados.telegramChatId){
+        telegramChatIdAtual = dados.telegramChatId;
+        clearInterval(intervalo);
+        atualizarBotaoTelegram();
+        alert("Telegram ligado com sucesso! Voce ja vai receber os avisos de contas por la.");
+      }
+    } catch(error){
+      console.log("Erro ao verificar conexao do Telegram:", error);
+    }
+
+    if(tentativas >= 60){
+      clearInterval(intervalo);
+      atualizarBotaoTelegram();
+    }
+  }, 5000);
+}
+
+function atualizarBotaoTelegram(){
+  const botao = document.getElementById("botaoTelegram");
+  if(!botao) return;
+
+  if(telegramChatIdAtual){
+    botao.innerText = "✅ Telegram Conectado";
+  } else {
+    botao.innerText = "📨 Acompanhar no Telegram";
+  }
+}
+
+window.conectarTelegram = conectarTelegram;
+window.atualizarBotaoTelegram = atualizarBotaoTelegram;
+
+// Botao de ajuda/suporte - abre uma conversa no WhatsApp ja com uma
+// mensagem inicial preenchida, pra facilitar o contato do usuario.
+var NUMERO_SUPORTE_WHATSAPP = "351931714823";
+
+function abrirSuporteWhatsapp(){
+  var mensagem = "Oi! Preciso de ajuda com o Meta Viva.";
+  var link = "https://wa.me/" + NUMERO_SUPORTE_WHATSAPP + "?text=" + encodeURIComponent(mensagem);
+  window.open(link, "_blank", "noopener,noreferrer");
+}
+window.abrirSuporteWhatsapp = abrirSuporteWhatsapp;
+
+// Botao "Instalar app" da tela inicial.
+// No Android/Chrome (e desktop Chrome/Edge) o navegador dispara o evento
+// "beforeinstallprompt", que a gente guardou em window.eventoInstalacaoPWA
+// la no <head>; nesse caso o clique so precisa chamar .prompt(). No
+// iPhone/Safari esse evento nao existe (o iOS nao permite instalar via
+// clique), entao mostramos uma instrucao explicando o caminho manual.
+function rodandoComoAppInstalado(){
+  return window.matchMedia && window.matchMedia("(display-mode: standalone)").matches
+    || window.navigator.standalone === true;
+}
+
+function ehIOS(){
+  return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+}
+
+async function instalarApp(){
+  if(rodandoComoAppInstalado()){
+    alert("O Meta Viva ja esta instalado nesse aparelho! 🎉");
+    return;
+  }
+
+  if(window.eventoInstalacaoPWA){
+    window.eventoInstalacaoPWA.prompt();
+    const escolha = await window.eventoInstalacaoPWA.userChoice;
+    window.eventoInstalacaoPWA = null;
+    if(escolha && escolha.outcome === "accepted"){
+      const botao = document.getElementById("botaoInstalarApp");
+      if(botao) botao.classList.add("hidden");
+    }
+    return;
+  }
+
+  if(ehIOS()){
+    alert("Pra instalar no iPhone: toca no botao de compartilhar (o quadrado com a seta pra cima, na barra do Safari) e depois em \"Adicionar a Tela de Inicio\".");
+    return;
+  }
+
+  alert("Pra instalar: procura por \"Adicionar a tela inicial\" ou \"Instalar app\" no menu do seu navegador (geralmente nos tres pontinhos, no canto superior).");
+}
+window.instalarApp = instalarApp;
+
+window.addEventListener("appinstalled", function(){
+  const botao = document.getElementById("botaoInstalarApp");
+  if(botao) botao.classList.add("hidden");
+});
+
+document.addEventListener("DOMContentLoaded", function(){
+  if(rodandoComoAppInstalado()){
+    const botao = document.getElementById("botaoInstalarApp");
+    if(botao) botao.classList.add("hidden");
+  }
+});
+
+function falarApresentacaoIsaCred(){
+  const textoFalado =
+    "Oi! Eu sou a Evelyn. Enquanto cuido das suas contas aqui no Meta Viva, " +
+    "também acompanho outra novidade que pode te interessar: o IsaCred. " +
+    "O IsaCred é um clube de crédito de verdade. Diferente do Empréstimo Interno daqui, " +
+    "que só move o seu próprio dinheiro guardado, no IsaCred você pode solicitar um " +
+    "empréstimo externo, com dinheiro de verdade caindo na sua conta. " +
+    "Toda vez que você pega um empréstimo no IsaCred, ganha ISAcoins, e ganha ainda " +
+    "mais se pagar rapidinho. Ao juntar dez mil ISAcoins, você já pode sacar dinheiro " +
+    "de verdade no Clube ISAcoin. " +
+    "Conforme você paga em dia, seu score sobe e você sobe de nível: Essencial, Bronze, " +
+    "Prata, Ouro e Black, e cada nível libera um limite de crédito maior. " +
+    "Se quiser, eu já te ajudo a criar sua conta agora mesmo, usando o mesmo e-mail " +
+    "que você já usa aqui no Meta Viva. Bora?";
+  if(typeof falar === "function"){
+    falar(textoFalado);
+  }
+}
+
+function abrirEmprestimoExterno(){
+  document.getElementById("telaIsaCredIntro").classList.remove("hidden");
+  falarApresentacaoIsaCred();
+}
+
+function fecharTelaIsaCredIntro(){
+  if(typeof speechSynthesis !== "undefined") speechSynthesis.cancel();
+  document.getElementById("telaIsaCredIntro").classList.add("hidden");
+}
+
+function avancarParaFormularioIsaCred(){
+  if(typeof speechSynthesis !== "undefined") speechSynthesis.cancel();
+  document.getElementById("telaIsaCredIntro").classList.add("hidden");
+  document.getElementById("telaIsaCredForm").classList.remove("hidden");
+  const campoEmail = document.getElementById("isacredEmail");
+  if(campoEmail && auth.currentUser){
+    campoEmail.value = auth.currentUser.email || "";
+  }
+  atualizarCamposPorPaisIsaCred();
+}
+
+function voltarParaIntroIsaCred(){
+  document.getElementById("telaIsaCredForm").classList.add("hidden");
+  document.getElementById("telaIsaCredIntro").classList.remove("hidden");
+}
+
+function atualizarCamposPorPaisIsaCred(){
+  const pais = document.getElementById("isacredPais").value;
+  const labelDocumento = document.getElementById("isacredLabelDocumento");
+  const labelPix = document.getElementById("isacredLabelPix");
+  const campoDocumento = document.getElementById("isacredDocumento");
+  const campoPix = document.getElementById("isacredPix");
+  if(pais === "PT"){
+    labelDocumento.textContent = "NIF:";
+    labelPix.textContent = "MB Way:";
+    campoDocumento.placeholder = "000000000";
+    campoPix.placeholder = "Número do MB Way";
+  } else {
+    labelDocumento.textContent = "CPF:";
+    labelPix.textContent = "Chave Pix:";
+    campoDocumento.placeholder = "000.000.000-00";
+    campoPix.placeholder = "Sua chave Pix";
+  }
+}
+
+function calcularAnaliseClienteIsaCred(){
+
+  const hoje = new Date();
+
+  let diasDeUso = 0;
+  if(contaMetaVivaCriadaEm && typeof contaMetaVivaCriadaEm.toDate === "function"){
+    const criadoData = contaMetaVivaCriadaEm.toDate();
+    diasDeUso = Math.max(0, Math.floor((hoje - criadoData) / (1000 * 60 * 60 * 24)));
+  }
+
+  const contasAtrasadas = (contas || []).filter(function(c){
+    if(c.paga) return false;
+    const vencimento = new Date(c.vencimento + "T00:00:00");
+    return vencimento < hoje;
+  });
+
+  const totalTransacoes =
+    (historicoEntradas ? historicoEntradas.length : 0) +
+    (historicoSaidas ? historicoSaidas.length : 0);
+
+  let nota = 50;
+  nota += Math.min(diasDeUso / 3, 20);
+  nota += Math.min(totalTransacoes * 2, 20);
+  nota -= Math.min(contasAtrasadas.length * 15, 40);
+  nota = Math.max(0, Math.min(100, Math.round(nota)));
+
+  let classificacao;
+  if(nota >= 80){ classificacao = "Excelente"; }
+  else if(nota >= 60){ classificacao = "Bom"; }
+  else if(nota >= 40){ classificacao = "Regular"; }
+  else { classificacao = "Atenção"; }
+
+  return {
+    diasDeUso: diasDeUso,
+    contasAtrasadas: contasAtrasadas.length,
+    totalTransacoes: totalTransacoes,
+    nota: nota,
+    classificacao: classificacao
+  };
+
+}
+
+async function criarContaIsaCred(){
+
+  const nome = document.getElementById("isacredNome").value.trim();
+  const email = document.getElementById("isacredEmail").value.trim();
+  const telefone = document.getElementById("isacredTelefone").value.trim();
+  const pais = document.getElementById("isacredPais").value;
+  const documento = document.getElementById("isacredDocumento").value.trim();
+  const pix = document.getElementById("isacredPix").value.trim();
+  const senha = document.getElementById("isacredSenha").value;
+
+  const statusTexto = document.getElementById("isacredStatusTexto");
+
+  if(!nome || !email || !telefone || !documento || !pix || !senha){
+    if(statusTexto) statusTexto.textContent = "Preencha todos os campos para continuar.";
+    return;
+  }
+
+  if(senha.length < 6){
+    if(statusTexto) statusTexto.textContent = "A senha precisa ter pelo menos 6 caracteres.";
+    return;
+  }
+
+  if(statusTexto) statusTexto.textContent = "Criando sua conta, aguarde...";
+
+  const vivaCredConfig = {
+    apiKey: "AIzaSyDJHtQp7OUxgYqtcD_2eTqzh1BRpufvKrY",
+    authDomain: "vivacred-5a5b8.firebaseapp.com",
+    projectId: "vivacred-5a5b8",
+    storageBucket: "vivacred-5a5b8.firebasestorage.app",
+    messagingSenderId: "932933359706",
+    appId: "1:932933359706:web:59fd16618feea3b2fa6063"
+  };
+
+  try{
+
+    const appIsaCred = getApps().some(function(a){ return a.name === "isacredSecundario"; })
+      ? getApp("isacredSecundario")
+      : initializeApp(vivaCredConfig, "isacredSecundario");
+
+    const authIsaCred = getAuth(appIsaCred);
+    const dbIsaCred = getFirestore(appIsaCred);
+
+    const credencial = await createUserWithEmailAndPassword(authIsaCred, email, senha);
+    const novoUid = credencial.user.uid;
+
+    await setDoc(doc(dbIsaCred, "usuarios", novoUid), {
+      nome: nome,
+      email: email,
+      telefone: telefone,
+      cpf: documento,
+      pix: pix,
+      pais: pais,
+      moeda: pais === "PT" ? "€" : "R$",
+      score: 20,
+      status: "ativo",
+      isaCoins: 0,
+      origem: "meta-viva",
+      criadoEm: new Date()
+    });
+
+    await signOut(authIsaCred);
+
+    const analise = calcularAnaliseClienteIsaCred();
+
+    const mensagem =
+    "🌟 Nova conta IsaCred criada pelo Meta Viva!\n\n" +
+    "Nome: " + nome + "\n" +
+    "E-mail: " + email + "\n" +
+    "Telefone: " + telefone + "\n" +
+    "País: " + (pais === "PT" ? "Portugal" : "Brasil") + "\n\n" +
+    "📊 Análise do cliente (dados do Meta Viva):\n" +
+    "Tempo de uso: " + analise.diasDeUso + " dia(s)\n" +
+    "Contas atrasadas: " + analise.contasAtrasadas + "\n" +
+    "Transações registradas: " + analise.totalTransacoes + "\n" +
+    "Nota: " + analise.nota + "/100 (" + analise.classificacao + ")";
+
+    const numeroAdmin = "351931714823";
+    const linkWhatsapp =
+      "https://wa.me/" + numeroAdmin + "?text=" + encodeURIComponent(mensagem);
+
+    if(statusTexto) statusTexto.textContent = "Conta criada com sucesso! Redirecionando...";
+
+    window.location.href = linkWhatsapp;
+
+  } catch(erro){
+
+    console.error("Erro ao criar conta no IsaCred:", erro);
+
+    let mensagemErro = "Não foi possível criar sua conta agora. Tente novamente.";
+    if(erro && erro.code === "auth/email-already-in-use"){
+      mensagemErro = "Esse e-mail já tem uma conta no IsaCred. Tente entrar por lá.";
+    }
+
+    if(statusTexto) statusTexto.textContent = mensagemErro;
+
+  }
+
+}
+
+window.abrirEmprestimoExterno = abrirEmprestimoExterno;
+window.fecharTelaIsaCredIntro = fecharTelaIsaCredIntro;
+window.avancarParaFormularioIsaCred = avancarParaFormularioIsaCred;
+window.voltarParaIntroIsaCred = voltarParaIntroIsaCred;
+window.atualizarCamposPorPaisIsaCred = atualizarCamposPorPaisIsaCred;
+window.criarContaIsaCred = criarContaIsaCred;
+
+function escolherFotoFundo(){
+  const input = document.getElementById("inputFundoPersonalizado");
+  if(input) input.click();
+}
+
+function aplicarFundoPersonalizado(dataUrl, salvar = true){
+  fundoPersonalizadoAtual = dataUrl;
+  nomeTemaAtual = "personalizado";
+
+  const iconeFundo = document.getElementById("temaIconeFundo");
+  if(iconeFundo) iconeFundo.textContent = "";
+
+  const camadaFoto = document.getElementById("fundoPersonalizado");
+  if(camadaFoto){
+    camadaFoto.style.backgroundImage = "url(" + dataUrl + ")";
+    camadaFoto.style.opacity = "0.18";
+  }
+
+  if(salvar && typeof salvarEstadoCompleto === "function"){
+    salvarEstadoCompleto();
+  }
+
+  renderizarListaTemas();
+}
+
+const inputFundoPersonalizadoEl = document.getElementById("inputFundoPersonalizado");
+if(inputFundoPersonalizadoEl){
+  inputFundoPersonalizadoEl.addEventListener("change", function(evento){
+    const arquivo = evento.target.files[0];
+    if(!arquivo) return;
+
+    const leitor = new FileReader();
+
+    leitor.onload = function(e){
+
+      const img = new Image();
+      img.onload = function(){
+
+        const larguraMax = 900;
+        let largura = img.width;
+        let altura = img.height;
+
+        if(largura > larguraMax){
+          altura = Math.round(altura * (larguraMax / largura));
+          largura = larguraMax;
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = largura;
+        canvas.height = altura;
+        canvas.getContext("2d").drawImage(img, 0, 0, largura, altura);
+
+        const dataUrlComprimido = canvas.toDataURL("image/jpeg", 0.6);
+
+        aplicarFundoPersonalizado(dataUrlComprimido);
+      };
+      img.src = e.target.result;
+    };
+
+    leitor.readAsDataURL(arquivo);
+  });
+}
+
+window.escolherFotoFundo = escolherFotoFundo;
+window.aplicarFundoPersonalizado = aplicarFundoPersonalizado;
+
+// Endpoint (Netlify Function) que cria a assinatura recorrente no Mercado
+// Pago e devolve o link (init_point) pra onde o usuario e redirecionado
+// pra autorizar a cobranca mensal. Quando ele autoriza, o webhook do
+// Mercado Pago (outra Netlify Function) grava assinaturaAtiva: true no
+// documento do usuario em "usuarios/<uid>" no Firestore automaticamente.
+//
+// Troque o dominio abaixo pelo dominio do site Netlify que voce vai criar
+// só pras functions (ex: "https://meta-viva-pagamentos.netlify.app").
+var ENDPOINT_CRIAR_ASSINATURA = "https://SEU-SITE-DE-FUNCTIONS.netlify.app/.netlify/functions/criar-assinatura-mp";
+
+async function iniciarAssinatura(clickEvent){
+  var user = auth.currentUser;
+  if(!user){
+    alert("Voce precisa estar logado pra assinar.");
+    return;
+  }
+
+  var botao = clickEvent && clickEvent.target;
+  if(botao){
+    botao.disabled = true;
+    botao.textContent = "Preparando pagamento...";
+  }
+
+  try{
+    var idToken = await user.getIdToken();
+
+    var resposta = await fetch(ENDPOINT_CRIAR_ASSINATURA, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + idToken
+      }
+    });
+
+    var dados = await resposta.json();
+
+    if(!resposta.ok || !dados.init_point){
+      console.error("Erro ao criar assinatura no Mercado Pago:", dados);
+      alert("Nao foi possivel iniciar o pagamento agora. Tenta de novo em alguns instantes.");
+      if(botao){
+        botao.disabled = false;
+        botao.textContent = "Assinar agora";
+      }
+      return;
+    }
+
+    window.location.href = dados.init_point;
+  }catch(erro){
+    console.error("Erro ao iniciar assinatura:", erro);
+    alert("Nao foi possivel iniciar o pagamento agora. Tenta de novo em alguns instantes.");
+    if(botao){
+      botao.disabled = false;
+      botao.textContent = "Assinar agora";
+    }
+  }
+}
+window.iniciarAssinatura = iniciarAssinatura;
+</script>
+</body>
+</html>

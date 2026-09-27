@@ -84,6 +84,17 @@ flex:1;
 }
 .menuItem .menuIcon{display:block;font-size:20px;line-height:24px}
 
+#cardCentralVencimentos{display:grid;gap:14px}
+#cardCentralVencimentos h3{margin:0 0 4px}
+#cardCentralVencimentos [id^="vencimentos"]{margin:0;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--bg);min-height:54px}
+#vencimentos3Dias{border-left:4px solid #facc15!important}
+#vencimentos2Dias{border-left:4px solid #fb923c!important}
+#vencimentos1Dia{border-left:4px solid #60a5fa!important}
+#vencimentosHoje{border-left:4px solid var(--primary)!important}
+#vencimentosAtrasados{border:1px solid #fecaca!important;border-left:4px solid var(--danger)!important;background:var(--danger-soft)!important}
+.vencimentoTitulo{font-weight:800;font-size:15px;color:var(--text)}
+.vencimentoItem{margin-top:12px;padding:12px;border-radius:9px;background:var(--surface);border:1px solid var(--border);line-height:1.55}
+
 .menuItem:hover{
 background:var(--bg);
 }
@@ -130,19 +141,11 @@ Nenhum vencimento encontrado.
 
 <div id="vencimentos3Dias"></div>
 
-<hr>
-
 <div id="vencimentos2Dias"></div>
-
-<hr>
 
 <div id="vencimentos1Dia"></div>
 
-<hr>
-
 <div id="vencimentosHoje"></div>
-
-<hr>
 
 <div id="vencimentosAtrasados"></div>
 
@@ -1950,7 +1953,11 @@ document.getElementById("totalRetiradasCaixa").innerHTML =
 // ================================================
 async function montarListaVencimentos(lista,titulo){
 
- let html = titulo;
+ let html = "<div class='vencimentoTitulo'>" + titulo + "</div>";
+
+ if(lista.length === 0){
+  return html + "<div style='margin-top:8px;color:var(--text-soft);font-size:13px;'>Nenhuma parcela neste prazo.</div>";
+ }
 
  for(const parcela of lista){
 
@@ -1976,7 +1983,7 @@ async function montarListaVencimentos(lista,titulo){
    }
 
    html +=
-   "<br><br>" +
+    "<div class='vencimentoItem'>" +
 
    "👤 " + (emp.nomeCliente || "Cliente") +
    "<br>" +
@@ -2001,8 +2008,8 @@ async function montarListaVencimentos(lista,titulo){
    "<button onclick=\"emitirFatura('" + parcela.parcelaId + "')\" style=\"" +
    "margin-top:6px;background:#2563eb;color:white;\">" +
    "🧾 Emitir Fatura" +
-   "</button>" +
-   "<br>";
+    "</button>" +
+    "</div>";
  }
 
  return html;

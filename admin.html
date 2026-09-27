@@ -414,8 +414,7 @@ import {
   query,
   where,
   orderBy,
-  limit,
-  runTransaction
+  limit
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
  let capitalBR = 1000;
 let capitalPT = 1000;
@@ -3833,45 +3832,44 @@ window.registrarRetiradaCaixa = async function(){
  );
  if(!confirmar) return;
 
- const financeiroRef = doc(db,"configuracoes","financeiro");
- const movimentacaoRef = doc(collection(db,"movimentacoesCaixa"));
-
  try{
-  await runTransaction(db, async (transaction) => {
-   const financeiroSnap = await transaction.get(financeiroRef);
-   const financeiro = financeiroSnap.exists() ? financeiroSnap.data() : {};
-   const saldoInicial = pais === "PT"
-    ? Number(financeiro.saldoInicialPT ?? SALDO_INICIAL_CAIXA_PT)
-    : Number(financeiro.saldoInicialBR ?? SALDO_INICIAL_CAIXA_BR);
-   const impacto = pais === "PT"
-    ? Number(financeiro.impactoCaixaPT || 0)
-    : Number(financeiro.impactoCaixaBR || 0);
-   const saldoDisponivel = arredondarDinheiro(saldoInicial + impacto);
+  const financeiroRef = doc(db,"configuracoes","financeiro");
+  const financeiroSnap = await getDoc(financeiroRef);
+  const financeiro = financeiroSnap.exists() ? financeiroSnap.data() : {};
+  const saldoInicial = pais === "PT"
+   ? Number(financeiro.saldoInicialPT ?? SALDO_INICIAL_CAIXA_PT)
+   : Number(financeiro.saldoInicialBR ?? SALDO_INICIAL_CAIXA_BR);
+  const impacto = pais === "PT"
+   ? Number(financeiro.impactoCaixaPT || 0)
+   : Number(financeiro.impactoCaixaBR || 0);
+  const saldoDisponivel = arredondarDinheiro(saldoInicial + impacto);
 
-   if(valor > saldoDisponivel){
-    throw new Error("Saldo insuficiente no Caixa. Disponível: " + moeda + " " + saldoDisponivel.toFixed(2));
-   }
+  if(valor > saldoDisponivel){
+   throw new Error("Saldo insuficiente no Caixa. Disponível: " + moeda + " " + saldoDisponivel.toFixed(2));
+  }
 
-   transaction.set(
-    financeiroRef,
-    camposAcumuladosFinanceiros(pais,{
-     impactoCaixa: -valor,
-     retiradasCaixa: valor
-    }),
-    { merge: true }
-   );
-   transaction.set(movimentacaoRef,{
-    tipo: "retiradaCaixa",
-    direcao: "saida",
-    pais: pais,
-    moeda: moeda,
-    valor: -valor,
-    motivo: motivo,
-    criadoEm: new Date(),
-    origem: "admin",
-    criadoPor: auth.currentUser ? auth.currentUser.uid : null
-   });
+  // Mesmo padrão do aporte e do saque ISAcoin, ambos já autorizados pelas
+  // regras atuais do projeto.
+  const loteRetirada = writeBatch(db);
+  loteRetirada.set(
+   financeiroRef,
+   camposAcumuladosFinanceiros(pais,{
+    impactoCaixa: -valor,
+    retiradasCaixa: valor
+   }),
+   { merge: true }
+  );
+  loteRetirada.set(doc(collection(db,"movimentacoesCaixa")),{
+   tipo: "retiradaCaixa",
+   direcao: "saida",
+   pais: pais,
+   moeda: moeda,
+   valor: -valor,
+   motivo: motivo,
+   criadoEm: new Date(),
+   origem: "admin"
   });
+  await loteRetirada.commit();
 
   input.value = "";
   motivoInput.value = "";
@@ -4214,17 +4212,6 @@ if(Number(valor) > restanteAtual){
    restante: restante,
    ultimaDataPagamento: new Date()
   });
-  lote.set(doc(collection(db,"pagamentos")),{
-   userId: dados.userId,
-   emprestimoId: dados.emprestimoId,
-   parcelaId: parcelaId,
-   numeroParcela: dados.numero || null,
-   pais: emprestimo.pais || dados.pais || "BR",
-   valor: Number(valor),
-   tipo: novoPago >= Number(dados.valor || 0) ? "quitacao" : "parcial",
-   registradoEm: new Date(),
-   registradoPor: auth.currentUser ? auth.currentUser.uid : null
-  });
 
  acumularFinanceiroNoLote(
   lote,
@@ -4309,17 +4296,6 @@ const lotePagamento = writeBatch(db);
     diasDiferenca: diasDiferenca,
     perfilPagamento: perfilPagamento
 });
- lotePagamento.set(doc(collection(db,"pagamentos")),{
-  userId: dados.userId,
-  emprestimoId: dados.emprestimoId,
-  parcelaId: parcelaId,
-  numeroParcela: dados.numero || null,
-  pais: emprestimo.pais || dados.pais || "BR",
-  valor: valorRecebidoAgora,
-  tipo: "quitacao",
-  registradoEm: new Date(),
-  registradoPor: auth.currentUser ? auth.currentUser.uid : null
- });
 
 acumularFinanceiroNoLote(
  lotePagamento,
@@ -5267,17 +5243,6 @@ window.gerarExtratoCliente = async function(id){
    lista.push(parcela);
    parcelasPorEmprestimo.set(parcela.emprestimoId, lista);
   });
-  const pagamentosSnap = await getDocs(
-   query(collection(db,"pagamentos"), where("userId","==",id))
-  );
-  const pagamentosPorEmprestimo = new Map();
-  pagamentosSnap.docs.forEach((pagamentoDoc) => {
-   const pagamento = pagamentoDoc.data();
-   if(!idsEmprestimos.has(pagamento.emprestimoId)) return;
-   const lista = pagamentosPorEmprestimo.get(pagamento.emprestimoId) || [];
-   lista.push(pagamento);
-   pagamentosPorEmprestimo.set(pagamento.emprestimoId, lista);
-  });
 
   const linhasEmprestimos = emprestimos
    .sort((a,b) => {
@@ -5314,7 +5279,14 @@ window.gerarExtratoCliente = async function(id){
         <td>${dataHoraFormatada(parcela.pagoEm || parcela.dataPagamento)}</td>
        </tr>`).join("")
      : "<tr><td colspan='7'>Ainda não há parcelas geradas para este empréstimo.</td></tr>";
-    const pagamentos = (pagamentosPorEmprestimo.get(emprestimoDoc.id) || [])
+    const pagamentos = parcelas
+     .filter((parcela) => Number(parcela.pago || 0) > 0)
+     .map((parcela) => ({
+      numeroParcela: parcela.numero,
+      valor: parcela.pago,
+      tipo: Number(parcela.pago || 0) >= Number(parcela.valor || 0) ? "quitado" : "pagamento parcial",
+      registradoEm: parcela.pagoEm || parcela.dataPagamento || parcela.ultimaDataPagamento
+     }))
      .sort((a,b) => {
       const dataA = a.registradoEm?.toDate?.()?.getTime?.() || 0;
       const dataB = b.registradoEm?.toDate?.()?.getTime?.() || 0;
@@ -5323,7 +5295,7 @@ window.gerarExtratoCliente = async function(id){
     const linhasPagamentos = pagamentos.length
      ? pagamentos.map((pagamento) => `
        <tr><td>${dataHoraFormatada(pagamento.registradoEm)}</td><td>${escaparHtml(pagamento.numeroParcela || "-")}</td><td>${moeda(pagamento.valor, emprestimo.pais)}</td><td>${escaparHtml(pagamento.tipo || "pagamento")}</td></tr>`).join("")
-     : "<tr><td colspan='4'>Sem pagamentos detalhados registrados. Para registros antigos, consulte a data na tabela de parcelas, quando disponível.</td></tr>";
+     : "<tr><td colspan='4'>Sem pagamentos registrados para este empréstimo.</td></tr>";
 
     return `
      <section class="emprestimo">
@@ -5340,7 +5312,7 @@ window.gerarExtratoCliente = async function(id){
       <h3>Parcelas e pagamentos registrados</h3>
       <table><thead><tr><th>#</th><th>Vencimento</th><th>Valor</th><th>Pago</th><th>Em aberto</th><th>Status</th><th>Data de pagamento</th></tr></thead>
       <tbody>${linhasParcelas}</tbody></table>
-      <h3>Histórico de pagamentos</h3>
+      <h3>Último pagamento registrado por parcela</h3>
       <table><thead><tr><th>Data e hora</th><th>Parcela</th><th>Valor</th><th>Tipo</th></tr></thead>
       <tbody>${linhasPagamentos}</tbody></table>
      </section>`;

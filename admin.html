@@ -422,6 +422,28 @@ Nenhum usuário cadastrado.
  <button class="menuItem" data-tela="config" onclick="abrirTela('config')"><span class="menuIcon">⚙️</span>Mais</button>
 </nav>
 
+<script>
+// Navegação independente do Firebase: os botões continuam a trocar de tela
+// mesmo quando uma consulta de dados falhar ou estiver demorando.
+window.abrirTela = function(tela){
+ const telas = ["dashboard", "solicitacoes", "emprestimos", "historico", "config", "financeiro", "usuarios", "saques"];
+ telas.forEach(function(nome){
+  const elemento = document.getElementById("tela" + nome.charAt(0).toUpperCase() + nome.slice(1));
+  if(elemento) elemento.style.display = nome === tela ? "block" : "none";
+ });
+ document.querySelectorAll(".menuItem").forEach(function(botao){
+  botao.classList.toggle("menuAtivo", botao.dataset.tela === tela);
+ });
+ if(tela === "usuarios" && typeof window.renderizarUsuarios === "function"){
+  window.renderizarUsuarios();
+ }
+ if(tela === "saques" && typeof window.carregarSaques === "function"){
+  window.carregarSaques();
+ }
+ window.scrollTo(0,0);
+};
+</script>
+
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";

@@ -183,7 +183,8 @@ setDoc,
 query,
 where,
 getDocs,
-collection
+collection,
+addDoc
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -378,6 +379,25 @@ indicadoPor: indicadoPor,
 indicacaoPremiada: false,
 criadoEm: new Date()
 });
+
+// A conta já foi criada neste ponto. O aviso é independente para que uma
+// indisponibilidade temporária da fila não interrompa o novo cadastro.
+try {
+ await addDoc(collection(db, "notificacoes"), {
+  userId: cred.user.uid,
+  titulo: "",
+  mensagem: "",
+  lida: true,
+  telegramInterno: true,
+  tipoTelegram: "cadastro",
+  dadosTelegram: {},
+  criadoPor: cred.user.uid,
+  data: new Date(),
+  statusTelegram: "pendente"
+ });
+} catch(erroTelegram) {
+ console.warn("Conta criada, mas o alerta Telegram será ignorado:", erroTelegram);
+}
 
 window.location.href = "home.html";
 } catch (error) {

@@ -41,6 +41,22 @@ def mensagem_cliente(db, tipo, dados_evento, uid):
             "📌 Motivo:\nCliente solicitou atendimento para alteração de renda ou revisão de limite."
         )
 
+    if tipo == "cadastro":
+        indicador = ""
+        if usuario.get("indicadoPor"):
+            indicador = "\n🤝 Cadastro realizado por indicação"
+        return (
+            "🆕 NOVA CONTA ISACRED\n\n"
+            f"👤 Cliente: {nome}\n"
+            f"📧 E-mail: {email}\n"
+            f"📱 Telefone: {telefone}\n"
+            f"🌍 País: {usuario.get('pais') or 'BR'}\n"
+            f"📍 Cidade: {usuario.get('cidade') or 'Não informada'}\n"
+            f"⭐ Score inicial: {int(usuario.get('score') or 20)}"
+            f"{indicador}\n\n"
+            "✅ Status: conta criada e disponível para análise."
+        )
+
     if tipo == "emprestimo":
         item = carregar_do_usuario(db, "emprestimos", dados_evento.get("id"), uid)
         pais = item.get("pais") or "BR"

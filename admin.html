@@ -94,6 +94,7 @@ flex:1;
 #vencimentosAtrasados{border:1px solid #fecaca!important;border-left:4px solid var(--danger)!important;background:var(--danger-soft)!important}
 .vencimentoTitulo{font-weight:800;font-size:15px;color:var(--text)}
 .vencimentoItem{margin-top:12px;padding:12px;border-radius:9px;background:var(--surface);border:1px solid var(--border);line-height:1.55}
+.insightHero{padding:20px;border-radius:16px;background:linear-gradient(135deg,#fff1e6,#fff);border:1px solid #fed7aa;display:flex;gap:16px;align-items:center;justify-content:space-between}.insightHero h2{margin:4px 0;font-size:24px}.insightHero p{margin:0;color:var(--text-soft)}.insightEyebrow{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--primary-dark)}.insightScore{min-width:125px;padding:12px;border-radius:14px;text-align:center;background:#fff;font-size:48px;font-weight:800;color:var(--primary-dark);line-height:1}.insightScore small{font-size:22px}.insightScore span{display:block;margin-top:7px;font-size:12px;line-height:1.2;color:var(--text-soft)}.insightGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-top:14px}.insightMetric{padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}.insightMetric span{display:block;font-size:12px;color:var(--text-soft);margin-bottom:5px}.insightMetric strong{font-size:20px;display:block}.insightMetric small{display:block;color:var(--text-soft);margin-top:5px;font-size:11px;line-height:1.35}.insightSection{margin-top:16px;padding:16px;border:1px solid var(--border);border-radius:14px;background:var(--surface)}.insightSection h3{margin:0 0 6px}.insightList{margin:8px 0 0;padding-left:20px;line-height:1.65}.insightCaption{margin:0;color:var(--text-soft);font-size:12px}.chartRow{display:grid;grid-template-columns:1fr;gap:6px;margin-top:14px;font-size:13px}.chartRow>div:first-child{display:flex;justify-content:space-between;gap:8px}.chartTrack{height:12px;border-radius:99px;background:#eef2f6;overflow:hidden}.chartFill{display:block;height:100%;border-radius:99px;background:var(--primary)}.chartFill.risk{background:var(--danger)}.chartFill.success{background:var(--success)}.insightFormula p{margin:0;color:var(--text-soft);font-size:13px;line-height:1.5}@media(max-width:560px){.insightHero{align-items:flex-start;flex-direction:column}.insightScore{width:100%;box-sizing:border-box}.insightGrid{grid-template-columns:1fr 1fr}.insightMetric strong{font-size:17px}}
 
 .menuItem:hover{
 background:var(--bg);
@@ -113,7 +114,7 @@ color:var(--primary-dark);
 
 <header class="adminHeader">
  <div class="adminBrand"><div class="adminBrandIcon">💼</div><div><strong>IsaCred Admin</strong><span id="adminIdentity">Painel administrativo</span></div></div>
- <button onclick="sairAdmin()" style="color:var(--danger);margin:0;">Sair</button>
+ <div style="display:flex;gap:7px;"><button onclick="abrirTela('inteligencia')" style="margin:0;color:var(--primary-dark);">🧠 Resultados</button><button onclick="sairAdmin()" style="color:var(--danger);margin:0;">Sair</button></div>
 </header>
 
 <!-- ÁREA PRINCIPAL -->
@@ -279,6 +280,13 @@ Saldo:<br>
 <div id="conteudoFinanceiro"></div>
 </div>
 
+<!-- INTELIGÊNCIA -->
+<div id="telaInteligencia" style="display:none;">
+<h3>🧠 Inteligência do Negócio</h3>
+<p style="color:var(--text-soft);margin-top:-6px;">Leitura da saúde, risco e capacidade da carteira.</p>
+<div id="painelInteligencia"><div class="card">Calculando indicadores...</div></div>
+</div>
+
 <!-- SOLICITAÇÕES -->
 
 <div id="telaSolicitacoes" style="display:none;">
@@ -427,7 +435,7 @@ Nenhum usuário cadastrado.
 // que cada aba seja filha direta da área principal, nunca escondida dentro da
 // tela Início.
 const areaPrincipalAdmin = document.querySelector(".adminMain");
-const idsTelasAdmin = ["telaSolicitacoes", "telaEmprestimos", "telaHistorico", "telaConfig", "telaFinanceiro", "telaUsuarios", "telaSaques"];
+const idsTelasAdmin = ["telaSolicitacoes", "telaEmprestimos", "telaHistorico", "telaConfig", "telaFinanceiro", "telaInteligencia", "telaUsuarios", "telaSaques"];
 if(areaPrincipalAdmin){
  idsTelasAdmin.forEach(function(id){
   const tela = document.getElementById(id);
@@ -436,7 +444,7 @@ if(areaPrincipalAdmin){
 }
 
 window.abrirTela = function(tela){
- const telas = ["dashboard", "solicitacoes", "emprestimos", "historico", "config", "financeiro", "usuarios", "saques"];
+ const telas = ["dashboard", "solicitacoes", "emprestimos", "historico", "config", "financeiro", "inteligencia", "usuarios", "saques"];
  telas.forEach(function(nome){
   const elemento = document.getElementById("tela" + nome.charAt(0).toUpperCase() + nome.slice(1));
   if(elemento) elemento.style.display = nome === tela ? "block" : "none";
@@ -1504,6 +1512,109 @@ if(d.aniversarios.proximos7Dias.length > 0){
 // (Caixa, Na Rua, Esta Semana, Em Atraso, Próximo Vencimento,
 // Central de Vencimentos)
 // ================================================
+function renderizarInteligencia(dados){
+ const painel = document.getElementById("painelInteligencia");
+ if(!painel) return;
+
+ const limitar = (valor, minimo = 0, maximo = 100) =>
+  Math.max(minimo, Math.min(maximo, Number(valor) || 0));
+ const real = (valor) => "R$ " + (Number(valor) || 0).toLocaleString("pt-BR", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2
+ });
+ const percentual = (valor) => limitar(valor).toLocaleString("pt-BR", {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 1
+ });
+
+ const baseRecebimentos = dados.totalRecebidoBR + dados.totalAReceberBR;
+ const taxaRecebimento = baseRecebimentos > 0
+  ? (dados.totalRecebidoBR / baseRecebimentos) * 100
+  : 0;
+ const roi = dados.capitalEmprestadoBR > 0
+  ? (dados.lucroLiquidoBR / dados.capitalEmprestadoBR) * 100
+  : 0;
+ const percentualAtrasado = (dados.totalAReceberBR + dados.valorAtrasadoBR) > 0
+  ? (dados.valorAtrasadoBR / (dados.totalAReceberBR + dados.valorAtrasadoBR)) * 100
+  : 0;
+ const reservaSugerida = Math.max(100, dados.dinheiroRuaBR * 0.20);
+ const capacidadeLiberacao = Math.max(0, dados.saldoBR - reservaSugerida);
+
+ // Saúde não é um número decorativo: cada parte abaixo tem peso visível.
+ const notaRentabilidade = limitar(roi * 10);
+ const notaCobranca = limitar(taxaRecebimento);
+ const notaLiquidez = dados.dinheiroRuaBR > 0
+  ? limitar((dados.saldoBR / dados.dinheiroRuaBR) * 100)
+  : limitar(dados.saldoBR > 0 ? 100 : 0);
+ const notaRisco = 100 - limitar(percentualAtrasado);
+ const saude = (notaRentabilidade * 0.35) + (notaCobranca * 0.30) +
+  (notaLiquidez * 0.20) + (notaRisco * 0.15);
+
+ let classificacao = "Risco elevado";
+ let explicacao = "Priorize cobrança e preserve o caixa antes de aumentar a carteira.";
+ if(saude >= 80){
+  classificacao = "Muito saudável";
+  explicacao = "A carteira apresenta boa base para crescer com disciplina.";
+ }else if(saude >= 60){
+  classificacao = "Saudável, com atenção";
+  explicacao = "Há base para operar, mas as cobranças e o caixa merecem acompanhamento.";
+ }else if(saude >= 40){
+  classificacao = "Atenção necessária";
+  explicacao = "Evite ampliar o risco até melhorar a recuperação e a liquidez.";
+ }
+
+ const maiorBarra = Math.max(dados.totalRecebidoBR, dados.totalAReceberBR, dados.valorAtrasadoBR, 1);
+ const barra = (valor) => limitar((valor / maiorBarra) * 100);
+ const decisaoLiberacao = capacidadeLiberacao > 0 && saude >= 60
+  ? `Há margem operacional estimada de <strong>${real(capacidadeLiberacao)}</strong> para novas liberações, mantendo uma reserva de segurança.`
+  : "Não é recomendável ampliar as liberações agora; recupere caixa e reduza o risco primeiro.";
+ const decisaoAtrasos = dados.valorAtrasadoBR > 0
+  ? `Prioridade de cobrança: <strong>${real(dados.valorAtrasadoBR)}</strong> em atraso, distribuídos em ${dados.qtdAtrasados} empréstimo(s).`
+  : "Não há parcelas brasileiras vencidas em aberto no momento.";
+
+ painel.innerHTML = `
+  <section class="insightHero">
+   <div>
+    <span class="insightEyebrow">ANÁLISE DA CARTEIRA — BRASIL</span>
+    <h2>Saúde do negócio</h2>
+    <p>${explicacao}</p>
+   </div>
+   <div class="insightScore" aria-label="Índice de saúde ${percentual(saude)} por cento">
+    <strong>${percentual(saude)}<small>%</small></strong>
+    <span>${classificacao}</span>
+   </div>
+  </section>
+
+  <div class="insightGrid">
+   <article class="insightMetric"><span>Rentabilidade da carteira</span><strong>${percentual(roi)}%</strong><small>ROI: lucro líquido ÷ capital ativo</small></article>
+   <article class="insightMetric"><span>Taxa de recebimento</span><strong>${percentual(taxaRecebimento)}%</strong><small>valor pago sobre carteira registrada</small></article>
+   <article class="insightMetric"><span>Valor em risco</span><strong>${real(dados.valorAtrasadoBR)}</strong><small>${percentual(percentualAtrasado)}% da carteira em aberto</small></article>
+   <article class="insightMetric"><span>Capacidade sugerida</span><strong>${real(capacidadeLiberacao)}</strong><small>estimativa após reserva de segurança</small></article>
+  </div>
+
+  <section class="insightSection">
+   <h3>🎯 Leitura para decisão</h3>
+   <ul class="insightList">
+    <li>${decisaoLiberacao}</li>
+    <li>${decisaoAtrasos}</li>
+    <li>Nos próximos 7 dias, há <strong>${real(dados.valorEstaSemana)}</strong> em vencimentos previstos.</li>
+   </ul>
+  </section>
+
+  <section class="insightSection">
+   <h3>📊 Gráfico da carteira</h3>
+   <p class="insightCaption">Composição atual em reais. Não mistura dados em euro.</p>
+   <div class="chartRow"><div><span>Recebido</span><strong>${real(dados.totalRecebidoBR)}</strong></div><div class="chartTrack"><i class="chartFill success" style="width:${barra(dados.totalRecebidoBR)}%"></i></div></div>
+   <div class="chartRow"><div><span>A receber</span><strong>${real(dados.totalAReceberBR)}</strong></div><div class="chartTrack"><i class="chartFill" style="width:${barra(dados.totalAReceberBR)}%"></i></div></div>
+   <div class="chartRow"><div><span>Em atraso</span><strong>${real(dados.valorAtrasadoBR)}</strong></div><div class="chartTrack"><i class="chartFill risk" style="width:${barra(dados.valorAtrasadoBR)}%"></i></div></div>
+  </section>
+
+  <section class="insightSection insightFormula">
+   <h3>Como o índice foi calculado</h3>
+   <p>Rentabilidade <strong>${percentual(notaRentabilidade)}%</strong> (35%) · Cobrança <strong>${percentual(notaCobranca)}%</strong> (30%) · Liquidez <strong>${percentual(notaLiquidez)}%</strong> (20%) · Risco <strong>${percentual(notaRisco)}%</strong> (15%).</p>
+  </section>`;
+}
+
 async function calcularFinanceiro(){
 
  let totalEmprestadoBR = 0;
@@ -1690,7 +1801,8 @@ if (diasRestantes < 0 && emAberto) {
 if (
     emAberto &&
     diasRestantes >= 0 &&
-    diasRestantes <= 7
+    diasRestantes <= 7 &&
+    (dados.pais || "BR") !== "PT"
 ) {
     valorEstaSemana += Number(
         dados.restante ?? dados.valor ?? 0
@@ -1874,6 +1986,24 @@ let evelynBR = Number(configuracaoFinanceira.repasseEvelynBR || 0);
 let evelynPT = Number(configuracaoFinanceira.repasseEvelynPT || 0);
 let lucroLiquidoBR = Number(configuracaoFinanceira.lucroLiquidoBR || 0);
 let lucroLiquidoPT = Number(configuracaoFinanceira.lucroLiquidoPT || 0);
+const valorAtrasadoBR = atrasados.reduce((total, atraso) => {
+ const emprestimo = emprestimosPorIdFinanceiro.get(atraso.emprestimoId);
+ return (emprestimo?.pais || "BR") === "PT"
+  ? total
+  : total + Number(atraso.restante || atraso.valor || 0);
+}, 0);
+
+renderizarInteligencia({
+ saldoBR,
+ dinheiroRuaBR,
+ capitalEmprestadoBR,
+ lucroLiquidoBR,
+ totalRecebidoBR,
+ totalAReceberBR,
+ valorAtrasadoBR,
+ valorEstaSemana,
+ qtdAtrasados: emprestimosAtrasadosSet.size
+});
 
 document.getElementById("caixaDisponivel").innerHTML =
 "💰 Caixa Disponível<br>" +

@@ -240,11 +240,6 @@ Saldo:<br>
 <div id="lucroLiquido">R$ 0</div>
 </div>
 
-<div class="card">
-<h3>📤 Retiradas do Caixa</h3>
-<div id="totalRetiradasCaixa">R$ 0</div>
-</div>
-
 </div>
 
 </div>
@@ -1879,8 +1874,6 @@ let evelynBR = Number(configuracaoFinanceira.repasseEvelynBR || 0);
 let evelynPT = Number(configuracaoFinanceira.repasseEvelynPT || 0);
 let lucroLiquidoBR = Number(configuracaoFinanceira.lucroLiquidoBR || 0);
 let lucroLiquidoPT = Number(configuracaoFinanceira.lucroLiquidoPT || 0);
-let retiradasCaixaBR = Number(configuracaoFinanceira.retiradasCaixaBR || 0);
-let retiradasCaixaPT = Number(configuracaoFinanceira.retiradasCaixaPT || 0);
 
 document.getElementById("caixaDisponivel").innerHTML =
 "💰 Caixa Disponível<br>" +
@@ -1941,11 +1934,6 @@ document.getElementById("lucroLiquido").innerHTML =
 "📈 Lucro recebido após Evelyn<br>" +
 "R$ " + lucroLiquidoBR.toFixed(2) +
 "<br>€ " + lucroLiquidoPT.toFixed(2);
-
-document.getElementById("totalRetiradasCaixa").innerHTML =
-"📤 Saídas registradas<br>" +
-"R$ " + retiradasCaixaBR.toFixed(2) +
-"<br>€ " + retiradasCaixaPT.toFixed(2);
 
 // ================================================
 // 🏠 ABA: DASHBOARD — Renderização das listas de vencimento
@@ -2966,8 +2954,6 @@ window.classificarEmprestimosAtuais = async function(){
     impactoCaixaPT: 0,
     aportesBR: 0,
     aportesPT: 0,
-    retiradasCaixaBR: 0,
-    retiradasCaixaPT: 0,
     repasseEvelynBR: 0,
     repasseEvelynPT: 0,
     lucroLiquidoBR: 0,
@@ -3926,27 +3912,17 @@ window.registrarRetiradaCaixa = async function(){
    throw new Error("Saldo insuficiente no Caixa. Disponível: " + moeda + " " + saldoDisponivel.toFixed(2));
   }
 
-  // Mesmo padrão do aporte e do saque ISAcoin, ambos já autorizados pelas
-  // regras atuais do projeto.
+  // Usa exclusivamente o campo financeiro já alterado pelos empréstimos
+  // aprovados. As regras atuais do Firestore recusam criar uma movimentação
+  // adicional pelo navegador.
   const loteRetirada = writeBatch(db);
   loteRetirada.set(
    financeiroRef,
    camposAcumuladosFinanceiros(pais,{
-    impactoCaixa: -valor,
-    retiradasCaixa: valor
+    impactoCaixa: -valor
    }),
    { merge: true }
   );
-  loteRetirada.set(doc(collection(db,"movimentacoesCaixa")),{
-   tipo: "retiradaCaixa",
-   direcao: "saida",
-   pais: pais,
-   moeda: moeda,
-   valor: -valor,
-   motivo: motivo,
-   criadoEm: new Date(),
-   origem: "admin"
-  });
   await loteRetirada.commit();
 
   input.value = "";

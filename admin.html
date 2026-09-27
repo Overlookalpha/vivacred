@@ -33,7 +33,11 @@ font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-
 background:var(--bg);
 color:var(--text);
 margin:0;
+padding:76px 0 88px;
 }
+
+.adminHeader{position:fixed;z-index:100;top:0;left:0;right:0;height:68px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;background:rgba(255,255,255,.96);border-bottom:1px solid var(--border);backdrop-filter:blur(12px)}
+.adminBrand{display:flex;align-items:center;gap:10px;min-width:0}.adminBrandIcon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--primary-soft);font-size:21px}.adminBrand strong{display:block;color:var(--primary-dark);font-size:16px}.adminBrand span{display:block;color:var(--text-soft);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}.adminMain{width:min(1120px,100%);margin:0 auto;padding:18px 16px}.adminBottomNav{position:fixed;z-index:100;bottom:0;left:0;right:0;display:flex;justify-content:space-around;gap:2px;padding:7px 4px calc(7px + env(safe-area-inset-bottom));background:rgba(255,255,255,.97);border-top:1px solid var(--border);box-shadow:0 -4px 18px rgba(16,24,40,.06)}
 
 .card{
 background:var(--surface);
@@ -68,14 +72,17 @@ border-color:var(--success);
 }
 
 .menuItem{
-margin-top:8px;
 cursor:pointer;
-padding:10px 12px;
-border-radius:8px;
+padding:5px 3px;
+border-radius:10px;
 color:var(--text-soft);
 font-weight:600;
-font-size:14px;
+font-size:10px;
+text-align:center;
+min-width:48px;
+flex:1;
 }
+.menuItem .menuIcon{display:block;font-size:20px;line-height:24px}
 
 .menuItem:hover{
 background:var(--bg);
@@ -86,42 +93,20 @@ background:var(--primary-soft);
 color:var(--primary-dark);
 }
 
+@media (min-width:760px){.adminMain{padding:28px}.adminHeader{padding:10px max(28px,calc((100vw - 1120px)/2 + 28px))}.adminBottomNav{left:50%;right:auto;transform:translateX(-50%);width:min(760px,calc(100% - 32px));bottom:14px;border:1px solid var(--border);border-radius:18px;padding:8px;box-shadow:var(--shadow)}body{padding-bottom:105px}.menuItem{font-size:12px}}
+
 </style>
 </head>
 
 <body>
 
-<div style="display:flex;">
-
-<!-- MENU LATERAL -->
-
-<div style="
-width:200px;
-background:var(--surface);
-border-right:1px solid var(--border);
-min-height:100vh;
-padding:20px;
-color:var(--text);
-">
-
-<h3 style="color:var(--primary-dark);">💰 VivaCred</h3>
-
-<div class="menuItem" onclick="abrirTela('dashboard')">🏠 Dashboard</div>
-
-<div class="menuItem" onclick="abrirTela('emprestimos')">💰 Empréstimos</div>
-
-<div class="menuItem" onclick="abrirTela('solicitacoes')">📥 Solicitações</div>
-
-<div class="menuItem" onclick="abrirTela('historico')">📊 Histórico</div>
-
-<div class="menuItem" onclick="abrirTela('config')">⚙️ Config</div>
-<div class="menuItem" onclick="abrirTela('saques')">💸 Saques</div>
-
-</div>
+<header class="adminHeader">
+ <div class="adminBrand"><div class="adminBrandIcon">💼</div><div><strong>IsaCred Admin</strong><span id="adminIdentity">Painel administrativo</span></div></div>
+ <button onclick="sairAdmin()" style="color:var(--danger);margin:0;">Sair</button>
+</header>
 
 <!-- ÁREA PRINCIPAL -->
-
-<div style="flex:1; padding:30px;">
+<main class="adminMain">
 
 <!-- DASHBOARD -->
 
@@ -134,6 +119,7 @@ color:var(--text);
 
 <div id="proximoVencimentoInfo">
 Nenhum vencimento encontrado.
+
 </div>
 
 </div>
@@ -349,6 +335,20 @@ Abrir
 
 <div class="card">
 
+<h4>📊 Histórico de empréstimos</h4>
+
+<p>
+Consulte empréstimos encerrados e pagamentos antigos.
+</p>
+
+<button onclick="abrirTela('historico')">
+Abrir histórico
+</button>
+
+</div>
+
+<div class="card">
+
 <h4>🧪 Registros de teste</h4>
 
 <p>
@@ -391,14 +391,21 @@ Nenhum usuário cadastrado.
 
 </div>
 
-</div>
+</main>
 
-</div>
+<nav class="adminBottomNav" aria-label="Navegação administrativa">
+ <button class="menuItem menuAtivo" data-tela="dashboard" onclick="abrirTela('dashboard')"><span class="menuIcon">🏠</span>Início</button>
+ <button class="menuItem" data-tela="solicitacoes" onclick="abrirTela('solicitacoes')"><span class="menuIcon">📥</span>Pedidos</button>
+ <button class="menuItem" data-tela="emprestimos" onclick="abrirTela('emprestimos')"><span class="menuIcon">💰</span>Empréstimos</button>
+ <button class="menuItem" data-tela="usuarios" onclick="abrirTela('usuarios')"><span class="menuIcon">👥</span>Clientes</button>
+ <button class="menuItem" data-tela="saques" onclick="abrirTela('saques')"><span class="menuIcon">💸</span>Saques</button>
+ <button class="menuItem" data-tela="config" onclick="abrirTela('config')"><span class="menuIcon">⚙️</span>Mais</button>
+</nav>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
 import {
   getFirestore,
   collection,
@@ -3072,7 +3079,9 @@ if (!adminSnap.exists()) {
   return;
 }
 
-  console.log("Admin autenticado");
+   console.log("Admin autenticado");
+   const identidadeAdmin = document.getElementById("adminIdentity");
+   if(identidadeAdmin) identidadeAdmin.textContent = user.email || "Administrador";
 
 // A limpeza aprovada é idempotente e roda uma única vez. O documento
 // de controle impede qualquer repetição depois que ela termina.
@@ -4048,7 +4057,7 @@ window.toggleHistorico = () => {
 
 };
 // ================================================
-// 🧭 NAVEGAÇÃO — Troca de aba do menu lateral
+// 🧭 NAVEGAÇÃO — Troca de aba pelo menu inferior fixo
 // ================================================
 window.abrirTela = function(tela){
 document.getElementById("telaDashboard").style.display = "none";
@@ -4060,38 +4069,32 @@ document.getElementById("telaUsuarios").style.display = "none";
 document.getElementById("telaSaques").style.display = "none";
 
 const menu = document.querySelectorAll(".menuItem");
-menu.forEach(btn => btn.classList.remove("menuAtivo"));
+menu.forEach(btn => btn.classList.toggle("menuAtivo", btn.dataset.tela === tela));
 
 if(tela === "dashboard"){
 document.getElementById("telaDashboard").style.display = "block";
-menu[0].classList.add("menuAtivo");
 }
 
 if(tela === "emprestimos"){
 document.getElementById("telaEmprestimos").style.display = "block";
-menu[1].classList.add("menuAtivo");
 }
 
 if(tela === "solicitacoes"){
 document.getElementById("telaSolicitacoes").style.display = "block";
-menu[2].classList.add("menuAtivo");
 }
 
 if(tela === "historico"){
 document.getElementById("telaHistorico").style.display = "block";
-menu[3].classList.add("menuAtivo");
 }
 
 if(tela === "config"){
 document.getElementById("telaConfig").style.display = "block";
-menu[4].classList.add("menuAtivo");
 }
 if(tela === "usuarios"){
 document.getElementById("telaUsuarios").style.display = "block";
 }
 if(tela === "saques"){
 document.getElementById("telaSaques").style.display = "block";
-menu[5].classList.add("menuAtivo");
 carregarSaques();
 }
 window.scrollTo(0,0);
@@ -5187,6 +5190,16 @@ ${user.status === "ativo" ? "Bloquear" : "Desbloquear"}
  });
 
 }
+
+window.sairAdmin = async function(){
+ try{
+  await signOut(auth);
+  window.location.replace("login.html");
+ }catch(erro){
+  console.error("Erro ao sair do admin:", erro);
+  alert("Não foi possível sair agora.");
+ }
+};
   renderizarUsuarios();
 
 // Abre um extrato completo numa nova janela. O navegador oferece a opção

@@ -4124,6 +4124,9 @@ document.getElementById("telaFinanceiro").style.display = "block";
 }
 if(tela === "usuarios"){
 document.getElementById("telaUsuarios").style.display = "block";
+if(typeof window.renderizarUsuarios === "function"){
+ window.renderizarUsuarios();
+}
 }
 if(tela === "saques"){
 document.getElementById("telaSaques").style.display = "block";
@@ -5117,7 +5120,9 @@ window.renderizarUsuarios = async function(){
 
  const lista = document.getElementById("listaUsuariosAdmin");
 
- lista.innerHTML = "";
+ lista.innerHTML = "<p style='color:var(--text-soft)'>Carregando clientes...</p>";
+
+ try{
 
  const snapshot = await getDocs(
   collection(db,"usuarios")
@@ -5219,8 +5224,11 @@ ${user.status === "ativo" ? "Bloquear" : "Desbloquear"}
    </div>
   `;
 
- });
-
+  });
+ }catch(erro){
+  console.error("Erro ao carregar clientes:", erro);
+  lista.innerHTML = "<p style='color:var(--danger)'>Não foi possível carregar os clientes. Verifique as permissões do Firebase e tente novamente.</p>";
+ }
 }
 
 window.sairAdmin = async function(){

@@ -425,8 +425,18 @@ Nenhum usuário cadastrado.
 <script>
 // Navegação independente do Firebase: os botões continuam a trocar de tela
 // mesmo quando uma consulta de dados falhar ou estiver demorando.
-// Mantida somente como referência interna; a navegação visível é definida
-// antes do módulo, para não depender do carregamento do Firebase.
+// O HTML antigo tinha fechamentos de div misturados; esta normalização garante
+// que cada aba seja filha direta da área principal, nunca escondida dentro da
+// tela Início.
+const areaPrincipalAdmin = document.querySelector(".adminMain");
+const idsTelasAdmin = ["telaSolicitacoes", "telaEmprestimos", "telaHistorico", "telaConfig", "telaFinanceiro", "telaUsuarios", "telaSaques"];
+if(areaPrincipalAdmin){
+ idsTelasAdmin.forEach(function(id){
+  const tela = document.getElementById(id);
+  if(tela) areaPrincipalAdmin.appendChild(tela);
+ });
+}
+
 window.abrirTela = function(tela){
  const telas = ["dashboard", "solicitacoes", "emprestimos", "historico", "config", "financeiro", "usuarios", "saques"];
  telas.forEach(function(nome){

@@ -251,6 +251,11 @@ Saldo:<br>
 <div id="lucroLiquido">R$ 0</div>
 </div>
 
+<div class="card">
+<h3>📤 Retiradas do Caixa</h3>
+<div id="totalRetiradasCaixa">R$ 0</div>
+</div>
+
 </div>
 
 </div>
@@ -265,6 +270,18 @@ Saldo:<br>
 <input id="aporteValor" type="number" min="0.01" step="0.01" placeholder="Valor colocado na empresa">
 <input id="aporteMotivo" type="text" placeholder="Motivo (ex.: completar empréstimo de € 1.000)">
 <button onclick="registrarAporte()">Adicionar ao Caixa</button>
+</div>
+
+<div class="card">
+<h3>📤 Retirar dinheiro do Caixa</h3>
+<p>Registre uma saída de dinheiro da empresa. A retirada reduz apenas o Caixa disponível e não altera o lucro, os aportes ou os valores a receber.</p>
+<select id="retiradaCaixaPais">
+<option value="BR">Brasil (R$)</option>
+<option value="PT">Portugal (€)</option>
+</select>
+<input id="retiradaCaixaValor" type="number" min="0.01" step="0.01" placeholder="Valor retirado">
+<input id="retiradaCaixaMotivo" type="text" placeholder="Motivo da retirada">
+<button onclick="registrarRetiradaCaixa()">Registrar retirada</button>
 </div>
 
 </div>
@@ -397,7 +414,8 @@ import {
   query,
   where,
   orderBy,
-  limit
+  limit,
+  runTransaction
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
  let capitalBR = 1000;
 let capitalPT = 1000;
@@ -1798,6 +1816,8 @@ let evelynBR = Number(configuracaoFinanceira.repasseEvelynBR || 0);
 let evelynPT = Number(configuracaoFinanceira.repasseEvelynPT || 0);
 let lucroLiquidoBR = Number(configuracaoFinanceira.lucroLiquidoBR || 0);
 let lucroLiquidoPT = Number(configuracaoFinanceira.lucroLiquidoPT || 0);
+let retiradasCaixaBR = Number(configuracaoFinanceira.retiradasCaixaBR || 0);
+let retiradasCaixaPT = Number(configuracaoFinanceira.retiradasCaixaPT || 0);
 
 document.getElementById("caixaDisponivel").innerHTML =
 "💰 Caixa Disponível<br>" +
@@ -1858,6 +1878,11 @@ document.getElementById("lucroLiquido").innerHTML =
 "📈 Lucro recebido após Evelyn<br>" +
 "R$ " + lucroLiquidoBR.toFixed(2) +
 "<br>€ " + lucroLiquidoPT.toFixed(2);
+
+document.getElementById("totalRetiradasCaixa").innerHTML =
+"📤 Saídas registradas<br>" +
+"R$ " + retiradasCaixaBR.toFixed(2) +
+"<br>€ " + retiradasCaixaPT.toFixed(2);
 
 // ================================================
 // 🏠 ABA: DASHBOARD — Renderização das listas de vencimento
@@ -2866,6 +2891,8 @@ window.classificarEmprestimosAtuais = async function(){
     impactoCaixaPT: 0,
     aportesBR: 0,
     aportesPT: 0,
+    retiradasCaixaBR: 0,
+    retiradasCaixaPT: 0,
     repasseEvelynBR: 0,
     repasseEvelynPT: 0,
     lucroLiquidoBR: 0,
@@ -3785,6 +3812,76 @@ for (let i = 1; i <= dados.parcelas; i++) {
 alert("Empréstimo aprovado!");
  location.reload();
 };
+
+// Retirada administrativa: baixa somente o Caixa. O valor total retirado
+// fica separado dos aportes e do lucro para preservar o histórico financeiro.
+window.registrarRetiradaCaixa = async function(){
+ const input = document.getElementById("retiradaCaixaValor");
+ const motivoInput = document.getElementById("retiradaCaixaMotivo");
+ const pais = document.getElementById("retiradaCaixaPais").value;
+ const valor = arredondarDinheiro(input.value);
+ const motivo = (motivoInput.value || "Retirada administrativa do Caixa").trim();
+
+ if(valor <= 0){
+  alert("Informe um valor de retirada válido.");
+  return;
+ }
+
+ const moeda = pais === "PT" ? "€" : "R$";
+ const confirmar = confirm(
+  "Registrar retirada de " + moeda + " " + valor.toFixed(2) + " do Caixa?"
+ );
+ if(!confirmar) return;
+
+ const financeiroRef = doc(db,"configuracoes","financeiro");
+ const movimentacaoRef = doc(collection(db,"movimentacoesCaixa"));
+
+ try{
+  await runTransaction(db, async (transaction) => {
+   const financeiroSnap = await transaction.get(financeiroRef);
+   const financeiro = financeiroSnap.exists() ? financeiroSnap.data() : {};
+   const saldoInicial = pais === "PT"
+    ? Number(financeiro.saldoInicialPT ?? SALDO_INICIAL_CAIXA_PT)
+    : Number(financeiro.saldoInicialBR ?? SALDO_INICIAL_CAIXA_BR);
+   const impacto = pais === "PT"
+    ? Number(financeiro.impactoCaixaPT || 0)
+    : Number(financeiro.impactoCaixaBR || 0);
+   const saldoDisponivel = arredondarDinheiro(saldoInicial + impacto);
+
+   if(valor > saldoDisponivel){
+    throw new Error("Saldo insuficiente no Caixa. Disponível: " + moeda + " " + saldoDisponivel.toFixed(2));
+   }
+
+   transaction.set(
+    financeiroRef,
+    camposAcumuladosFinanceiros(pais,{
+     impactoCaixa: -valor,
+     retiradasCaixa: valor
+    }),
+    { merge: true }
+   );
+   transaction.set(movimentacaoRef,{
+    tipo: "retiradaCaixa",
+    direcao: "saida",
+    pais: pais,
+    moeda: moeda,
+    valor: -valor,
+    motivo: motivo,
+    criadoEm: new Date(),
+    origem: "admin",
+    criadoPor: auth.currentUser ? auth.currentUser.uid : null
+   });
+  });
+
+  input.value = "";
+  motivoInput.value = "";
+  alert("Retirada registrada e descontada do Caixa.");
+  location.reload();
+ }catch(erro){
+  console.error("Erro ao registrar retirada do Caixa:", erro);
+  alert(erro && erro.message ? erro.message : "Não foi possível registrar a retirada.");
+ }
+};
 // ================================================
 // 💰 ABA: EMPRÉSTIMOS — Gestão dos empréstimos ativos/quitados
 // ================================================
@@ -4112,10 +4209,22 @@ if(Number(valor) > restanteAtual){
  );
  const lote = writeBatch(db);
 
- lote.update(ref,{
-  pago: novoPago,
-  restante: restante
- });
+  lote.update(ref,{
+   pago: novoPago,
+   restante: restante,
+   ultimaDataPagamento: new Date()
+  });
+  lote.set(doc(collection(db,"pagamentos")),{
+   userId: dados.userId,
+   emprestimoId: dados.emprestimoId,
+   parcelaId: parcelaId,
+   numeroParcela: dados.numero || null,
+   pais: emprestimo.pais || dados.pais || "BR",
+   valor: Number(valor),
+   tipo: novoPago >= Number(dados.valor || 0) ? "quitacao" : "parcial",
+   registradoEm: new Date(),
+   registradoPor: auth.currentUser ? auth.currentUser.uid : null
+  });
 
  acumularFinanceiroNoLote(
   lote,
@@ -4186,7 +4295,7 @@ if(diasDiferenca > 0){
     
 const lotePagamento = writeBatch(db);
 
-lotePagamento.update(ref,{
+ lotePagamento.update(ref,{
     pago: dados.valor,
     restante: 0,
     status:"pago",
@@ -4200,6 +4309,17 @@ lotePagamento.update(ref,{
     diasDiferenca: diasDiferenca,
     perfilPagamento: perfilPagamento
 });
+ lotePagamento.set(doc(collection(db,"pagamentos")),{
+  userId: dados.userId,
+  emprestimoId: dados.emprestimoId,
+  parcelaId: parcelaId,
+  numeroParcela: dados.numero || null,
+  pais: emprestimo.pais || dados.pais || "BR",
+  valor: valorRecebidoAgora,
+  tipo: "quitacao",
+  registradoEm: new Date(),
+  registradoPor: auth.currentUser ? auth.currentUser.uid : null
+ });
 
 acumularFinanceiroNoLote(
  lotePagamento,
@@ -5057,6 +5177,10 @@ ${user.notasInternas ? "📝 <b>Nota:</b> " + user.notasInternas + "<br><br>" : 
       Ver
     </button>
 
+    <button onclick="gerarExtratoCliente('${id}')">
+      📄 Extrato PDF
+    </button>
+
     <button onclick="editarNotasUsuario('${id}')">
       📝 Notas
     </button>
@@ -5088,6 +5212,155 @@ ${user.status === "ativo" ? "Bloquear" : "Desbloquear"}
 
 }
   renderizarUsuarios();
+
+// Abre um extrato completo numa nova janela. O navegador oferece a opção
+// "Salvar como PDF" na impressão, evitando enviar os dados do cliente a um
+// serviço externo de geração de PDF.
+window.gerarExtratoCliente = async function(id){
+ const janela = window.open("", "_blank");
+ if(!janela){
+  alert("Permita pop-ups para gerar o extrato em PDF.");
+  return;
+ }
+
+ janela.document.write("<p style='font-family:Arial;padding:30px'>Gerando extrato...</p>");
+ janela.document.close();
+
+ const escaparHtml = (valor) => String(valor ?? "")
+  .replace(/&/g, "&amp;")
+  .replace(/</g, "&lt;")
+  .replace(/>/g, "&gt;")
+  .replace(/\"/g, "&quot;")
+  .replace(/'/g, "&#039;");
+ const dataFormatada = (valor) => {
+  if(!valor) return "Não registrada";
+  const data = typeof valor.toDate === "function" ? valor.toDate() : new Date(valor);
+  return Number.isNaN(data.getTime()) ? "Não registrada" : data.toLocaleDateString("pt-BR");
+ };
+ const dataHoraFormatada = (valor) => {
+  if(!valor) return "Não registrada";
+  const data = typeof valor.toDate === "function" ? valor.toDate() : new Date(valor);
+  return Number.isNaN(data.getTime()) ? "Não registrada" : data.toLocaleString("pt-BR");
+ };
+ const moeda = (valor, pais) => (pais === "PT" ? "€" : "R$") + " " + Number(valor || 0).toFixed(2);
+ const statusEmprestimo = (status) => ({
+  aguardando: "Em análise", ativo: "Em aberto", rejeitado: "Recusado", perdido: "Encerrado como perda"
+ }[status] || status || "Não informado");
+
+ try{
+  const usuarioSnap = await getDoc(doc(db,"usuarios",id));
+  if(!usuarioSnap.exists()) throw new Error("Cliente não encontrado.");
+  const cliente = usuarioSnap.data();
+
+  const emprestimosSnap = await getDocs(collection(db,"emprestimos"));
+  const emprestimos = emprestimosSnap.docs.filter((emprestimoDoc) => {
+   const dados = emprestimoDoc.data();
+   return !registroTeste(dados) && (dados.userId === id || (!!cliente.email && dados.email === cliente.email));
+  });
+  const idsEmprestimos = new Set(emprestimos.map((emprestimoDoc) => emprestimoDoc.id));
+  const parcelasSnap = await getDocs(collection(db,"parcelas"));
+  const parcelasPorEmprestimo = new Map();
+  parcelasSnap.docs.forEach((parcelaDoc) => {
+   const parcela = parcelaDoc.data();
+   if(!idsEmprestimos.has(parcela.emprestimoId)) return;
+   const lista = parcelasPorEmprestimo.get(parcela.emprestimoId) || [];
+   lista.push(parcela);
+   parcelasPorEmprestimo.set(parcela.emprestimoId, lista);
+  });
+  const pagamentosSnap = await getDocs(
+   query(collection(db,"pagamentos"), where("userId","==",id))
+  );
+  const pagamentosPorEmprestimo = new Map();
+  pagamentosSnap.docs.forEach((pagamentoDoc) => {
+   const pagamento = pagamentoDoc.data();
+   if(!idsEmprestimos.has(pagamento.emprestimoId)) return;
+   const lista = pagamentosPorEmprestimo.get(pagamento.emprestimoId) || [];
+   lista.push(pagamento);
+   pagamentosPorEmprestimo.set(pagamento.emprestimoId, lista);
+  });
+
+  const linhasEmprestimos = emprestimos
+   .sort((a,b) => {
+    const dataA = a.data().criadoEm?.toDate?.()?.getTime?.() || 0;
+    const dataB = b.data().criadoEm?.toDate?.()?.getTime?.() || 0;
+    return dataB - dataA;
+   })
+   .map((emprestimoDoc, indice) => {
+    const emprestimo = emprestimoDoc.data();
+    const parcelas = (parcelasPorEmprestimo.get(emprestimoDoc.id) || [])
+     .sort((a,b) => Number(a.numero || 0) - Number(b.numero || 0));
+    const aberto = parcelas.some((parcela) => Number(parcela.pago || 0) < Number(parcela.valor || 0));
+    const proximasParcelas = parcelas
+     .filter((parcela) => Number(parcela.pago || 0) < Number(parcela.valor || 0))
+     .sort((a,b) => {
+      const dataA = a.vencimento?.toDate?.()?.getTime?.() || Number.MAX_SAFE_INTEGER;
+      const dataB = b.vencimento?.toDate?.()?.getTime?.() || Number.MAX_SAFE_INTEGER;
+      return dataA - dataB;
+     });
+    const avisoVencimentos = proximasParcelas.length
+     ? `<div class="vencimentos"><b>Próximas parcelas a vencer:</b><br>${proximasParcelas.map((parcela) =>
+        "Parcela " + escaparHtml(parcela.numero || "-") + " — " + dataFormatada(parcela.vencimento) + " — " + moeda(Math.max(0, Number(parcela.valor || 0) - Number(parcela.pago || 0)), emprestimo.pais)
+       ).join("<br>")}</div>`
+     : "<div class=\"vencimentos quitado\"><b>Não há parcelas em aberto neste empréstimo.</b></div>";
+    const linhasParcelas = parcelas.length
+     ? parcelas.map((parcela) => `
+       <tr>
+        <td>${escaparHtml(parcela.numero || "-")}</td>
+        <td>${dataFormatada(parcela.vencimento)}</td>
+        <td>${moeda(parcela.valor, emprestimo.pais)}</td>
+        <td>${moeda(parcela.pago, emprestimo.pais)}</td>
+        <td>${moeda(Math.max(0, Number(parcela.valor || 0) - Number(parcela.pago || 0)), emprestimo.pais)}</td>
+        <td>${escaparHtml(parcela.status || (Number(parcela.pago || 0) >= Number(parcela.valor || 0) ? "pago" : "pendente"))}</td>
+        <td>${dataHoraFormatada(parcela.pagoEm || parcela.dataPagamento)}</td>
+       </tr>`).join("")
+     : "<tr><td colspan='7'>Ainda não há parcelas geradas para este empréstimo.</td></tr>";
+    const pagamentos = (pagamentosPorEmprestimo.get(emprestimoDoc.id) || [])
+     .sort((a,b) => {
+      const dataA = a.registradoEm?.toDate?.()?.getTime?.() || 0;
+      const dataB = b.registradoEm?.toDate?.()?.getTime?.() || 0;
+      return dataA - dataB;
+     });
+    const linhasPagamentos = pagamentos.length
+     ? pagamentos.map((pagamento) => `
+       <tr><td>${dataHoraFormatada(pagamento.registradoEm)}</td><td>${escaparHtml(pagamento.numeroParcela || "-")}</td><td>${moeda(pagamento.valor, emprestimo.pais)}</td><td>${escaparHtml(pagamento.tipo || "pagamento")}</td></tr>`).join("")
+     : "<tr><td colspan='4'>Sem pagamentos detalhados registrados. Para registros antigos, consulte a data na tabela de parcelas, quando disponível.</td></tr>";
+
+    return `
+     <section class="emprestimo">
+      <h2>Empréstimo ${indice + 1} — ${aberto ? "Em aberto" : "Encerrado"}</h2>
+      <div class="resumo">
+       <div><b>Status:</b> ${escaparHtml(statusEmprestimo(emprestimo.status))}</div>
+       <div><b>Solicitado em:</b> ${dataFormatada(emprestimo.criadoEm)}</div>
+       <div><b>Aprovado em:</b> ${dataFormatada(emprestimo.dataAprovacao)}</div>
+       <div><b>Valor liberado:</b> ${moeda(emprestimo.valor, emprestimo.pais)}</div>
+       <div><b>Total do contrato:</b> ${moeda(emprestimo.valorFinal || emprestimo.valor, emprestimo.pais)}</div>
+       <div><b>Parcelas:</b> ${escaparHtml(emprestimo.parcelas || "-")}</div>
+      </div>
+      ${avisoVencimentos}
+      <h3>Parcelas e pagamentos registrados</h3>
+      <table><thead><tr><th>#</th><th>Vencimento</th><th>Valor</th><th>Pago</th><th>Em aberto</th><th>Status</th><th>Data de pagamento</th></tr></thead>
+      <tbody>${linhasParcelas}</tbody></table>
+      <h3>Histórico de pagamentos</h3>
+      <table><thead><tr><th>Data e hora</th><th>Parcela</th><th>Valor</th><th>Tipo</th></tr></thead>
+      <tbody>${linhasPagamentos}</tbody></table>
+     </section>`;
+   }).join("") || "<p>Nenhum empréstimo encontrado para este cliente.</p>";
+
+  const paisCliente = cliente.pais === "PT" ? "PT" : "BR";
+  janela.document.open();
+  janela.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Extrato - ${escaparHtml(cliente.nome || cliente.email || "Cliente")}</title>
+   <style>
+    *{box-sizing:border-box} body{font-family:Arial,sans-serif;color:#172033;margin:0;background:#f4f6f8;padding:28px} .pagina{max-width:900px;margin:auto;background:#fff;padding:34px;border-radius:12px} h1{margin:0;color:#cc4e00} h2{font-size:18px;color:#cc4e00;margin:0 0 12px} h3{font-size:14px;margin:18px 0 8px} .cabecalho{display:flex;justify-content:space-between;gap:20px;border-bottom:2px solid #ff6200;padding-bottom:18px;margin-bottom:22px}.dados{line-height:1.65}.resumo{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:13px}.emprestimo{border:1px solid #d8dee8;border-radius:8px;padding:16px;margin-top:18px;page-break-inside:avoid}.vencimentos{margin-top:14px;padding:10px;border-radius:6px;background:#fff1e6;line-height:1.6;font-size:13px}.vencimentos.quitado{background:#ecfdf5}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #d8dee8;padding:7px;text-align:left}th{background:#fff1e6}@media print{body{background:#fff;padding:0}.pagina{max-width:none;padding:0;border-radius:0}.btn{display:none}.emprestimo{break-inside:avoid}}
+   </style></head><body><main class="pagina"><div class="cabecalho"><div><h1>IsaCred — Extrato do Cliente</h1><div>Emitido em ${new Date().toLocaleString("pt-BR")}</div></div><button class="btn" onclick="window.print()">Imprimir / Salvar como PDF</button></div>
+   <section class="dados"><b>Cliente:</b> ${escaparHtml(cliente.nome || "Não informado")}<br><b>E-mail:</b> ${escaparHtml(cliente.email || "Não informado")}<br><b>Telefone:</b> ${escaparHtml(cliente.telefone || "Não informado")}<br><b>Documento:</b> ${escaparHtml(cliente.cpf || "Não informado")}</section>${linhasEmprestimos}</main></body></html>`);
+  janela.document.close();
+ }catch(erro){
+  console.error("Erro ao gerar extrato do cliente:", erro);
+  janela.document.open();
+  janela.document.write("<p style='font-family:Arial;padding:30px'>Não foi possível gerar o extrato. " + escaparHtml(erro.message || "") + "</p>");
+  janela.document.close();
+ }
+};
 
 window.enviarRecuperacaoSenha = async function(id){
 

@@ -12,11 +12,14 @@ on:
 
 concurrency:
   group: telegram-vivacred
-  cancel-in-progress: true
+  # A fila é curta e cada execução termina rápido. Nunca cancelar uma
+  # execução em andamento evita deixar um alerta preso em "processando".
+  cancel-in-progress: false
 
 jobs:
   enviar:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Baixar projeto
         uses: actions/checkout@v4
@@ -29,13 +32,9 @@ jobs:
       - name: Instalar dependências
         run: pip install -r .github/scripts/requirements.txt
 
-      - name: Manter envio dos alertas ativo
+      - name: Processar alertas pendentes
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-        run: |
-          for rodada in $(seq 1 330); do
-            python .github/scripts/processar_telegram.py
-            if [ "$rodada" -lt 330 ]; then sleep 60; fi
-          done
+        run: python .github/scripts/processar_telegram.py

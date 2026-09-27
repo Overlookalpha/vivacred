@@ -53,16 +53,15 @@ def inicializar_firebase():
 
 
 def enviar_mensagem(texto):
-    try:
-        resposta = requests.post(
-            TELEGRAM_API + "/sendMessage",
-            json={"chat_id": TELEGRAM_CHAT_ID, "text": texto, "parse_mode": "HTML"},
-            timeout=15,
-        )
-        if not resposta.ok:
-            print("Falha ao enviar mensagem: " + resposta.text)
-    except Exception as erro:
-        print("Erro ao enviar mensagem: " + str(erro))
+    resposta = requests.post(
+        TELEGRAM_API + "/sendMessage",
+        json={"chat_id": TELEGRAM_CHAT_ID, "text": texto, "parse_mode": "HTML"},
+        timeout=15,
+    )
+    resposta.raise_for_status()
+    retorno = resposta.json()
+    if not retorno.get("ok"):
+        raise RuntimeError(retorno.get("description") or "Telegram recusou a mensagem")
 
 
 def calcular_cobranca_parcela(parcela, hoje):

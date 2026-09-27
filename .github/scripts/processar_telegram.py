@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import datetime, timedelta, timezone
 
 import firebase_admin
 import requests
@@ -111,6 +112,23 @@ def montar_mensagem(db, evento):
     return mensagem_cliente(db, tipo, dados, uid)
 
 
+LIMITE_POR_EXECUCAO = 50
+MAX_TENTATIVAS = 3
+
+
+def horario_pronto(valor, agora):
+    """Retorna se a mensagem pode ser tentada agora.
+
+    Registros antigos não tinham data de tentativa; eles são tratados como
+    prontos para recuperar a fila que existia antes desta correção.
+    """
+    if valor is None:
+        return True
+    if hasattr(valor, "timestamp"):
+        return valor <= agora
+    return True
+
+
 def main():
     conta = json.loads(os.environ["FIREBASE_SERVICE_ACCOUNT_JSON"])
     firebase_admin.initialize_app(credentials.Certificate(conta))
@@ -119,24 +137,69 @@ def main():
     chat_id = os.environ["TELEGRAM_CHAT_ID"]
     url = f"https://api.telegram.org/bot{token}/sendMessage"
 
-    pendentes = list(db.collection("notificacoes").where("statusTelegram", "==", "pendente").limit(50).stream())
-    print(f"Alertas pendentes encontrados: {len(pendentes)}")
+    agora = datetime.now(timezone.utc)
+    limite_processando = agora - timedelta(minutes=15)
+    candidatos = []
+    vistos = set()
+
+    # Pendente inclui tentativas novas e as que aguardam a próxima janela.
+    for snap in db.collection("notificacoes").where("statusTelegram", "==", "pendente").limit(LIMITE_POR_EXECUCAO).stream():
+        evento = snap.to_dict() or {}
+        if horario_pronto(evento.get("proximaTentativaTelegramEm"), agora):
+            candidatos.append(snap)
+            vistos.add(snap.id)
+
+    # Recupera uma execução interrompida antes de marcar o alerta como enviado.
+    for snap in db.collection("notificacoes").where("statusTelegram", "==", "processando").limit(LIMITE_POR_EXECUCAO).stream():
+        evento = snap.to_dict() or {}
+        iniciou = evento.get("processandoEm")
+        if (iniciou is None or iniciou <= limite_processando) and snap.id not in vistos:
+            candidatos.append(snap)
+            vistos.add(snap.id)
+
+    pendentes = candidatos[:LIMITE_POR_EXECUCAO]
+    print(f"Alertas prontos para envio: {len(pendentes)}")
     enviados = 0
     erros = 0
     for snap in pendentes:
         ref = snap.reference
+        evento = snap.to_dict() or {}
+        tentativas = int(evento.get("tentativasTelegram") or 0) + 1
         try:
-            ref.update({"statusTelegram": "processando"})
-            texto = montar_mensagem(db, snap.to_dict() or {})
+            ref.update({
+                "statusTelegram": "processando",
+                "processandoEm": firestore.SERVER_TIMESTAMP,
+                "tentativasTelegram": tentativas
+            })
+            texto = montar_mensagem(db, evento)
             resposta = requests.post(url, json={"chat_id": chat_id, "text": texto}, timeout=20)
             resposta.raise_for_status()
             retorno = resposta.json()
             if not retorno.get("ok"):
                 raise RuntimeError(retorno.get("description") or "Telegram recusou a mensagem")
-            ref.update({"statusTelegram": "enviado", "enviadoEm": firestore.SERVER_TIMESTAMP})
+            ref.update({
+                "statusTelegram": "enviado",
+                "enviadoEm": firestore.SERVER_TIMESTAMP,
+                "erroTelegram": firestore.DELETE_FIELD,
+                "proximaTentativaTelegramEm": firestore.DELETE_FIELD
+            })
             enviados += 1
         except Exception as erro:
-            ref.update({"statusTelegram": "erro", "erroTelegram": str(erro)[:300], "processadoEm": firestore.SERVER_TIMESTAMP})
+            mensagem_erro = str(erro)[:300]
+            if tentativas < MAX_TENTATIVAS:
+                espera = 15 * (2 ** (tentativas - 1))
+                ref.update({
+                    "statusTelegram": "pendente",
+                    "erroTelegram": mensagem_erro,
+                    "proximaTentativaTelegramEm": agora + timedelta(minutes=espera),
+                    "processadoEm": firestore.SERVER_TIMESTAMP
+                })
+            else:
+                ref.update({
+                    "statusTelegram": "erro",
+                    "erroTelegram": mensagem_erro,
+                    "processadoEm": firestore.SERVER_TIMESTAMP
+                })
             erros += 1
     print(f"Alertas enviados: {enviados}; alertas com erro: {erros}")
 

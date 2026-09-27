@@ -425,6 +425,8 @@ Nenhum usuário cadastrado.
 <script>
 // Navegação independente do Firebase: os botões continuam a trocar de tela
 // mesmo quando uma consulta de dados falhar ou estiver demorando.
+// Mantida somente como referência interna; a navegação visível é definida
+// antes do módulo, para não depender do carregamento do Firebase.
 window.abrirTela = function(tela){
  const telas = ["dashboard", "solicitacoes", "emprestimos", "historico", "config", "financeiro", "usuarios", "saques"];
  telas.forEach(function(nome){
@@ -4107,9 +4109,9 @@ window.toggleHistorico = () => {
 
 };
 // ================================================
-// 🧭 NAVEGAÇÃO — Troca de aba pelo menu inferior fixo
+// 🧭 NAVEGAÇÃO — versão legada do módulo Firebase
 // ================================================
-window.abrirTela = function(tela){
+window.abrirTelaFirebaseLegada = function(tela){
 document.getElementById("telaDashboard").style.display = "none";
 document.getElementById("telaSolicitacoes").style.display = "none";
 document.getElementById("telaEmprestimos").style.display = "none";

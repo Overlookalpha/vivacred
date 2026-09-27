@@ -273,6 +273,12 @@ Saldo:<br>
 </div>
 
 </div>
+
+<!-- FINANCEIRO -->
+<div id="telaFinanceiro" style="display:none;">
+<h3>💰 Financeiro</h3>
+<p style="color:var(--text-soft);margin-top:-6px;">Caixa, valores em aberto, entradas e saídas da empresa.</p>
+<div id="conteudoFinanceiro"></div>
 </div>
 
 <!-- SOLICITAÇÕES -->
@@ -349,6 +355,20 @@ Abrir histórico
 
 <div class="card">
 
+<h4>💸 Saques ISAcoin</h4>
+
+<p>
+Consulte e confirme os pedidos de saque dos clientes.
+</p>
+
+<button onclick="abrirTela('saques')">
+Abrir saques
+</button>
+
+</div>
+
+<div class="card">
+
 <h4>🧪 Registros de teste</h4>
 
 <p>
@@ -397,8 +417,8 @@ Nenhum usuário cadastrado.
  <button class="menuItem menuAtivo" data-tela="dashboard" onclick="abrirTela('dashboard')"><span class="menuIcon">🏠</span>Início</button>
  <button class="menuItem" data-tela="solicitacoes" onclick="abrirTela('solicitacoes')"><span class="menuIcon">📥</span>Pedidos</button>
  <button class="menuItem" data-tela="emprestimos" onclick="abrirTela('emprestimos')"><span class="menuIcon">💰</span>Empréstimos</button>
+ <button class="menuItem" data-tela="financeiro" onclick="abrirTela('financeiro')"><span class="menuIcon">📊</span>Financeiro</button>
  <button class="menuItem" data-tela="usuarios" onclick="abrirTela('usuarios')"><span class="menuIcon">👥</span>Clientes</button>
- <button class="menuItem" data-tela="saques" onclick="abrirTela('saques')"><span class="menuIcon">💸</span>Saques</button>
  <button class="menuItem" data-tela="config" onclick="abrirTela('config')"><span class="menuIcon">⚙️</span>Mais</button>
 </nav>
 
@@ -2641,6 +2661,14 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// Mantém o dashboard focado em operações. O painel financeiro existente é
+// reutilizado na sua própria aba, sem duplicar cálculos ou IDs do Firebase.
+const painelFinanceiro = document.getElementById("painelFinanceiro");
+const conteudoFinanceiro = document.getElementById("conteudoFinanceiro");
+if(painelFinanceiro && conteudoFinanceiro){
+ conteudoFinanceiro.appendChild(painelFinanceiro);
+}
+
 const SALDO_INICIAL_CAIXA_BR = 331;
 const SALDO_INICIAL_CAIXA_PT = 0;
 const PERCENTUAL_EVELYN = 0.10;
@@ -4065,6 +4093,7 @@ document.getElementById("telaSolicitacoes").style.display = "none";
 document.getElementById("telaEmprestimos").style.display = "none";
 document.getElementById("telaHistorico").style.display = "none";
 document.getElementById("telaConfig").style.display = "none";
+document.getElementById("telaFinanceiro").style.display = "none";
 document.getElementById("telaUsuarios").style.display = "none";
 document.getElementById("telaSaques").style.display = "none";
 
@@ -4089,6 +4118,9 @@ document.getElementById("telaHistorico").style.display = "block";
 
 if(tela === "config"){
 document.getElementById("telaConfig").style.display = "block";
+}
+if(tela === "financeiro"){
+document.getElementById("telaFinanceiro").style.display = "block";
 }
 if(tela === "usuarios"){
 document.getElementById("telaUsuarios").style.display = "block";

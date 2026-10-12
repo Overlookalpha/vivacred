@@ -1099,6 +1099,11 @@ import {
   uploadBytes,
   getDownloadURL
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-storage.js";
+
+import {
+  getFunctions,
+  httpsCallable
+} from "https://www.gstatic.com/firebasejs/12.10.0/firebase-functions.js";
 const firebaseConfig = {
   apiKey: "AIzaSyDJHtQp7OUxgYqtcD_2eTqzh1BRpufvKrY",
   authDomain: "vivacred-5a5b8.firebaseapp.com",
@@ -1281,6 +1286,19 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
+const functions = getFunctions(app, "europe-west1");
+const recalcularParcelaVencida = httpsCallable(functions, "recalcularParcelaVencida");
+
+// O painel mantém o cálculo visual imediato, mas a gravação dos encargos é
+// feita no servidor a partir da parcela salva. Assim o navegador não envia
+// multa, juros ou saldo que possam ter sido alterados localmente.
+async function atualizarCobrancaParcelaNoServidor(parcelaId){
+  try{
+    await recalcularParcelaVencida({ parcelaId });
+  }catch(erro){
+    console.warn("Não foi possível atualizar a cobrança no servidor:", erro.code || erro.message);
+  }
+}
 
 const inputFotoPerfilEl = document.getElementById("inputFotoPerfil");
 const headerFotoWrapEl = document.getElementById("headerFotoWrap");
@@ -2400,12 +2418,7 @@ function renderizarGrupoEmprestimo(grupo){
 
   restante = dados.valor + multa + juros - dados.pago;
 
-  updateDoc(doc(db,"parcelas",docSnap.id),{
-  multa: multa,
-  juros: juros,
-  diasAtraso: diasAtraso,
-  restante: restante
-  });
+  atualizarCobrancaParcelaNoServidor(docSnap.id);
 
   status = "⚠️ Atrasado";
 

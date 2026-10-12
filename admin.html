@@ -84,6 +84,13 @@ flex:1;
 }
 .menuItem .menuIcon{display:block;font-size:20px;line-height:24px}
 
+.adminDashboardIntro{margin:0 0 18px;color:var(--text-soft);font-size:14px;line-height:1.5}
+.vencimentoLegenda{display:flex;flex-wrap:wrap;gap:8px;margin:-4px 0 2px;font-size:11px;color:var(--text-soft)}
+.vencimentoLegenda span{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:99px;background:var(--bg);border:1px solid var(--border)}
+.vencimentoLegenda i{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--primary)}
+.vencimentoLegenda .alerta i{background:var(--danger)}
+.vencimentoLegenda .proximo i{background:#60a5fa}
+
 #cardCentralVencimentos{display:grid;gap:14px}
 #cardCentralVencimentos h3{margin:0 0 4px}
 #cardCentralVencimentos [id^="vencimentos"]{margin:0;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--bg);min-height:54px}
@@ -125,9 +132,11 @@ color:var(--primary-dark);
 <div id="telaDashboard">
 
 <h2>Painel Administrativo VivaCred</h2>
+<p class="adminDashboardIntro">Comece pelos vencimentos e pedidos que precisam de atenção. Os indicadores financeiros continuam disponíveis nas seções abaixo.</p>
 <div class="card" id="cardProximoVencimento">
 
 <h3>🎯 Próximo Vencimento</h3>
+<p class="adminDashboardIntro" style="margin:0 0 12px;">Atendimento mais próximo que exige acompanhamento.</p>
 
 <div id="proximoVencimentoInfo">
 Nenhum vencimento encontrado.
@@ -139,6 +148,11 @@ Nenhum vencimento encontrado.
 <div class="card" id="cardCentralVencimentos">
 
 <h3>📅 Central de Vencimentos</h3>
+<div class="vencimentoLegenda" aria-label="Legenda da Central de Vencimentos">
+  <span class="alerta"><i></i> Atrasados: prioridade</span>
+  <span><i></i> Hoje: acompanhar</span>
+  <span class="proximo"><i></i> Próximos dias: prevenir</span>
+</div>
 
 <div id="vencimentos3Dias"></div>
 

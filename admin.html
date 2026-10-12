@@ -94,6 +94,7 @@ flex:1;
 #cardCentralVencimentos{display:grid;gap:14px}
 #cardCentralVencimentos h3{margin:0 0 4px}
 #cardCentralVencimentos [id^="vencimentos"]{margin:0;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--bg);min-height:54px}
+#cardCentralVencimentos [id^="vencimentos"][hidden]{display:none}
 #vencimentos3Dias{border-left:4px solid #facc15!important}
 #vencimentos2Dias{border-left:4px solid #fb923c!important}
 #vencimentos1Dia{border-left:4px solid #60a5fa!important}
@@ -1944,9 +1945,13 @@ ${proximaParcela.vencimento.toLocaleDateString()}
 <br><br>
 
 ⏳ ${
- diasRestantes >= 0
- ? "Faltam " + diasRestantes + " dias"
- : "Atrasado há " + Math.abs(diasRestantes) + " dias"
+ diasRestantes < 0
+ ? "Em atraso há " + Math.abs(diasRestantes) + (Math.abs(diasRestantes) === 1 ? " dia" : " dias")
+ : diasRestantes === 0
+ ? "Vence hoje"
+ : diasRestantes === 1
+ ? "Vence amanhã"
+ : "Vence em " + diasRestantes + " dias"
 }
 
 <br><br>
@@ -2680,34 +2685,38 @@ window.darEmprestimoComoPerdido = async function(emprestimoId){
  location.reload();
 };
 
-document.getElementById("vencimentos3Dias").innerHTML =
-await montarListaVencimentos(
- vencemEm3Dias,
- "🟡 Vence em 3 dias:"
+async function atualizarGrupoVencimentos(id, lista, titulo){
+ const grupo = document.getElementById(id);
+ if(!grupo) return;
+
+ // Um bloco sem parcelas não precisa disputar atenção com os casos que
+ // exigem acompanhamento. A consulta e os dados continuam os mesmos.
+ grupo.hidden = lista.length === 0;
+ if(!grupo.hidden){
+  grupo.innerHTML = await montarListaVencimentos(lista,titulo);
+ }
+}
+
+await atualizarGrupoVencimentos(
+ "vencimentos3Dias", vencemEm3Dias, "🟡 Vence em 3 dias:"
 );
 
-document.getElementById("vencimentos2Dias").innerHTML =
-await montarListaVencimentos(
- vencemEm2Dias,
- "🟠 Vence em 2 dias:"
+await atualizarGrupoVencimentos(
+ "vencimentos2Dias", vencemEm2Dias, "🟠 Vence em 2 dias:"
 );
 
-document.getElementById("vencimentos1Dia").innerHTML =
-await montarListaVencimentos(
- vencemAmanha,
- "🔵 Vence amanhã:"
+await atualizarGrupoVencimentos(
+ "vencimentos1Dia", vencemAmanha, "🔵 Vence amanhã:"
 );
 
-document.getElementById("vencimentosHoje").innerHTML =
-await montarListaVencimentos(
- vencemHoje,
- "📅 Vence hoje:"
+await atualizarGrupoVencimentos(
+ "vencimentosHoje", vencemHoje, "📅 Vence hoje:"
 );
 
 if(atrasados.length === 0){
 
  document.getElementById("vencimentosAtrasados").innerHTML =
- "🔴 Em atraso: 0";
+ "✅ Nenhuma parcela em atraso.";
 
 }else{
 

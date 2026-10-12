@@ -209,6 +209,18 @@
       font-size: 13px;
     }
 
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
     .modal {
       display: none;
       position: fixed;
@@ -722,9 +734,7 @@
   <div class="container" id="topoApp">
 
     
-    <div class="card">
-      <div id="userEmail" class="email"></div>
-    </div>
+    <div id="userEmail" class="sr-only" aria-live="polite"></div>
 
     <div id="areaInstalarApp"></div>
 

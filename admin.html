@@ -620,10 +620,22 @@ function inicioDoDia(data){
  return new Date(data.getFullYear(),data.getMonth(),data.getDate());
 }
 
+function dataLocalInformada(valor){
+ const partes = String(valor || "").trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+ if(!partes) return null;
+ const data = new Date(Number(partes[1]),Number(partes[2]) - 1,Number(partes[3]),12);
+ return data.getFullYear() === Number(partes[1]) &&
+  data.getMonth() === Number(partes[2]) - 1 &&
+  data.getDate() === Number(partes[3])
+  ? data
+  : null;
+}
+
 // Este resumo não aprova, recusa nem altera score. Ele apenas reúne fatos
 // verificáveis para que o administrador faça a revisão manual do pedido.
 function resumirComportamentoPagamento(parcelas,hojeReferencia = new Date()){
  let pagamentosConcluidos = 0;
+ let pagamentosSemDataReal = 0;
  let antecipadas7Dias = 0;
  let atrasosAcima3Dias = 0;
  let maiorAtraso = 0;
@@ -635,16 +647,23 @@ function resumirComportamentoPagamento(parcelas,hojeReferencia = new Date()){
   const vencimento = dataRegistro(parcela.vencimento);
   if(!vencimento) return;
 
-  const pagamento = dataRegistro(
-   parcela.pagoEm || parcela.dataPagamento || parcela.ultimaDataPagamento
+  // pagoEm/dataPagamento antigos representam o momento em que o admin
+  // confirmou a parcela, não necessariamente quando o cliente pagou.
+  // Só a data real registrada separadamente pode avaliar atraso/adiantamento.
+  const pagamentoReal = dataRegistro(
+   parcela.dataPagamentoReal || parcela.dataPagamentoEfetivo
   );
   const quitada = parcela.status === "pago" ||
    Number(parcela.pago || 0) >= Number(parcela.valor || 0);
 
-  if(quitada && pagamento){
+  if(quitada){
    pagamentosConcluidos++;
+   if(!pagamentoReal){
+    pagamentosSemDataReal++;
+    return;
+   }
    const diferencaDias = Math.floor(
-    (inicioDoDia(pagamento) - inicioDoDia(vencimento)) / 86400000
+    (inicioDoDia(pagamentoReal) - inicioDoDia(vencimento)) / 86400000
    );
 
    if(diferencaDias <= -7) antecipadas7Dias++;
@@ -668,6 +687,7 @@ function resumirComportamentoPagamento(parcelas,hojeReferencia = new Date()){
 
  return {
   pagamentosConcluidos,
+  pagamentosSemDataReal,
   antecipadas7Dias,
   atrasosAcima3Dias,
   atrasosEmAberto,
@@ -683,6 +703,10 @@ function resumoComportamentoHTML(resumo){
   linhas.push("⚪ Sem parcelas concluídas para analisar.");
  }else{
   linhas.push("📋 " + resumo.pagamentosConcluidos + " parcela(s) concluída(s) registrada(s).");
+ }
+
+ if(resumo.pagamentosSemDataReal > 0){
+  linhas.push("ℹ️ " + resumo.pagamentosSemDataReal + " pagamento(s) histórico(s) sem data real confirmada; não entram na avaliação de atraso ou antecipação.");
  }
 
  if(resumo.bomHistorico){
@@ -4576,11 +4600,31 @@ if(Number(valor) > restanteAtual){
  );
 
 const vencimento = dados.vencimento.toDate();
+const agoraConfirmacao = new Date();
+const sugestaoDataPagamento = [
+ agoraConfirmacao.getFullYear(),
+ String(agoraConfirmacao.getMonth() + 1).padStart(2,"0"),
+ String(agoraConfirmacao.getDate()).padStart(2,"0")
+].join("-");
+const textoDataPagamento = prompt(
+ "Data em que o cliente pagou (AAAA-MM-DD):",
+ sugestaoDataPagamento
+);
 
-const hoje = new Date();
+if(textoDataPagamento === null){
+ if(janela) janela.close();
+ return;
+}
+
+const dataPagamentoReal = dataLocalInformada(textoDataPagamento);
+if(!dataPagamentoReal){
+ if(janela) janela.close();
+ alert("Informe uma data válida no formato AAAA-MM-DD.");
+ return;
+}
 
 const diasDiferenca = Math.floor(
- (hoje - vencimento) / (1000 * 60 * 60 * 24)
+ (inicioDoDia(dataPagamentoReal) - inicioDoDia(vencimento)) / 86400000
 );
 
 let perfilPagamento = "pontual";
@@ -4600,12 +4644,13 @@ const lotePagamento = writeBatch(db);
     restante: 0,
     status:"pago",
 
-    pagoEm: new Date(),
+    pagoEm: agoraConfirmacao,
     formaPagamento: "manual",
     transacaoId: "manual",
     confirmadoPor: "admin",
 
-    dataPagamento: new Date(),
+    dataPagamento: agoraConfirmacao,
+    dataPagamentoReal: dataPagamentoReal,
     diasDiferenca: diasDiferenca,
     perfilPagamento: perfilPagamento
 });
@@ -6038,33 +6083,6 @@ ${totalAtivos > 0 ? "SIM" : "NÃO"}
 <b>🧾 Comportamento de pagamento</b><br>
 ${resumoComportamentoHTML(comportamentoPagamento)}
 </div>
-
-🚀 Pagamentos Adiantados:
-${user.pagamentosAdiantados || 0}
-<br><br>
-
-⭐ Classificação:
-${classificacao}
-<br><br>
-
-📋 Pagamentos Registrados:
-${totalPagamentos}
-<br><br>
-
-⏳ Maior Atraso:
-${maiorAtraso} dias
-<br><br>
-
-🎯 Confiabilidade:
-${confiabilidade}%
-<br><br>
-
-${recomendacao}
-<br><br>
-
-🟢 Adiantadas: ${totalAdiantadas}<br>
-🟡 Pontuais: ${totalPontuais}<br>
-🔴 Atrasadas: ${totalAtrasadas + atrasadasEmAberto}
 
 `;
 

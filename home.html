@@ -109,6 +109,37 @@
       line-height: 1.45;
     }
 
+    .resumo-proxima-parcela {
+      display: none;
+      margin-top: 16px;
+      padding: 16px;
+      border: 1px solid rgba(255, 98, 0, 0.35);
+      border-radius: 14px;
+      background: var(--primary-soft);
+      cursor: pointer;
+    }
+
+    .resumo-proxima-parcela.visivel { display: block; }
+
+    .resumo-proxima-parcela-titulo {
+      color: var(--primary-dark);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .resumo-proxima-parcela-valor {
+      margin-top: 5px;
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .resumo-proxima-parcela-ajuda {
+      margin-top: 5px;
+      color: var(--text-soft);
+      font-size: 12px;
+    }
+
     .score-value {
       font-size: 40px;
       font-weight: 800;
@@ -663,6 +694,7 @@
     <div id="areaAvisoTopo"></div>
 
     <div id="statusPagamentoBanner"></div>
+    <div id="resumoProximaParcela" class="resumo-proxima-parcela" role="button" tabindex="0"></div>
 
     <div class="card card-acao-principal">
       <div style="font-weight:700;">Seu limite disponível</div>
@@ -692,6 +724,7 @@
     <div class="hero-text">
       Quanto melhor seu histórico, maior seu limite.
     </div>
+    <p class="card-subtitulo">Para evoluir: mantenha os pagamentos em dia e acompanhe suas parcelas por aqui.</p>
 
     <div class="trilha-niveis" id="trilhaNiveis">
       <div class="trilha-etapa" data-nivel="Essencial">
@@ -2159,16 +2192,9 @@ async function mostrarAtividadesQuitacao(uidAtual){
 
     atividades.forEach((atividade, indice) => {
       setTimeout(() => {
-        const nome = atividade.nomeExibicao || "Um cliente";
-        // Registros preenchidos a partir do histórico (antes dessa
-        // funcionalidade existir) não têm o valor exato de IsaCoins
-        // ganho naquela quitação, então a mensagem fica sem número em
-        // vez de inventar um.
-        const mensagem =
-          typeof atividade.isaCoinsGanhos === "number"
-            ? "🎉 " + nome + " acabou de quitar um empréstimo e ganhou " +
-              Math.round(atividade.isaCoinsGanhos) + " IsaCoins!"
-            : "🎉 " + nome + " acabou de quitar um empréstimo!";
+        // A atividade continua servindo como incentivo, mas sem expor
+        // informações financeiras ou a identidade de outro cliente.
+        const mensagem = "🎉 Um cliente acabou de concluir um pagamento!";
         mostrarAviso(mensagem, "info");
       }, 3000 + indice * 5000);
     });
@@ -2342,6 +2368,40 @@ const gruposEmprestimos = Object.keys(emprestimosMap).map((idEmprestimo) => {
 
 const gruposEmAberto = gruposEmprestimos.filter(g => !g.quitado);
 const gruposQuitados = gruposEmprestimos.filter(g => g.quitado);
+
+function atualizarResumoProximaParcela(){
+  const resumo = document.getElementById("resumoProximaParcela");
+  if(!resumo) return;
+
+  const proxima = gruposEmAberto
+    .flatMap(grupo => grupo.parcelas)
+    .filter(parcela => Number(parcela.data().pago || 0) < Number(parcela.data().valor || 0))
+    .sort((a, b) => a.data().vencimento.toDate() - b.data().vencimento.toDate())[0];
+
+  if(!proxima){
+    resumo.classList.remove("visivel");
+    resumo.innerHTML = "";
+    return;
+  }
+
+  const dados = proxima.data();
+  const moeda = paisUsuarioGlobal === "PT" ? "EUR" : "BRL";
+  const valor = Number(dados.valor || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: moeda
+  });
+  const vencimento = dados.vencimento.toDate().toLocaleDateString("pt-BR");
+
+  resumo.classList.add("visivel");
+  resumo.innerHTML =
+    "<div class='resumo-proxima-parcela-titulo'>PRÓXIMA PARCELA</div>" +
+    "<div class='resumo-proxima-parcela-valor'>" + valor + " · vence em " + vencimento + "</div>" +
+    "<div class='resumo-proxima-parcela-ajuda'>Toque para ver todas as suas parcelas.</div>";
+  resumo.onclick = () => document.getElementById("secaoParcelas")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  resumo.onkeydown = (event) => {
+    if(event.key === "Enter" || event.key === " ") resumo.click();
+  };
+}
 
 // Guarda pra o botão "Extrato" poder montar o PDF sem precisar
 // buscar tudo de novo no banco.
@@ -2541,6 +2601,7 @@ if(gruposQuitados.length > 0){
 }
 
 atualizarBannerStatusPagamento();
+atualizarResumoProximaParcela();
 
 // Avisa o próprio cliente quando uma parcela está a 3 dias do
 // vencimento — antes só o admin recebia esse aviso, pelo Telegram.

@@ -196,6 +196,14 @@
 
     .btn-secondary:hover { background: var(--primary-soft); }
 
+    .simulador-embutido {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+
+    .simulador-embutido h3 { margin: 0; }
+
     .email {
       color: var(--text-soft);
       font-size: 13px;
@@ -731,6 +739,22 @@
       <p class="card-subtitulo">Simule as opções antes de solicitar. A análise continua seguindo as regras atuais do seu perfil.</p>
       <button id="btnSolicitar" class="btn-credit">Solicitar Crédito</button>
       <button id="btnIrSimulador" class="btn-secondary" type="button">🧮 Simular Crédito</button>
+
+      <div id="cardSimulador" class="simulador-embutido" hidden>
+        <h3>🧮 Simular Crédito</h3>
+        <p class="dica-simulador">Veja as parcelas e o total antes de enviar uma solicitação.</p>
+
+        <input
+          id="valorSimulacao"
+          type="text"
+          inputmode="numeric"
+          placeholder="Digite o valor desejado"
+          style="width:100%;padding:12px;border-radius:8px;border:2px solid var(--primary);margin-top:10px;box-sizing:border-box;font-size:15px;font-family:inherit;color:var(--text);background:var(--primary-soft);">
+
+        <div id="resultadoSimulacao" style="margin-top:15px;line-height:1.8;font-size:15px;background:var(--primary-soft);border:1.5px dashed var(--primary);padding:12px;border-radius:10px;min-height:80px;">
+          <div style="text-align:center;color:var(--text-soft);font-weight:600;">👆 Digite um valor acima para simular</div>
+        </div>
+      </div>
     </div>
 
   <div class="hero-score" id="secaoScore">
@@ -827,48 +851,6 @@ R$ 0,00
   </div>
 
 </div>
-<div class="card" id="cardSimulador">
-
-<h3>🧮 Simular Crédito</h3>
-<p class="dica-simulador">Veja as parcelas e o total antes de enviar uma solicitação.</p>
-
-<input
-id="valorSimulacao"
-type="text"
-inputmode="numeric"
-placeholder="Digite o valor desejado"
-style="
-width:100%;
-padding:12px;
-border-radius:8px;
-border:2px solid var(--primary);
-margin-top:10px;
-box-sizing:border-box;
-font-size:15px;
-font-family:inherit;
-color:var(--text);
-background:var(--primary-soft);
-">
-
-<br><br>
-
-<div id="resultadoSimulacao" style="
-margin-top:15px;
-line-height:1.8;
-font-size:15px;
-background:var(--primary-soft);
-border:1.5px dashed var(--primary);
-padding:12px;
-border-radius:10px;
-min-height:80px;
-">
-<div style="text-align:center;color:var(--text-soft);font-weight:600;">
-👆 Digite um valor acima para simular
-</div>
-</div>
-
-</div>
-
 <div class="card" id="cardIndicacao">
 
 <h3>👨‍👩‍👧 Indique um parente</h3>
@@ -3361,7 +3343,12 @@ fecharBtn.addEventListener("click", async () => {
 
     if (btnIrSimulador) {
       btnIrSimulador.addEventListener("click", () => {
-        document.getElementById("cardSimulador")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        const simulador = document.getElementById("cardSimulador");
+        if (!simulador) return;
+        const abrindo = simulador.hidden;
+        simulador.hidden = !abrindo;
+        btnIrSimulador.innerText = abrindo ? "Fechar simulador" : "🧮 Simular Crédito";
+        if (abrindo) document.getElementById("valorSimulacao")?.focus();
       });
     }
 

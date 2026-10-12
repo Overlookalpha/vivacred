@@ -140,6 +140,19 @@
       font-size: 12px;
     }
 
+    .estado-vazio {
+      padding: 16px;
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      background: var(--bg);
+      color: var(--text-soft);
+      font-size: 14px;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .estado-vazio strong { display: block; color: var(--text); margin-bottom: 4px; }
+
     .score-value {
       font-size: 40px;
       font-weight: 800;
@@ -2577,7 +2590,7 @@ function renderizarGrupoEmprestimo(grupo){
 if(gruposEmprestimos.length === 0){
 
   containerParcelas.innerHTML =
-    "<div style='color:var(--text-soft);font-size:14px;'>Nenhuma parcela encontrada.</div>";
+    "<div class='estado-vazio'><strong>Você não tem parcelas no momento.</strong>Quando houver um empréstimo ativo, o acompanhamento aparecerá aqui.</div>";
 
 }
 
@@ -3589,7 +3602,8 @@ const querySnapshot = await getDocs(qEmprestimos);
 
 if (querySnapshot.empty) {
 
-  listaDiv.innerHTML = "Você não possui empréstimos ativos.";
+  listaDiv.innerHTML =
+    "<div class='estado-vazio'><strong>Nenhum empréstimo ativo.</strong>Use o botão Solicitar Crédito acima para ver as opções disponíveis para o seu perfil.</div>";
 
 } else {
 

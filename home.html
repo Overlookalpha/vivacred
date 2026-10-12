@@ -86,6 +86,29 @@
       box-shadow: var(--shadow);
     }
 
+    .card-acao-principal {
+      border-color: rgba(255, 98, 0, 0.35);
+      background: linear-gradient(135deg, #FFFFFF 0%, #FFF8F2 100%);
+    }
+
+    .card-acao-principal .limit {
+      margin: 6px 0 0;
+    }
+
+    .card-subtitulo {
+      margin: 5px 0 0;
+      color: var(--text-soft);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .dica-simulador {
+      margin: 8px 0 0;
+      color: var(--text-soft);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
     .score-value {
       font-size: 40px;
       font-weight: 800;
@@ -146,7 +169,7 @@
     }
 
     .hero-score {
-      margin-top: 22px;
+      margin-top: 16px;
       padding: 30px 20px;
       border-radius: 20px;
       background: var(--surface);
@@ -641,6 +664,13 @@
 
     <div id="statusPagamentoBanner"></div>
 
+    <div class="card card-acao-principal">
+      <div style="font-weight:700;">Seu limite disponível</div>
+      <div class="limit skeleton" id="limiteDisponivel">Até R$ 100,00</div>
+      <p class="card-subtitulo">Simule as opções antes de solicitar. A análise continua seguindo as regras atuais do seu perfil.</p>
+      <button id="btnSolicitar" class="btn-credit">Solicitar Crédito</button>
+    </div>
+
   <div class="hero-score" id="secaoScore">
   <div class="hero-inner">
    <div style="margin-bottom:10px;">
@@ -740,6 +770,7 @@ R$ 0,00
 <div class="card" id="cardSimulador">
 
 <h3>🧮 Simular Crédito</h3>
+<p class="dica-simulador">Veja as parcelas e o total antes de enviar uma solicitação.</p>
 
 <input
 id="valorSimulacao"
@@ -812,14 +843,6 @@ color:var(--text);
 </button>
 
 </div>
-    <div class="card">
-      <div>Limite Disponível</div>
-      <div class="limit skeleton" id="limiteDisponivel">Até R$ 100,00</div>
-
-     <button id="btnSolicitar" class="btn-credit">
-     Solicitar Crédito
-     </button>
-    </div>
      <div class="card">
     <div><>📊 Resumo dos Empréstimos</></div>
    <div id="listaEmprestimos" style="margin-top:15px; font-size:14px;">
@@ -2446,7 +2469,10 @@ function renderizarGrupoEmprestimo(grupo){
       "<div style='display:flex;justify-content:space-between;font-size:13px;'>" +
       "<span style='color:var(--text-soft);'>Parcela " + dados.numero + "</span>" +
       "<span style='color:var(--success);font-weight:600;'>🟢 Pago · " +
-      Number(dados.valor).toFixed(2) + "</span>" +
+      Number(dados.valor).toLocaleString("pt-BR", {
+        style: "currency",
+        currency: paisUsuarioGlobal === "PT" ? "EUR" : "BRL"
+      }) + "</span>" +
       "</div>";
 
   } else {
@@ -2458,11 +2484,11 @@ function renderizarGrupoEmprestimo(grupo){
       "Parcela " + dados.numero + " — " + status +
       "</div>" +
       "<div style='font-size:13px;color:var(--text-soft);line-height:1.6;'>" +
-      "Valor: " + Number(dados.valor).toFixed(2) + "<br>" +
-      "Pago: " + Number(dados.pago).toFixed(2) +
-      (multa > 0 ? "<br>Multa: " + multa.toFixed(2) : "") +
-      (juros > 0 ? "<br>Juros atraso: " + juros.toFixed(2) : "") +
-      "<br><strong style='color:var(--text);'>Restante: " + restante.toFixed(2) + "</strong>" +
+      "Valor: " + Number(dados.valor).toLocaleString("pt-BR", { style: "currency", currency: paisUsuarioGlobal === "PT" ? "EUR" : "BRL" }) + "<br>" +
+      "Pago: " + Number(dados.pago).toLocaleString("pt-BR", { style: "currency", currency: paisUsuarioGlobal === "PT" ? "EUR" : "BRL" }) +
+      (multa > 0 ? "<br>Multa: " + multa.toLocaleString("pt-BR", { style: "currency", currency: paisUsuarioGlobal === "PT" ? "EUR" : "BRL" }) : "") +
+      (juros > 0 ? "<br>Juros atraso: " + juros.toLocaleString("pt-BR", { style: "currency", currency: paisUsuarioGlobal === "PT" ? "EUR" : "BRL" }) : "") +
+      "<br><strong style='color:var(--text);'>Restante: " + restante.toLocaleString("pt-BR", { style: "currency", currency: paisUsuarioGlobal === "PT" ? "EUR" : "BRL" }) + "</strong>" +
       "</div>" +
       (status === "⚠️ Atrasado"
         ? "<button onclick=\"negociarAtraso('" + docSnap.id + "', " + dados.numero + ")\" style='" +

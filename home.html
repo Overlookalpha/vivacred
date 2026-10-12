@@ -2436,7 +2436,7 @@ function atualizarBannerStatusPagamento(){
 
     banner.className = "statusPagamento ok";
     banner.innerHTML =
-      "✅ Tudo certo! Seus pagamentos estão em dia.";
+      "✅ Nenhuma parcela está em atraso.";
     banner.onclick = null;
 
   }
@@ -3238,7 +3238,12 @@ if (progressoNivelTexto) {
 }
 
 if (faltamPontosTexto) {
-  if (faltam > 0) {
+  if (nivelNomeGlobal === "Black" && faltam > 0) {
+    faltamPontosTexto.innerText =
+      `Faltam ${faltam} ponto${faltam > 1 ? "s" : ""} para completar o nível Black`;
+  } else if (nivelNomeGlobal === "Black") {
+    faltamPontosTexto.innerText = "Você atingiu a pontuação máxima do nível Black!";
+  } else if (faltam > 0) {
     faltamPontosTexto.innerText =
       `Faltam ${faltam} ponto${faltam > 1 ? "s" : ""} para o próximo nível`;
   } else {

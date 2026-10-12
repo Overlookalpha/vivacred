@@ -176,6 +176,7 @@ createUserWithEmailAndPassword,
 setPersistence,
 browserLocalPersistence
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-functions.js";
 import {
 getFirestore,
 doc,
@@ -199,6 +200,8 @@ appId: "1:932933359706:web:59fd16618feea3b2fa6063"
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const functions = getFunctions(app, "europe-west1");
+const criarPerfilUsuario = httpsCallable(functions, "criarPerfilUsuario");
 await setPersistence(auth, browserLocalPersistence);
 
 function formatarDataNascimento(valor){
@@ -330,54 +333,16 @@ alert("Digite a data de nascimento no formato DD/MM/AAAA.");
 return;
 }
 
-const cpfExistenteQuery = query(
-collection(db, "usuarios"),
-where("cpf", "==", documento)
-);
-const cpfExistenteSnap = await getDocs(cpfExistenteQuery);
-if (!cpfExistenteSnap.empty) {
-alert("Este CPF/NIF já está cadastrado. Se você esqueceu sua senha, entre em contato pelo suporte.");
-return;
-}
-
 cadastrando = true;
 btnCadastrar.disabled = true;
 btnCadastrar.textContent = "Criando conta...";
 
 try {
-// Resolve o código de indicação (se algum foi digitado) e gera o código
-// próprio desse novo usuário ANTES de criar a conta - assim, se algo
-// der errado aqui, ainda não criamos usuário nenhum no Auth.
-const indicadoPor = codigoIndicacaoDigitado
-? await buscarIndicadorPorCodigo(codigoIndicacaoDigitado)
-: null;
-
-const codigoIndicacaoProprio = await gerarCodigoIndicacao(nome);
-
 const cred = await createUserWithEmailAndPassword(auth, email, senha);
 
-await setDoc(doc(db, "usuarios", cred.user.uid), {
-nome: nome,
-email: email,
-telefone: telefone,
-cpf: documento,
-pais: pais,
-moeda: pais === "PT" ? "€" : "R$",
-dataNascimento: dataNascimento,
-pix: pix,
-profissao: profissao,
-cidade: cidade,
-estado: estado,
-score: 20,
-nivel: "Essencial",
-limiteBase: 100,
-status: "ativo",
-isaCoins: 0,
-diasLembrete: 3,
-codigoIndicacao: codigoIndicacaoProprio,
-indicadoPor: indicadoPor,
-indicacaoPremiada: false,
-criadoEm: new Date()
+await criarPerfilUsuario({
+ nome, email, telefone, cpf: documento, pais, dataNascimento, pix, profissao,
+ cidade, estado, codigoIndicacao: codigoIndicacaoDigitado
 });
 
 // A conta já foi criada neste ponto. O aviso é independente para que uma

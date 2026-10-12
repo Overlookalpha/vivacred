@@ -897,8 +897,9 @@ color:var(--text);
 </button>
 
 </div>
-     <div class="card">
-    <div><>📊 Resumo dos Empréstimos</></div>
+     <div class="card" id="secaoResumoEmprestimos">
+    <h3 style="margin:0;">📊 Resumo dos empréstimos</h3>
+    <p class="card-subtitulo">Veja somente o que está em aberto e decida qual parcela pagar primeiro.</p>
    <div id="listaEmprestimos" style="margin-top:15px; font-size:14px;">
     <div class="skeleton" style="height:16px;width:70%;margin-bottom:8px;">.</div>
     <div class="skeleton" style="height:16px;width:50%;">.</div>
@@ -907,7 +908,7 @@ color:var(--text);
 
    <div class="card" id="secaoParcelas">
    <div style="display:flex;justify-content:space-between;align-items:center;">
-     <>📅 Controle de Parcelas</>
+     <h3 style="margin:0;">📅 Controle de parcelas</h3>
      <button id="btnBaixarExtrato" style="
        background:var(--primary-soft);
        color:var(--primary-dark);
@@ -3654,15 +3655,20 @@ if (querySnapshot.empty) {
   return dataA - dataB;
 });
 
-emprestimosOrdenados.forEach((docSnap) => {
+const emprestimosEmAberto = emprestimosOrdenados.filter((docSnap) => {
+  return snapshotParcelas.docs.some((parcela) =>
+    parcela.data().emprestimoId === docSnap.id && parcela.data().pago < parcela.data().valor
+  );
+});
+
+if (emprestimosEmAberto.length === 0) {
+  listaDiv.innerHTML =
+    "<div class='estado-vazio'><strong>Nenhuma parcela pendente.</strong>Seus empréstimos ativos já estão quitados.</div>";
+} else {
+
+emprestimosEmAberto.forEach((docSnap) => {
 
     const dados = docSnap.data();
-
-    const valorParcela = Number(
-      (dados.valorFinal / dados.parcelas).toFixed(2)
-    );
-
-   let parcelasHTML = "";
 
 const parcelasOrdenadas = snapshotParcelas.docs
   .filter(p => p.data().emprestimoId === docSnap.id)
@@ -3672,89 +3678,44 @@ const primeiraParcelaPendente = parcelasOrdenadas.find(
   p => p.data().pago < p.data().valor
 );
     
-parcelasOrdenadas.forEach((p) => {
-
-  const dadosParcela = p.data();
-
-  const dataVencimento = dadosParcela.vencimento.toDate();
-
-  let status = "🔴 PENDENTE";
-
-  if(dadosParcela.pago >= dadosParcela.valor){
-    status = "🟢 PAGO";
-  }
-
-  parcelasHTML +=
-    "Parcela " + dadosParcela.numero +
-    " - " +
-    dadosParcela.valor.toLocaleString("pt-BR", {
-      style: "currency",
-      currency: paisUsuarioGlobal === "PT" ? "EUR" : "BRL"
-    }) +
-    " - " + status +
-    " - Vencimento: " +
-    dataVencimento.toLocaleDateString("pt-BR") +
-    "<br>";
-
-});
-
     const item = document.createElement("div");
     item.style.marginBottom = "15px";
-    item.style.padding = "12px";
-    item.style.background = "var(--bg)";
+    item.style.padding = "16px";
+    item.style.background = "var(--surface)";
     item.style.border = "1px solid var(--border)";
-    item.style.borderRadius = "10px";
-    let statusEmprestimo = "🟢 Quitado";
-
-const possuiPendente = parcelasOrdenadas.some(
-p => p.data().pago < p.data().valor
-);
+    item.style.borderRadius = "12px";
+    item.style.boxShadow = "var(--shadow)";
 
 const parcelasPagas = parcelasOrdenadas.filter(
  p => p.data().pago >= p.data().valor
 ).length;
 
 const totalParcelas = parcelasOrdenadas.length;
-    
-if(possuiPendente){
-    statusEmprestimo =
-        "🔴 Em Aberto" +
-        "<br><button onclick=\"gerarPagamentoParcela('" + primeiraParcelaPendente.id + "')\" style='margin-top:10px;background:var(--primary);color:white;border:none;padding:9px 14px;border-radius:8px;font-weight:600;cursor:pointer;font-family:inherit;'>💳 Pagar Parcela</button>";
-}
+const moedaResumo = paisUsuarioGlobal === "PT" ? "EUR" : "BRL";
+const valorProximaParcela = Number(primeiraParcelaPendente.data().valor || 0)
+  .toLocaleString("pt-BR", { style: "currency", currency: moedaResumo });
+const dataProximaParcela = primeiraParcelaPendente.data().vencimento.toDate()
+  .toLocaleDateString("pt-BR");
+
     item.innerHTML =
-
-"<div style='font-size:18px;font-weight:bold;margin-bottom:10px;'>" +
-statusEmprestimo +
+"<div style='font-size:12px;font-weight:800;color:var(--danger);letter-spacing:.04em;'>EMPRÉSTIMO EM ABERTO</div>" +
+"<div style='font-size:18px;font-weight:800;margin-top:5px;'>" +
+  "Recebido: " + Number(dados.valor || 0).toLocaleString("pt-BR", { style: "currency", currency: moedaResumo }) +
 "</div>" +
-
-"<strong>Valor Recebido:</strong> " +
-  dados.valor.toLocaleString("pt-BR", {
-    style: "currency",
-    currency: paisUsuarioGlobal === "PT" ? "EUR" : "BRL"
-  }) +
-  "<br>" +
-  "<strong>Valor Total:</strong> " +
-  dados.valorFinal.toLocaleString("pt-BR", {
-    style: "currency",
-    currency: paisUsuarioGlobal === "PT" ? "EUR" : "BRL"
-  }) +
-  "<br>" +
-  "<strong>📊 Progresso:</strong> " +
-parcelasPagas + "/" + totalParcelas + " pagas" +
-"<br>" +
-"<strong>Próximo Vencimento:</strong> " +
-(
-parcelasOrdenadas.find(p => p.data().pago < p.data().valor)
-?.data()
-?.vencimento
-?.toDate()
-?.toLocaleDateString("pt-BR")
-|| "Quitado"
-);
+"<div style='margin-top:12px;padding:10px;border-radius:9px;background:var(--primary-soft);'>" +
+  "<strong>Próxima parcela:</strong> " + valorProximaParcela + "<br>" +
+  "<span style='font-size:13px;color:var(--text-soft);'>Vence em " + dataProximaParcela + " · " + parcelasPagas + "/" + totalParcelas + " pagas</span>" +
+"</div>" +
+"<div style='margin-top:10px;font-size:13px;color:var(--text-soft);'>Total a pagar: " +
+  Number(dados.valorFinal || 0).toLocaleString("pt-BR", { style: "currency", currency: moedaResumo }) +
+"</div>" +
+"<button onclick=\"gerarPagamentoParcela('" + primeiraParcelaPendente.id + "')\" style='width:100%;margin:12px 0 0;background:var(--primary);color:white;border:none;padding:10px 14px;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit;'>💳 Pagar próxima parcela</button>";
 
     listaDiv.appendChild(item);
 
   });
+
+}
 
   }
  });

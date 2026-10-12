@@ -38,6 +38,7 @@ padding:76px 0 88px;
 
 .adminHeader{position:fixed;z-index:100;top:0;left:0;right:0;height:68px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;background:rgba(255,255,255,.96);border-bottom:1px solid var(--border);backdrop-filter:blur(12px)}
 .adminBrand{display:flex;align-items:center;gap:10px;min-width:0}.adminBrandIcon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--primary-soft);font-size:21px}.adminBrand strong{display:block;color:var(--primary-dark);font-size:16px}.adminBrand span{display:block;color:var(--text-soft);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}.adminMain{width:min(1120px,100%);margin:0 auto;padding:18px 16px}.adminBottomNav{position:fixed;z-index:100;bottom:0;left:0;right:0;display:flex;justify-content:space-around;gap:2px;padding:7px 4px calc(7px + env(safe-area-inset-bottom));background:rgba(255,255,255,.97);border-top:1px solid var(--border);box-shadow:0 -4px 18px rgba(16,24,40,.06)}
+.adminActions{display:flex;gap:7px;align-items:center;flex-shrink:0}.adminActions button{margin:0}.adminLinkButton{color:var(--primary-dark);border-color:#fed7aa;background:var(--primary-soft)}
 
 .card{
 background:var(--surface);
@@ -114,6 +115,7 @@ color:var(--primary-dark);
 }
 
 @media (min-width:760px){.adminMain{padding:28px}.adminHeader{padding:10px max(28px,calc((100vw - 1120px)/2 + 28px))}.adminBottomNav{left:50%;right:auto;transform:translateX(-50%);width:min(760px,calc(100% - 32px));bottom:14px;border:1px solid var(--border);border-radius:18px;padding:8px;box-shadow:var(--shadow)}body{padding-bottom:105px}.menuItem{font-size:12px}}
+@media (max-width:560px){.adminBrand span{display:none}.adminActions button{padding:8px 9px}.adminActionLabel{display:none}}
 
 </style>
 </head>
@@ -122,7 +124,7 @@ color:var(--primary-dark);
 
 <header class="adminHeader">
  <div class="adminBrand"><div class="adminBrandIcon">💼</div><div><strong>IsaCred Admin</strong><span id="adminIdentity">Painel administrativo</span></div></div>
- <div style="display:flex;gap:7px;"><button onclick="abrirTela('inteligencia')" style="margin:0;color:var(--primary-dark);">🧠 Resultados</button><button onclick="sairAdmin()" style="color:var(--danger);margin:0;">Sair</button></div>
+ <div class="adminActions"><button type="button" class="adminLinkButton" onclick="copiarLinkCadastro()" title="Copiar link para novos clientes">🔗 <span class="adminActionLabel">Link</span></button><button type="button" onclick="abrirTela('inteligencia')" style="color:var(--primary-dark);" title="Resultados">🧠 <span class="adminActionLabel">Resultados</span></button><button type="button" onclick="sairAdmin()" style="color:var(--danger);" title="Sair">↪ <span class="adminActionLabel">Sair</span></button></div>
 </header>
 
 <!-- ÁREA PRINCIPAL -->
@@ -5576,6 +5578,24 @@ ${user.status === "ativo" ? "Bloquear" : "Desbloquear"}
   lista.innerHTML = "<p style='color:var(--danger)'>Não foi possível carregar os clientes. Verifique as permissões do Firebase e tente novamente.</p>";
  }
 }
+
+window.copiarLinkCadastro = async function(){
+ const link = new URL("cadastro.html",window.location.href).href;
+
+ try{
+  if(navigator.clipboard && navigator.clipboard.writeText){
+   await navigator.clipboard.writeText(link);
+   alert("Link de cadastro copiado. Agora é só colar e enviar para a pessoa.");
+   return;
+  }
+ }catch(erro){
+  console.warn("Não foi possível copiar o link automaticamente:",erro);
+ }
+
+ // Alguns navegadores de celular bloqueiam a área de transferência. Nesse
+ // caso o próprio link aparece para ser copiado manualmente, sem perder o acesso.
+ prompt("Copie o link de cadastro:",link);
+};
 
 window.sairAdmin = async function(){
  try{

@@ -65,9 +65,12 @@ testes = 0
 
 for documento in db.collection("emprestimos").stream():
     dados = documento.to_dict() or {}
-    nome = normalizar(dados.get("nomeCliente") or dados.get("nome"))
-    email = normalizar(dados.get("email"))
-    tipo = "real" if nome in NOMES_REAIS or email in EMAILS_REAIS else "teste"
+    # Não deduza uma classificação financeira a partir de nome ou e-mail.
+    # Registros sem uma classificação revisada ficam intactos até uma decisão
+    # explícita do administrador.
+    tipo = dados.get("tipoRegistro")
+    if tipo not in {"real", "teste"}:
+        continue
     classificacao_por_id[documento.id] = tipo
     reais += tipo == "real"
     testes += tipo == "teste"
@@ -98,24 +101,6 @@ for documento in db.collection("parcelas").stream():
     parcelas_classificadas += 1
 
 executar_lotes(operacoes)
-
-db.collection("configuracoes").document("financeiro").set(
-    {
-        "saldoInicialBR": 331,
-        "saldoInicialPT": 0,
-        "impactoCaixaBR": 0,
-        "impactoCaixaPT": 0,
-        "aportesBR": 0,
-        "aportesPT": 0,
-        "repasseEvelynBR": 0,
-        "repasseEvelynPT": 0,
-        "lucroLiquidoBR": 0,
-        "lucroLiquidoPT": 0,
-        "percentualEvelyn": 10,
-        "inicioNovoCaixaEm": firestore.SERVER_TIMESTAMP,
-    },
-    merge=True,
-)
 
 controle_ref.set(
     {

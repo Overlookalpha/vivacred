@@ -1,11 +1,6 @@
 name: Classificar emprestimos antigos
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/classificar-testes.yml"
-      - ".github/scripts/classificar_testes.py"
   workflow_dispatch: {}
 
 jobs:

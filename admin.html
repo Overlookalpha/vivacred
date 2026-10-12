@@ -381,8 +381,8 @@ Abrir saques
 Classifica os empréstimos antigos já conferidos. Registros de teste ficam guardados, mas não entram no Caixa, Dinheiro na Rua, vencimentos, atrasos ou histórico financeiro.
 </p>
 
-<button onclick="classificarEmprestimosAtuais()">
-Classificar empréstimos antigos
+<button type="button" disabled title="Rotina suspensa por segurança">
+Classificação automática suspensa
 </button>
 
 <div id="statusClassificacaoTestes" style="margin-top:10px;"></div>
@@ -2985,6 +2985,17 @@ function normalizarIdentificacao(valor){
   .replace(/\s+/g, " ");
 }
 
+// Dados de clientes nunca devem ser inseridos como HTML. Isto impede que um
+// nome, nota ou contacto cadastrado execute código no painel administrativo.
+function escaparHTML(valor){
+ return String(valor ?? "")
+  .replace(/&/g, "&amp;")
+  .replace(/</g, "&lt;")
+  .replace(/>/g, "&gt;")
+  .replace(/\"/g, "&quot;")
+  .replace(/'/g, "&#39;");
+}
+
 function emprestimoConfirmadoReal(dados){
  const nome = normalizarIdentificacao(
   dados.nomeCliente || dados.nome
@@ -2999,7 +3010,11 @@ function emprestimoConfirmadoReal(dados){
 
 window.classificarEmprestimosAtuais = async function(){
  const status = document.getElementById("statusClassificacaoTestes");
- if(status) status.innerText = "Classificando, aguarde...";
+ if(status) status.innerText = "Classificação automática suspensa: revise os registros e execute uma migração auditada, com backup, fora do painel.";
+ return;
+
+ // Código histórico mantido abaixo apenas como referência temporária. A
+ // classificação por nome/e-mail não é confiável para dados financeiros.
 
  try{
   const controleRef = doc(
@@ -3074,25 +3089,6 @@ window.classificarEmprestimosAtuais = async function(){
    testes,
    parcelasClassificadas
   });
-
-  await setDoc(
-   doc(db,"configuracoes","financeiro"),
-   {
-    saldoInicialBR: SALDO_INICIAL_CAIXA_BR,
-    saldoInicialPT: SALDO_INICIAL_CAIXA_PT,
-    impactoCaixaBR: 0,
-    impactoCaixaPT: 0,
-    aportesBR: 0,
-    aportesPT: 0,
-    repasseEvelynBR: 0,
-    repasseEvelynPT: 0,
-    lucroLiquidoBR: 0,
-    lucroLiquidoPT: 0,
-    percentualEvelyn: PERCENTUAL_EVELYN * 100,
-    inicioNovoCaixaEm: new Date()
-   },
-   { merge: true }
-  );
 
   const mensagem =
    "Classificação concluída: " + reais + " empréstimos reais, " +
@@ -3268,10 +3264,8 @@ if (!adminSnap.exists()) {
    const identidadeAdmin = document.getElementById("adminIdentity");
    if(identidadeAdmin) identidadeAdmin.textContent = user.email || "Administrador";
 
-// A limpeza aprovada é idempotente e roda uma única vez. O documento
-// de controle impede qualquer repetição depois que ela termina.
-await window.classificarEmprestimosAtuais();
-await window.preencherAtividadesQuitacaoHistorico();
+// Migrações históricas não podem rodar ao abrir o painel: elas alteram muitos
+// registros e exigem revisão prévia dos dados e um backup.
   
 // O diagnóstico e o cálculo financeiro não dependem um do outro,
 // então rodam ao mesmo tempo em vez de um esperar o outro terminar.
@@ -5281,13 +5275,13 @@ window.renderizarUsuarios = async function(){
   const id = docSnap.id;
 
   lista.innerHTML += `
-   <div class="card" data-busca="${(user.nome||'').toLowerCase()} ${(user.email||'').toLowerCase()} ${(user.cpf||'').toLowerCase()}">
+   <div class="card" data-busca="${escaparHTML(`${user.nome || ""} ${user.email || ""} ${user.cpf || ""}`.toLowerCase())}">
 
-    <strong>${user.nome || "-"}</strong><br>
+    <strong>${escaparHTML(user.nome || "-")}</strong><br>
 
-    📧 ${user.email || "-"}<br>
+    📧 ${escaparHTML(user.email || "-")}<br>
     🔐 Senha protegida pelo Firebase<br>
-    📞 ${user.telefone || "-"}<br>
+    📞 ${escaparHTML(user.telefone || "-")}<br>
 
     🌍 ${
       user.moeda === "€"
@@ -5334,7 +5328,7 @@ window.renderizarUsuarios = async function(){
    )
 }<br><br>
 
-${user.notasInternas ? "📝 <b>Nota:</b> " + user.notasInternas + "<br><br>" : ""}
+${user.notasInternas ? "📝 <b>Nota:</b> " + escaparHTML(user.notasInternas) + "<br><br>" : ""}
 
     <button onclick="verUsuarioFirestore('${id}')">
       Ver
@@ -5819,20 +5813,20 @@ user.pais === "PT"
   
 const conteudo = `
 
-<h3>👤 ${user.nome || "-"}</h3>
+<h3>👤 ${escaparHTML(user.nome || "-")}</h3>
 
 <p>
-📧 ${user.email || "-"}<br>
+📧 ${escaparHTML(user.email || "-")}<br>
 🔐 Senha protegida pelo Firebase<br>
-📞 ${user.telefone || "-"}<br>
-📄 ${user.cpf || "-"}<br>
-🎂 ${user.dataNascimento || "-"}<br>
-💼 ${user.profissao || "-"}<br>
-💰 ${user.rendaMensal || "-"}<br>
-🏙️ ${user.cidade || "-"}<br>
-📍 ${user.estado || "-"}<br>
-💳 ${user.pix || user.chavePix || "-"}<br>
-📝 Nota interna: ${user.notasInternas || "-"}
+📞 ${escaparHTML(user.telefone || "-")}<br>
+📄 ${escaparHTML(user.cpf || "-")}<br>
+🎂 ${escaparHTML(user.dataNascimento || "-")}<br>
+💼 ${escaparHTML(user.profissao || "-")}<br>
+💰 ${escaparHTML(user.rendaMensal || "-")}<br>
+🏙️ ${escaparHTML(user.cidade || "-")}<br>
+📍 ${escaparHTML(user.estado || "-")}<br>
+💳 ${escaparHTML(user.pix || user.chavePix || "-")}<br>
+📝 Nota interna: ${escaparHTML(user.notasInternas || "-")}
 </p>
 
 <button onclick="enviarRecuperacaoSenha('${id}')">

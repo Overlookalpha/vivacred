@@ -610,6 +610,97 @@ function parcelaEmAberto(parcela){
  return restante > 0;
 }
 
+function dataRegistro(valor){
+ if(!valor) return null;
+ const data = valor.toDate ? valor.toDate() : new Date(valor);
+ return Number.isNaN(data.getTime()) ? null : data;
+}
+
+function inicioDoDia(data){
+ return new Date(data.getFullYear(),data.getMonth(),data.getDate());
+}
+
+// Este resumo não aprova, recusa nem altera score. Ele apenas reúne fatos
+// verificáveis para que o administrador faça a revisão manual do pedido.
+function resumirComportamentoPagamento(parcelas,hojeReferencia = new Date()){
+ let pagamentosConcluidos = 0;
+ let antecipadas7Dias = 0;
+ let atrasosAcima3Dias = 0;
+ let maiorAtraso = 0;
+ let atrasosEmAberto = 0;
+
+ parcelas.forEach(function(parcela){
+  if(registroTeste(parcela) || !parcela.vencimento) return;
+
+  const vencimento = dataRegistro(parcela.vencimento);
+  if(!vencimento) return;
+
+  const pagamento = dataRegistro(
+   parcela.pagoEm || parcela.dataPagamento || parcela.ultimaDataPagamento
+  );
+  const quitada = parcela.status === "pago" ||
+   Number(parcela.pago || 0) >= Number(parcela.valor || 0);
+
+  if(quitada && pagamento){
+   pagamentosConcluidos++;
+   const diferencaDias = Math.floor(
+    (inicioDoDia(pagamento) - inicioDoDia(vencimento)) / 86400000
+   );
+
+   if(diferencaDias <= -7) antecipadas7Dias++;
+   if(diferencaDias > 3){
+    atrasosAcima3Dias++;
+    maiorAtraso = Math.max(maiorAtraso,diferencaDias);
+   }
+   return;
+  }
+
+  if(parcelaEmAberto(parcela)){
+   const diasEmAberto = Math.floor(
+    (inicioDoDia(hojeReferencia) - inicioDoDia(vencimento)) / 86400000
+   );
+   if(diasEmAberto > 3){
+    atrasosEmAberto++;
+    maiorAtraso = Math.max(maiorAtraso,diasEmAberto);
+   }
+  }
+ });
+
+ return {
+  pagamentosConcluidos,
+  antecipadas7Dias,
+  atrasosAcima3Dias,
+  atrasosEmAberto,
+  maiorAtraso,
+  temAlerta: atrasosAcima3Dias + atrasosEmAberto > 0,
+  bomHistorico: antecipadas7Dias >= 2
+ };
+}
+
+function resumoComportamentoHTML(resumo){
+ const linhas = [];
+ if(resumo.pagamentosConcluidos === 0){
+  linhas.push("⚪ Sem parcelas concluídas para analisar.");
+ }else{
+  linhas.push("📋 " + resumo.pagamentosConcluidos + " parcela(s) concluída(s) registrada(s).");
+ }
+
+ if(resumo.bomHistorico){
+  linhas.push("✅ Bom histórico: " + resumo.antecipadas7Dias + " parcela(s) paga(s) com 7+ dias de antecedência.");
+ }else if(resumo.antecipadas7Dias > 0){
+  linhas.push("🟢 " + resumo.antecipadas7Dias + " parcela(s) paga(s) com 7+ dias de antecedência.");
+ }
+
+ if(resumo.temAlerta){
+  const totalAtrasos = resumo.atrasosAcima3Dias + resumo.atrasosEmAberto;
+  linhas.push("⚠️ Revisão manual: " + totalAtrasos + " atraso(s) acima de 3 dias; maior atraso de " + resumo.maiorAtraso + " dia(s).");
+ }else if(resumo.pagamentosConcluidos > 0){
+  linhas.push("✅ Sem atraso superior a 3 dias no histórico registrado.");
+ }
+
+ return linhas.join("<br>");
+}
+
 function calcularPrincipalPendenteParcela(emprestimo, parcela){
  const principalContrato = Number(emprestimo?.valor || 0);
  const totalContrato = Number(
@@ -3323,6 +3414,15 @@ if(alertasTelegram.trim() !== ""){
 }
 
 const snapshot = await getDocs(collection(db,"emprestimos"));
+const parcelasAnaliseSnap = await getDocs(collection(db,"parcelas"));
+const parcelasPorEmprestimoAnalise = new Map();
+
+parcelasAnaliseSnap.forEach(function(parcelaDoc){
+ const parcela = parcelaDoc.data();
+ const lista = parcelasPorEmprestimoAnalise.get(parcela.emprestimoId) || [];
+ lista.push(parcela);
+ parcelasPorEmprestimoAnalise.set(parcela.emprestimoId,lista);
+});
 
 const container = document.getElementById("listaUsuarios");
 
@@ -3358,6 +3458,13 @@ const historicoCliente = snapshot.docs.filter((d)=>{
  return e.email === dados.email && !registroTeste(e);
 
 });
+
+const parcelasHistoricoCliente = historicoCliente.flatMap(function(emprestimoDoc){
+ return parcelasPorEmprestimoAnalise.get(emprestimoDoc.id) || [];
+});
+const comportamentoPagamento = resumirComportamentoPagamento(
+ parcelasHistoricoCliente
+);
 
 const totalSolicitacoes = historicoCliente.length;
 
@@ -3494,6 +3601,10 @@ usuarioSistema.pais === "PT"
 )
 
 + "</b>" +
+
+"<br><br>" +
+"<b>🧾 Comportamento de pagamento</b><br>" +
+resumoComportamentoHTML(comportamentoPagamento) +
 
 "</div>" +
   
@@ -5288,14 +5399,35 @@ window.renderizarUsuarios = async function(){
 
  try{
 
- const snapshot = await getDocs(
-  collection(db,"usuarios")
- );
+ const [snapshot,emprestimosSnap,parcelasSnap] = await Promise.all([
+  getDocs(collection(db,"usuarios")),
+  getDocs(collection(db,"emprestimos")),
+  getDocs(collection(db,"parcelas"))
+ ]);
+
+ const parcelasPorEmprestimo = new Map();
+ parcelasSnap.forEach(function(parcelaDoc){
+  const parcela = parcelaDoc.data();
+  const lista = parcelasPorEmprestimo.get(parcela.emprestimoId) || [];
+  lista.push(parcela);
+  parcelasPorEmprestimo.set(parcela.emprestimoId,lista);
+ });
 
  snapshot.forEach((docSnap)=>{
 
   const user = docSnap.data();
   const id = docSnap.id;
+  const emprestimosCliente = emprestimosSnap.docs.filter(function(emprestimoDoc){
+   const emprestimo = emprestimoDoc.data();
+   return !registroTeste(emprestimo) && (
+    emprestimo.userId === id ||
+    (!!user.email && emprestimo.email === user.email)
+   );
+  });
+  const parcelasCliente = emprestimosCliente.flatMap(function(emprestimoDoc){
+   return parcelasPorEmprestimo.get(emprestimoDoc.id) || [];
+  });
+  const comportamentoPagamento = resumirComportamentoPagamento(parcelasCliente);
 
   lista.innerHTML += `
    <div class="card" data-busca="${escaparHTML(`${user.nome || ""} ${user.email || ""} ${user.cpf || ""}`.toLowerCase())}">
@@ -5352,6 +5484,11 @@ window.renderizarUsuarios = async function(){
 }<br><br>
 
 ${user.notasInternas ? "📝 <b>Nota:</b> " + escaparHTML(user.notasInternas) + "<br><br>" : ""}
+
+<div style="background:#F8FAFC;border:1px solid var(--border);border-radius:10px;padding:10px;margin:10px 0;line-height:1.5;">
+ <b>🧾 Comportamento de pagamento</b><br>
+ ${resumoComportamentoHTML(comportamentoPagamento)}
+</div>
 
     <button onclick="verUsuarioFirestore('${id}')">
       Ver
@@ -5682,6 +5819,8 @@ parcelasSnap.docs.filter(p => {
 
 });
 
+const comportamentoPagamento = resumirComportamentoPagamento(parcelasCliente);
+
 const hoje = new Date();
 
 let atrasoAtual = 0;
@@ -5894,6 +6033,11 @@ ${totalAtivos > 0 ? "SIM" : "NÃO"}
 <hr>
 
 <h3>🏅 Perfil de Pagador</h3>
+
+<div style="background:#F8FAFC;border:1px solid var(--border);border-radius:10px;padding:12px;margin:10px 0;line-height:1.55;">
+<b>🧾 Comportamento de pagamento</b><br>
+${resumoComportamentoHTML(comportamentoPagamento)}
+</div>
 
 🚀 Pagamentos Adiantados:
 ${user.pagamentosAdiantados || 0}

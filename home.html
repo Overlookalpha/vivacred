@@ -180,6 +180,22 @@
 
     .btn-credit:hover { background: var(--primary-dark); }
 
+    .btn-secondary {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--primary);
+      background: var(--surface);
+      color: var(--primary-dark);
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 9px;
+      font-family: inherit;
+    }
+
+    .btn-secondary:hover { background: var(--primary-soft); }
+
     .email {
       color: var(--text-soft);
       font-size: 13px;
@@ -714,6 +730,7 @@
       <div class="limit skeleton" id="limiteDisponivel">Até R$ 100,00</div>
       <p class="card-subtitulo">Simule as opções antes de solicitar. A análise continua seguindo as regras atuais do seu perfil.</p>
       <button id="btnSolicitar" class="btn-credit">Solicitar Crédito</button>
+      <button id="btnIrSimulador" class="btn-secondary" type="button">🧮 Simular Crédito</button>
     </div>
 
   <div class="hero-score" id="secaoScore">
@@ -3335,11 +3352,18 @@ fecharBtn.addEventListener("click", async () => {
 
   // ===== MODAL =====
   const btn = document.getElementById("btnSolicitar");
+  const btnIrSimulador = document.getElementById("btnIrSimulador");
   const modal = document.getElementById("modalCredito");
   const fechar = document.getElementById("fecharModal");
   const confirmar = document.getElementById("confirmarCredito");
 
   if (btn && modal && fechar && confirmar) {
+
+    if (btnIrSimulador) {
+      btnIrSimulador.addEventListener("click", () => {
+        document.getElementById("cardSimulador")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
 
 
     btn.addEventListener("click", async () => {

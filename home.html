@@ -3694,17 +3694,27 @@ const totalParcelas = parcelasOrdenadas.length;
 const moedaResumo = paisUsuarioGlobal === "PT" ? "EUR" : "BRL";
 const valorProximaParcela = Number(primeiraParcelaPendente.data().valor || 0)
   .toLocaleString("pt-BR", { style: "currency", currency: moedaResumo });
-const dataProximaParcela = primeiraParcelaPendente.data().vencimento.toDate()
-  .toLocaleDateString("pt-BR");
+const vencimentoProximaParcela = primeiraParcelaPendente.data().vencimento.toDate();
+const dataProximaParcela = vencimentoProximaParcela.toLocaleDateString("pt-BR");
+const hojeResumo = new Date();
+hojeResumo.setHours(0, 0, 0, 0);
+vencimentoProximaParcela.setHours(0, 0, 0, 0);
+const diasParaVencer = Math.round((vencimentoProximaParcela - hojeResumo) / (1000 * 60 * 60 * 24));
+let textoVencimento = "Vence em " + diasParaVencer + " dias";
+if (diasParaVencer === 0) textoVencimento = "Vence hoje";
+else if (diasParaVencer === 1) textoVencimento = "Vence amanhã";
+else if (diasParaVencer < 0) textoVencimento = "Em atraso há " + Math.abs(diasParaVencer) + " dia" + (diasParaVencer < -1 ? "s" : "");
+const tituloContrato = Number(dados.valor || 0)
+  .toLocaleString("pt-BR", { style: "currency", currency: moedaResumo });
 
     item.innerHTML =
 "<div style='font-size:12px;font-weight:800;color:var(--danger);letter-spacing:.04em;'>EMPRÉSTIMO EM ABERTO</div>" +
 "<div style='font-size:18px;font-weight:800;margin-top:5px;'>" +
-  "Recebido: " + Number(dados.valor || 0).toLocaleString("pt-BR", { style: "currency", currency: moedaResumo }) +
+  "Crédito de " + tituloContrato +
 "</div>" +
 "<div style='margin-top:12px;padding:10px;border-radius:9px;background:var(--primary-soft);'>" +
   "<strong>Próxima parcela:</strong> " + valorProximaParcela + "<br>" +
-  "<span style='font-size:13px;color:var(--text-soft);'>Vence em " + dataProximaParcela + " · " + parcelasPagas + "/" + totalParcelas + " pagas</span>" +
+  "<span style='font-size:13px;color:var(--text-soft);'>" + textoVencimento + " · " + dataProximaParcela + " · " + parcelasPagas + "/" + totalParcelas + " pagas</span>" +
 "</div>" +
 "<div style='margin-top:10px;font-size:13px;color:var(--text-soft);'>Total a pagar: " +
   Number(dados.valorFinal || 0).toLocaleString("pt-BR", { style: "currency", currency: moedaResumo }) +

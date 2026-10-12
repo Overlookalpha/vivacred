@@ -776,7 +776,7 @@
   </div>
 </div>
 
-  <div class="card" id="cardIsaCoin" style="cursor:pointer;">
+  <div class="card" id="cardIsaCoin" style="cursor:pointer;" role="button" tabindex="0" aria-label="Abrir Clube ISAcoin">
 
   <div style="font-size:22px;font-weight:bold;">
     🪙 ISAcoin
@@ -792,11 +792,8 @@ style="opacity:0.8;margin-top:5px;">
 R$ 0,00
 </div>
 
-  <div style="
-  margin-top:10px;
-  color:#9BE8C7;
-  font-size:14px;">
-    Clique para abrir o Clube ISAcoin
+  <div style="margin-top:10px;color:var(--primary-dark);font-size:14px;font-weight:600;">
+    Toque para ver o extrato, a cotação e as opções de saque
   </div>
 
 </div>
@@ -850,6 +847,8 @@ min-height:80px;
   Compartilhe seu código. Quando a pessoa criar a conta com ele e quitar o
   primeiro empréstimo, vocês dois ganham 5.000 IsaCoins.
 </p>
+
+<p class="card-subtitulo">Seu prêmio só é liberado depois da primeira quitação da pessoa indicada.</p>
 
 <div
 id="codigoIndicacaoTexto"
@@ -3906,11 +3905,14 @@ document.getElementById("fecharIsaCoin");
 
 if(cardIsaCoin){
 
-cardIsaCoin.addEventListener("click", ()=>{
+  const abrirClubeIsaCoin = ()=>{
+    modalIsaCoin.style.display = "flex";
+  };
 
-modalIsaCoin.style.display = "flex";
-
-});
+  cardIsaCoin.addEventListener("click", abrirClubeIsaCoin);
+  cardIsaCoin.addEventListener("keydown", (event)=>{
+    if(event.key === "Enter" || event.key === " ") abrirClubeIsaCoin();
+  });
 
 }
 

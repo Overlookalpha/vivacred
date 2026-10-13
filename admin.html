@@ -623,12 +623,32 @@ function inicioDoDia(data){
 }
 
 function dataLocalInformada(valor){
- const partes = String(valor || "").trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
- if(!partes) return null;
- const data = new Date(Number(partes[1]),Number(partes[2]) - 1,Number(partes[3]),12);
- return data.getFullYear() === Number(partes[1]) &&
-  data.getMonth() === Number(partes[2]) - 1 &&
-  data.getDate() === Number(partes[3])
+ const texto = String(valor || "").trim();
+
+ // Aceita AAAA-MM-DD (formato sugerido no campo) e também DD/MM/AAAA
+ // (formato natural em PT-BR, pra não rejeitar quem digitar do jeito
+ // que está acostumado).
+ let ano, mes, dia;
+
+ const isoMatch = texto.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+ const brMatch = texto.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+
+ if(isoMatch){
+  ano = Number(isoMatch[1]);
+  mes = Number(isoMatch[2]);
+  dia = Number(isoMatch[3]);
+ } else if(brMatch){
+  dia = Number(brMatch[1]);
+  mes = Number(brMatch[2]);
+  ano = Number(brMatch[3]);
+ } else {
+  return null;
+ }
+
+ const data = new Date(ano, mes - 1, dia, 12);
+ return data.getFullYear() === ano &&
+  data.getMonth() === mes - 1 &&
+  data.getDate() === dia
   ? data
   : null;
 }
@@ -4574,8 +4594,7 @@ if(Number(valor) > restanteAtual){
 
 }
   window.confirmarParcela = async (parcelaId)=>{
-
- const janela = window.open("","_blank");
+ try{
 
  const ref = doc(db,"parcelas",parcelaId);
  const snap = await getDoc(ref);
@@ -4585,7 +4604,6 @@ if(Number(valor) > restanteAtual){
  const emprestimoSnap = await getDoc(emprestimoRef);
 
  if(!emprestimoSnap.exists()){
-  if(janela) janela.close();
   alert("Empréstimo não encontrado.");
   return;
  }
@@ -4609,19 +4627,17 @@ const sugestaoDataPagamento = [
  String(agoraConfirmacao.getDate()).padStart(2,"0")
 ].join("-");
 const textoDataPagamento = prompt(
- "Data em que o cliente pagou (AAAA-MM-DD):",
+ "Data em que o cliente pagou (AAAA-MM-DD ou DD/MM/AAAA):",
  sugestaoDataPagamento
 );
 
 if(textoDataPagamento === null){
- if(janela) janela.close();
  return;
 }
 
 const dataPagamentoReal = dataLocalInformada(textoDataPagamento);
 if(!dataPagamentoReal){
- if(janela) janela.close();
- alert("Informe uma data válida no formato AAAA-MM-DD.");
+ alert("Informe uma data válida no formato AAAA-MM-DD ou DD/MM/AAAA.");
  return;
 }
 
@@ -4833,10 +4849,8 @@ const moeda = emprestimo.pais === "PT" ? "€" : "R$";
    "?text=" +
    encodeURIComponent(mensagem);
 
-   if(janela){ janela.location.href = link; } else { window.open(link,"_blank"); }
+   window.open(link,"_blank");
 
- } else if(janela){
-   janela.close();
  }
 
  await criarNotificacao(
@@ -4852,6 +4866,11 @@ alert(
 );
 
  location.reload();
+
+ } catch(erro){
+  console.error("Erro ao confirmar parcela:", erro);
+  alert("Não foi possível confirmar o pagamento. Detalhe: " + (erro?.message || erro));
+ }
 
 }
   // ================================================

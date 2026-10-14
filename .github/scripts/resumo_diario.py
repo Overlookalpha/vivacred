@@ -85,6 +85,16 @@ def calcular_cobranca_parcela(parcela, hoje):
     return {"diasAtraso": dias_atraso, "multa": multa, "juros": juros, "totalAtualizado": total_atualizado}
 
 
+def data_aniversario_segura(ano, mes, dia):
+    """29/02 cai em ano não bissexto: comemora em 28/02 pra não quebrar."""
+    if mes == 2 and dia == 29:
+        try:
+            return date(ano, 2, 29)
+        except ValueError:
+            return date(ano, 2, 28)
+    return date(ano, mes, dia)
+
+
 def calcular_aniversario(data_nascimento_str, hoje):
     """Replica o calculo de aniversario do admin.html: string "DD/MM/AAAA"."""
     try:
@@ -92,12 +102,19 @@ def calcular_aniversario(data_nascimento_str, hoje):
     except (ValueError, AttributeError):
         return None
 
-    aniversario_este_ano = date(hoje.year, mes, dia)
-    if aniversario_este_ano < hoje:
-        aniversario_este_ano = date(hoje.year + 1, mes, dia)
+    try:
+        ano_aniversario = hoje.year
+        aniversario_este_ano = data_aniversario_segura(ano_aniversario, mes, dia)
+        if aniversario_este_ano < hoje:
+            ano_aniversario = hoje.year + 1
+            aniversario_este_ano = data_aniversario_segura(ano_aniversario, mes, dia)
+    except ValueError:
+        # Data de nascimento inválida (mes/dia fora do intervalo) — ignora
+        # esse usuário em vez de derrubar o resumo diario inteiro.
+        return None
 
     dias_restantes = (aniversario_este_ano - hoje).days
-    idade = hoje.year - ano if dias_restantes > 0 else hoje.year - ano
+    idade = ano_aniversario - ano
 
     return {"diasRestantes": dias_restantes, "idade": idade}
 

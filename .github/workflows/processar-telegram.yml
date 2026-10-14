@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - ".github/scripts/processar_telegram.py"
+      - ".github/scripts/verificar_atrasos.py"
       - ".github/workflows/processar-telegram.yml"
   schedule:
     - cron: "17 * * * *"
@@ -31,6 +32,11 @@ jobs:
 
       - name: Instalar dependências
         run: pip install -r .github/scripts/requirements.txt
+
+      - name: Verificar parcelas em atraso
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: python .github/scripts/verificar_atrasos.py
 
       - name: Processar alertas pendentes
         env:

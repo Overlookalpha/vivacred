@@ -91,6 +91,20 @@ def mensagem_cliente(db, tipo, dados_evento, uid):
             f"📱 Telefone: {item.get('telefoneIndicado') or 'Não informado'}"
         )
 
+    if tipo == "saque":
+        item = carregar_do_usuario(db, "saques", dados_evento.get("id"), uid)
+        pais = item.get("pais") or usuario.get("pais") or "BR"
+        return (
+            "💸 PEDIDO DE SAQUE ISACOIN\n\n"
+            f"👤 Cliente: {item.get('nomeCliente') or nome}\n"
+            f"📱 Telefone: {item.get('telefoneCliente') or telefone}\n\n"
+            f"🪙 ISAcoins: {item.get('isaCoins')}\n"
+            f"💰 Valor: {moeda(item.get('valor'), pais)}\n"
+            f"🔑 Pix: {item.get('pix') or 'Não informado'}\n"
+            f"🌍 País: {pais}\n\n"
+            "⏳ Status: AGUARDANDO PAGAMENTO"
+        )
+
     if tipo in ("pagamento_aberto", "pagamento_confirmado"):
         item = carregar_do_usuario(db, "parcelas", dados_evento.get("id"), uid)
         pais = item.get("pais") or usuario.get("pais") or "BR"
@@ -114,6 +128,38 @@ def mensagem_cliente(db, tipo, dados_evento, uid):
     raise ValueError("Evento não permitido")
 
 
+def mensagem_parcela_atrasada(db, dados_evento):
+    parcela_id = str(dados_evento.get("id") or "")
+    if not parcela_id:
+        raise ValueError("Identificador ausente")
+    snap = db.collection("parcelas").document(parcela_id).get()
+    if not snap.exists:
+        raise ValueError("Parcela não encontrada")
+    item = snap.to_dict() or {}
+
+    usuario_snap = db.collection("usuarios").document(str(item.get("userId") or "")).get()
+    usuario = usuario_snap.to_dict() or {} if usuario_snap.exists else {}
+    nome = usuario.get("nome") or usuario.get("email") or "Cliente"
+    telefone = usuario.get("telefone") or "Não informado"
+    pais = item.get("pais") or usuario.get("pais") or "BR"
+
+    vencimento = item.get("vencimento")
+    if hasattr(vencimento, "strftime"):
+        vencimento_texto = vencimento.strftime("%d/%m/%Y")
+    else:
+        vencimento_texto = "Não informado"
+
+    return (
+        "⚠️ PARCELA EM ATRASO\n\n"
+        f"👤 Cliente: {nome}\n📱 Telefone: {telefone}\n\n"
+        f"📄 Parcela: {item.get('numero')}\n"
+        f"💰 Valor restante: {moeda(item.get('restante') or item.get('valor'), pais)}\n"
+        f"📅 Vencimento: {vencimento_texto}\n"
+        f"🌍 País: {pais}\n\n"
+        "⏳ Status: o cliente ainda não pagou e a data de vencimento já passou."
+    )
+
+
 def montar_mensagem(db, evento):
     tipo = str(evento.get("tipoTelegram") or "")
     uid = str(evento.get("criadoPor") or "")
@@ -125,6 +171,11 @@ def montar_mensagem(db, evento):
         if not texto or len(texto) > 4000:
             raise ValueError("Mensagem administrativa inválida")
         return texto
+    if tipo == "parcela_atrasada":
+        # Alerta gerado pelo sistema (verificar_atrasos.py), sem uid de
+        # cliente/admin para validar dono — a mensagem é sempre reconstruída
+        # a partir do registro real da parcela, nunca de texto livre.
+        return mensagem_parcela_atrasada(db, dados)
     return mensagem_cliente(db, tipo, dados, uid)
 
 

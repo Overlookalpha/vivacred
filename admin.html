@@ -3573,21 +3573,21 @@ if(dados.parcelasPagas >= dados.parcelas){
  statusTexto = "<div style='color:#17A673;font-weight:bold;font-size:18px;'>QUITADO</div>";
 }
 div.innerHTML =
-"<strong>" + dados.email + "</strong><br><br>" +
+"<strong>" + escaparHTML(dados.email) + "</strong><br><br>" +
 
 "<b>Cliente</b><br>" +
-"Nome: " + (dados.nomeCliente || "-") + "<br>" +
-"Telefone: " + (dados.telefoneCliente || "-") + "<br>" +
+"Nome: " + escaparHTML(dados.nomeCliente || "-") + "<br>" +
+"Telefone: " + escaparHTML(dados.telefoneCliente || "-") + "<br>" +
 (dados.pais === "PT" ? "NIF: " : "CPF: ") +
-(dados.cpfCliente || "-") + "<br>" +
+(escaparHTML(dados.cpfCliente || "-")) + "<br>" +
 (dados.pais === "PT" ? "MB Way: " : "Pix: ") +
-(dados.pixCliente || "-") + "<br><br>" +
+(escaparHTML(dados.pixCliente || "-")) + "<br><br>" +
 
 "<b>🤝 Avalista</b><br>" +
-"Nome: " + (dados.nomeAvalista || "-") + "<br>" +
-"Telefone: " + (dados.telefoneAvalista || "-") + "<br>" +
+"Nome: " + escaparHTML(dados.nomeAvalista || "-") + "<br>" +
+"Telefone: " + escaparHTML(dados.telefoneAvalista || "-") + "<br>" +
 (dados.pais === "PT" ? "NIF: " : "CPF: ") +
-(dados.cpfAvalista || "-") + "<br><br>" +
+(escaparHTML(dados.cpfAvalista || "-")) + "<br><br>" +
 
 
 "<div style='background:#FFF1E6;border:1px solid #FF6200;border-radius:10px;padding:12px;margin:12px 0;'>" +
@@ -3907,8 +3907,8 @@ const moeda = emp.pais === "PT" ? "€" : "R$";
 div.innerHTML = `
 
 <div style="text-align:center;margin-bottom:15px;">
-<h2 style="margin:0;">👤 ${emp.nomeCliente || "-"}</h2>
-<div>${emp.email || ""}</div>
+<h2 style="margin:0;">👤 ${escaparHTML(emp.nomeCliente || "-")}</h2>
+<div>${escaparHTML(emp.email || "")}</div>
 </div>
 
 💰 <b>Valor Emprestado:</b> ${moeda} ${Number(emp.valor || 0).toFixed(2)}<br>

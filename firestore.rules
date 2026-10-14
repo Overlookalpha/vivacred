@@ -1,0 +1,62 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isAdmin() {
+      return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+    function ownsUser(userId) { return signedIn() && request.auth.uid == userId; }
+    function onlyProfileFields() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly(['nome', 'telefone', 'pix', 'profissao', 'cidade', 'estado', 'diasLembrete', 'fotoBase64']);
+    }
+    function onlyOwnProofFields() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly(['comprovanteUrl', 'comprovanteEnviadoEm']);
+    }
+
+    // Perfis, documentos financeiros e notificações são criados por funções
+    // administrativas (que ignoram Rules). O cliente só pode ler seus próprios dados.
+    match /usuarios/{userId} {
+      allow read: if ownsUser(userId) || isAdmin();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || (ownsUser(userId) && onlyProfileFields() &&
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['fotoBase64']) ||
+          request.resource.data.fotoBase64 is string && request.resource.data.fotoBase64.size() <= 200000));
+    }
+    match /admins/{adminId} {
+      allow read: if signedIn() && (request.auth.uid == adminId || isAdmin());
+      allow write: if isAdmin();
+    }
+    match /emprestimos/{id} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if isAdmin();
+    }
+    match /parcelas/{id} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid && onlyOwnProofFields());
+    }
+    match /saques/{id} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if isAdmin();
+    }
+    match /negociacoes/{id} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid &&
+        request.resource.data.keys().hasOnly(['userId', 'nomeCliente', 'telefoneCliente', 'parcelaId', 'numeroParcela', 'motivo', 'status', 'criadoEm']) &&
+        request.resource.data.status == 'pendente' && request.resource.data.motivo is string && request.resource.data.motivo.size() <= 1000;
+      allow update, delete: if isAdmin();
+    }
+    match /notificacoes/{id} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow update: if isAdmin() || (
+        signedIn() && resource.data.userId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lida'])
+      );
+      allow create, delete: if isAdmin();
+    }
+    match /atividadesQuitacao/{id} { allow read: if signedIn(); allow write: if isAdmin(); }
+    match /{document=**} { allow read, write: if isAdmin(); }
+  }
+}

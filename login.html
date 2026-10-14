@@ -136,6 +136,11 @@ button:hover{
 
 const btnLogin = document.getElementById("btnLogin");
 const btnRecuperarSenha = document.getElementById("btnRecuperarSenha");
+const emailInicial = new URLSearchParams(window.location.search).get("email");
+if(emailInicial){
+  document.getElementById("email").value = emailInicial;
+  if(window.location.hash === "#recuperar") btnRecuperarSenha.focus();
+}
 
 btnRecuperarSenha.addEventListener("click", async () => {
   const email = document.getElementById("email").value.trim();

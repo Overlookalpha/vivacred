@@ -101,6 +101,22 @@ color:#94a3b8;
 margin-top:6px;
 text-align:left;
 }
+
+.erroCadastro{
+display:none;
+margin-top:14px;
+padding:13px;
+border:1px solid #fb7185;
+border-radius:8px;
+background:#4c1d2b;
+color:#ffe4e6;
+font-size:13px;
+line-height:1.45;
+text-align:left;
+}
+
+.erroCadastro.visivel{display:block;}
+.erroCadastro a{color:#fff;font-weight:bold;}
 </style>
 </head>
 
@@ -165,6 +181,8 @@ text-align:left;
 
 <button id="btnCadastrar">Criar conta</button>
 
+<div id="erroCadastro" class="erroCadastro" role="alert"></div>
+
 <a href="login.html" class="back">Já tem conta? Entrar</a>
 </div>
 
@@ -173,6 +191,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/fireba
 import {
 getAuth,
 createUserWithEmailAndPassword,
+deleteUser,
 setPersistence,
 browserLocalPersistence
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
@@ -221,14 +240,14 @@ inputDataNascimento.value = formatarDataNascimento(inputDataNascimento.value);
 });
 
 function dataNascimentoValida(valor){
-const partes = valor.split("/");
-if (partes.length !== 3) return false;
-const [dia, mes, ano] = partes.map(Number);
-if (!dia || !mes || !ano) return false;
-if (mes < 1 || mes > 12) return false;
-if (dia < 1 || dia > 31) return false;
-if (ano < 1900 || ano > new Date().getFullYear()) return false;
-return true;
+if (!/^\d{2}\/\d{2}\/\d{4}$/.test(valor)) return false;
+const [dia, mes, ano] = valor.split("/").map(Number);
+const data = new Date(ano, mes - 1, dia);
+if (data.getFullYear() !== ano || data.getMonth() !== mes - 1 || data.getDate() !== dia) return false;
+const hoje = new Date();
+let idade = hoje.getFullYear() - ano;
+if (hoje.getMonth() < mes - 1 || (hoje.getMonth() === mes - 1 && hoje.getDate() < dia)) idade--;
+return idade >= 18 && idade <= 120;
 }
 
 function traduzErro(codigo){
@@ -240,6 +259,18 @@ const mensagens = {
 "auth/network-request-failed": "Falha de conexão. Verifique sua internet e tente de novo."
 };
 return mensagens[codigo] || "Não foi possível criar a conta (" + codigo + ").";
+}
+
+function mostrarErroCadastro(html){
+ const area = document.getElementById("erroCadastro");
+ area.innerHTML = html;
+ area.classList.add("visivel");
+}
+
+function limparErroCadastro(){
+ const area = document.getElementById("erroCadastro");
+ area.textContent = "";
+ area.classList.remove("visivel");
 }
 
 // Gera um código de indicação curto e único pra esse usuário poder
@@ -318,6 +349,12 @@ alert("Preencha todos os campos antes de continuar.");
 return;
 }
 
+const documentoNormalizado = documento.replace(/\D/g, "");
+if ((pais === "BR" && documentoNormalizado.length !== 11) || (pais === "PT" && documentoNormalizado.length !== 9)) {
+alert("Informe um CPF ou NIF válido.");
+return;
+}
+
 if (senha.length < 6) {
 alert("A senha precisa ter pelo menos 6 caracteres.");
 return;
@@ -336,12 +373,15 @@ return;
 cadastrando = true;
 btnCadastrar.disabled = true;
 btnCadastrar.textContent = "Criando conta...";
+limparErroCadastro();
+let contaCriadaAgora = null;
 
 try {
 const cred = await createUserWithEmailAndPassword(auth, email, senha);
+contaCriadaAgora = cred.user;
 
 await criarPerfilUsuario({
- nome, email, telefone, cpf: documento, pais, dataNascimento, pix, profissao,
+ nome, email, telefone, cpf: documentoNormalizado, pais, dataNascimento, pix, profissao,
  cidade, estado, codigoIndicacao: codigoIndicacaoDigitado
 });
 
@@ -366,10 +406,27 @@ try {
 
 window.location.href = "home.html";
 } catch (error) {
+if (error.code === "functions/already-exists") {
+ // O perfil recusou o CPF/NIF porque pertence a outra conta. Como esse
+ // usuário de autenticação acabou de ser criado e não ganhou perfil, ele
+ // não deve ficar órfão impedindo uma tentativa futura com o mesmo e-mail.
+ if (contaCriadaAgora) {
+  try { await deleteUser(contaCriadaAgora); }
+  catch (erroLimpeza) { console.warn("Não foi possível limpar a conta incompleta:", erroLimpeza); }
+ }
+ const emailLogin = encodeURIComponent(email);
+ mostrarErroCadastro(
+  "<strong>Este CPF/NIF já está cadastrado.</strong><br>" +
+  "Se a conta for sua, entre ou recupere a senha. Se não reconhecer o cadastro, fale com o atendimento.<br><br>" +
+  '<a href="login.html?email=' + emailLogin + '">Entrar na conta</a> · ' +
+  '<a href="login.html?email=' + emailLogin + '#recuperar">Recuperar senha</a>'
+ );
+} else {
+ mostrarErroCadastro(traduzErro(error.code));
+}
 cadastrando = false;
 btnCadastrar.disabled = false;
 btnCadastrar.textContent = "Criar conta";
-alert(traduzErro(error.code));
 }
 });
 </script>

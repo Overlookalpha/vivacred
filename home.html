@@ -1290,18 +1290,7 @@ function renderizarBannerInstalarApp(){
 
 async function enviarTelegram(tipo, dados = {}){
  if(!auth.currentUser) throw new Error("Usuário não autenticado");
- await addDoc(collection(db,"notificacoes"),{
-  userId: auth.currentUser.uid,
-  titulo: "",
-  mensagem: "",
-  lida: true,
-  telegramInterno: true,
-  tipoTelegram: tipo,
-  dadosTelegram: dados,
-  criadoPor: auth.currentUser.uid,
-  data: new Date(),
-  statusTelegram: "pendente"
- });
+ await registrarEventoClienteNoServidor({ tipo, dados });
 }
 
 document.addEventListener("click", async (event) => {
@@ -1366,6 +1355,18 @@ const db = getFirestore(app);
 const storage = getStorage(app);
 const functions = getFunctions(app, "europe-west1");
 const recalcularParcelaVencida = httpsCallable(functions, "recalcularParcelaVencida");
+const solicitarCreditoNoServidor = httpsCallable(functions, "solicitarCredito");
+const solicitarSaqueNoServidor = httpsCallable(functions, "solicitarSaque");
+const registrarEventoClienteNoServidor = httpsCallable(functions, "registrarEventoCliente");
+
+function escaparTexto(valor) {
+  return String(valor ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 
 // O painel mantém o cálculo visual imediato, mas a gravação dos encargos é
 // feita no servidor a partir da parcela salva. Assim o navegador não envia
@@ -1390,7 +1391,7 @@ if (headerFotoWrapEl && inputFotoPerfilEl) {
     const arquivo = inputFotoPerfilEl.files && inputFotoPerfilEl.files[0];
     if (!arquivo || !usuarioLogado) return;
 
-    if (arquivo.size > 5 * 1024 * 1024) {
+    if (!arquivo.type.startsWith("image/") || arquivo.size > 5 * 1024 * 1024) {
       window.mostrarAviso("A foto precisa ter até 5MB.", "erro");
       return;
     }
@@ -1522,7 +1523,8 @@ window.mostrarAviso = function(mensagem, tipo){
   const toast = document.createElement("div");
   toast.className = "toast " + tipo;
   toast.innerHTML =
-    "<span>" + (icones[tipo] || "ℹ️") + "</span><span>" + mensagem + "</span>";
+    "<span>" + (icones[tipo] || "ℹ️") + "</span><span></span>";
+  toast.lastElementChild.textContent = mensagem;
 
   container.appendChild(toast);
 
@@ -1568,18 +1570,6 @@ window.confirmarModal = function(mensagem){
 
 };
 
-async function criarNotificacao(userId, titulo, mensagem){
-
-  await addDoc(collection(db,"notificacoes"),{
-    userId: userId,
-    titulo: titulo,
-    mensagem: mensagem,
-    data: new Date(),
-    lida: false
-  });
-
-}
-
 // =========================================
 // LEMBRETE DE VENCIMENTO PRO CLIENTE
 // Antes só o admin era avisado (Telegram) quando uma parcela
@@ -1611,17 +1601,9 @@ async function gerarLembretesVencimento(parcelasSnap, diasPreferidos){
     if(diasRestantes === diasPreferidos){
 
       const textoDias = diasPreferidos === 1 ? "1 dia" : diasPreferidos + " dias";
-
-      await criarNotificacao(
-        usuarioLogado.uid,
-        "📅 Parcela vencendo em " + textoDias,
-        "Sua parcela " + dados.numero +
-        " vence em " + textoDias + ". Fique de olho pra não atrasar!"
-      );
-
-      await updateDoc(doc(db, "parcelas", docSnap.id), {
-        lembreteEnviado: true
-      });
+      const chaveLembrete = "lembreteParcela:" + docSnap.id + ":" + vencimento.toISOString().slice(0, 10);
+      if(localStorage.getItem(chaveLembrete)) continue;
+      localStorage.setItem(chaveLembrete, "ok");
 
       mostrarAviso(
         "📅 Sua parcela " + dados.numero + " vence em " + textoDias + ".",
@@ -2159,12 +2141,8 @@ async function carregarCartaoIndicacao(dadosUsuario, uid){
   let codigo = dadosUsuario.codigoIndicacao;
 
   if(!codigo){
-    codigo = await gerarCodigoIndicacaoUnico(dadosUsuario.nome || "USER");
-    try {
-      await updateDoc(doc(db, "usuarios", uid), { codigoIndicacao: codigo });
-    } catch (erro) {
-      console.error("Erro ao salvar código de indicação:", erro);
-    }
+    elCodigo.innerText = "Código indisponível";
+    return;
   }
 
   elCodigo.innerText = codigo;
@@ -2325,9 +2303,11 @@ if(lista){
     div.style.border = "1px solid var(--border)";
     div.style.borderRadius = "8px";
 
-    div.innerHTML =
-      "<>" + dados.titulo + "</><br>" +
-      dados.mensagem;
+    const titulo = document.createElement("strong");
+    titulo.textContent = dados.titulo || "";
+    const mensagem = document.createElement("div");
+    mensagem.textContent = dados.mensagem || "";
+    div.replaceChildren(titulo, document.createElement("br"), mensagem);
 
     lista.appendChild(div);
 
@@ -2801,33 +2781,9 @@ setTimeout(function(){
 window.calcularNivel = calcularNivel;
   
   if (!userSnap.exists() || !userSnap.data().score) {
-
-    await setDoc(userRef, {
-
-  email: user.email,
-
-  nome: "",
-  telefone: "",
-  cpf: "",
-  pix: "",
-
-  score: 20,
-  limiteBase: 100,
-  nivel: "Essencial",
-
-  isaCoins: 0,
-  isaCoinsRecebidas: 0,
-  isaCoinsSacadas: 0,
-
-  status: "ativo",
-
-  criadoEm: new Date()
-
-});
-
-    window.location.reload();
-    
-    console.log("Usuário criado no Firestore");
+    await signOut(auth);
+    window.location.replace("cadastro.html");
+    return;
 
   } else {
 
@@ -2970,7 +2926,7 @@ window.editarDadoCadastro = async function(campo){
 
 if(dadosCadastroNome){
   dadosCadastroNome.innerHTML =
-    "👤 Nome: " + nomeCadastro +
+    "👤 Nome: " + escaparTexto(nomeCadastro) +
     ' <span onclick="editarDadoCadastro(\'nome\')" style="cursor:pointer;opacity:.7;">✏️</span>';
 }
 
@@ -2980,7 +2936,7 @@ if(dadosCadastroEmail){
 
 if(dadosCadastroTelefone){
   dadosCadastroTelefone.innerHTML =
-    "📱 Telefone: " + telefoneCadastro +
+    "📱 Telefone: " + escaparTexto(telefoneCadastro) +
     ' <span onclick="editarDadoCadastro(\'telefone\')" style="cursor:pointer;opacity:.7;">✏️</span>';
 }
 
@@ -2997,25 +2953,25 @@ if(dadosCadastroNascimento){
 
 if(dadosCadastroPix){
   dadosCadastroPix.innerHTML =
-    (paisUsuario === "PT" ? "📲 MB Way: " : "🔑 Chave Pix: ") + pixCadastro +
+    (paisUsuario === "PT" ? "📲 MB Way: " : "🔑 Chave Pix: ") + escaparTexto(pixCadastro) +
     ' <span onclick="editarDadoCadastro(\'pix\')" style="cursor:pointer;opacity:.7;">✏️</span>';
 }
 
 if(dadosCadastroProfissao){
   dadosCadastroProfissao.innerHTML =
-    "💼 Profissão: " + profissaoCadastro +
+    "💼 Profissão: " + escaparTexto(profissaoCadastro) +
     ' <span onclick="editarDadoCadastro(\'profissao\')" style="cursor:pointer;opacity:.7;">✏️</span>';
 }
 
 if(dadosCadastroCidade){
   dadosCadastroCidade.innerHTML =
-    "📍 Cidade: " + cidadeCadastro +
+    "📍 Cidade: " + escaparTexto(cidadeCadastro) +
     ' <span onclick="editarDadoCadastro(\'cidade\')" style="cursor:pointer;opacity:.7;">✏️</span>';
 }
 
 if(dadosCadastroEstado){
   dadosCadastroEstado.innerHTML =
-    "🗺️ Estado: " + estadoCadastro +
+    "🗺️ Estado: " + escaparTexto(estadoCadastro) +
     ' <span onclick="editarDadoCadastro(\'estado\')" style="cursor:pointer;opacity:.7;">✏️</span>';
 }
 
@@ -3504,46 +3460,11 @@ if (cliente.bloqueadoSolicitacaoAte) {
   }
 }
 
-const emprestimoRef = await addDoc(collection(db, "emprestimos"), {
-  userId: user.uid,
-  email: user.email,
-
-  pais: paisUsuarioGlobal,
-  moeda: paisUsuarioGlobal === "PT" ? "€" : "R$",
-
-  nomeCliente: nomeCliente,
-  telefoneCliente: telefoneCliente,
-  cpfCliente: cpfCliente,
-  pixCliente: pixCliente,
-
-  nomeAvalista: nomeAvalista,
-  telefoneAvalista: telefoneAvalista,
-  cpfAvalista: cpfAvalista,
-
+await solicitarCreditoNoServidor({
   valor: valorFinal,
   parcelas: Number(parcelasFinal),
-  juros: juros,
-  valorFinal: valorFinalComJuros,
-
-  status: "aguardando",
-  criadoEm: new Date(),
-  dataAprovacao: null,
-  dataVencimento: null
+  avalista: { nome: nomeAvalista, telefone: telefoneAvalista, cpf: cpfAvalista }
 });
-
-try{
-
-await enviarTelegram("emprestimo", { id: emprestimoRef.id });
-
-}catch(erro){
-console.log("Erro Telegram:", erro);
-}
-        
-await criarNotificacao(
-  user.uid,
-  "Solicitação enviada",
-  "Sua solicitação de crédito foi enviada para análise. Em até 24h você receberá uma resposta."
-);
 
  let box = document.getElementById("notificacaoCredito");
 
@@ -3991,26 +3912,6 @@ if(btnSacarIsaCoin){
 
     try{
 
-      const saquesPendentesSnap = await getDocs(
-        query(
-          collection(db,"saques"),
-          where("userId","==",auth.currentUser.uid),
-          where("status","==","pendente")
-        )
-      );
-
-      if(!saquesPendentesSnap.empty){
-
-        if(janela){ janela.close(); }
-
-        mostrarAviso(
-          "Você já tem uma solicitação de saque em andamento. Aguarde a confirmação do pagamento.",
-          "info"
-        );
-
-        return;
-      }
-
       const valorAtualFormatado =
         (isaCoinsGlobal * valorPorIsaCoin).toLocaleString(localizacaoSaque, {
           style: "currency",
@@ -4028,50 +3929,9 @@ if(btnSacarIsaCoin){
         return;
       }
 
-      const userRef = doc(db,"usuarios",auth.currentUser.uid);
-      const userSnap = await getDoc(userRef);
-      const dadosUsuario = userSnap.exists() ? userSnap.data() : {};
-
-      const isaCoinsAtual = dadosUsuario.isaCoins || 0;
-      const valorSaque = isaCoinsAtual * valorPorIsaCoin;
-
-      const saqueRef = await addDoc(collection(db,"saques"),{
-        userId: auth.currentUser.uid,
-        nomeCliente: dadosUsuario.nome || "",
-        telefoneCliente: dadosUsuario.telefone || "",
-        pix: dadosUsuario.pix || "",
-        isaCoins: isaCoinsAtual,
-        valor: valorSaque,
-        moeda: moedaSaque,
-        pais: paisUsuarioGlobal,
-        status: "pendente",
-        criadoEm: new Date()
-      });
-
-      // Aviso é independente para que uma indisponibilidade temporária da
-      // fila do Telegram não interrompa o pedido de saque, que já foi criado.
-      try {
-        await addDoc(collection(db,"notificacoes"),{
-          userId: auth.currentUser.uid,
-          titulo: "",
-          mensagem: "",
-          lida: true,
-          telegramInterno: true,
-          tipoTelegram: "saque",
-          dadosTelegram: { id: saqueRef.id },
-          criadoPor: auth.currentUser.uid,
-          data: new Date(),
-          statusTelegram: "pendente"
-        });
-      } catch(erroTelegram) {
-        console.warn("Saque criado, mas o alerta Telegram será ignorado:", erroTelegram);
-      }
-
-      await criarNotificacao(
-        auth.currentUser.uid,
-        "💸 Solicitação de saque enviada",
-        "Sua solicitação de saque do Clube ISAcoin foi enviada. Assim que o pagamento for feito, você será avisado por aqui."
-      );
+      const respostaSaque = await solicitarSaqueNoServidor();
+      const { isaCoins: isaCoinsAtual, valor: valorSaque } = respostaSaque.data;
+      const dadosUsuario = { nome: respostaSaque.data.nome || "", pix: respostaSaque.data.pix || "" };
 
       const valorSaqueFormatadoFinal =
         valorSaque.toLocaleString(localizacaoSaque, {
@@ -4478,12 +4338,6 @@ document.getElementById("btnConfirmarPagamentoParcela").onclick = async function
         botaoConfirmar.innerText = "⏳ Enviando confirmação...";
 
         await enviarTelegram("pagamento_confirmado", { id: parcelaId });
-
-        await criarNotificacao(
-            usuarioLogado.uid,
-            "📎 Confirmação de pagamento enviada",
-            "Recebemos sua confirmação de pagamento da parcela " + dados.numero + ". Vamos conferir e te avisamos por aqui em até 24 horas."
-        );
 
         mostrarAviso(
             "✅ Confirmação recebida! Seu pagamento será conferido e atualizado em até 24 horas.",

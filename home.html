@@ -4035,7 +4035,7 @@ if(btnSacarIsaCoin){
       const isaCoinsAtual = dadosUsuario.isaCoins || 0;
       const valorSaque = isaCoinsAtual * valorPorIsaCoin;
 
-      await addDoc(collection(db,"saques"),{
+      const saqueRef = await addDoc(collection(db,"saques"),{
         userId: auth.currentUser.uid,
         nomeCliente: dadosUsuario.nome || "",
         telefoneCliente: dadosUsuario.telefone || "",
@@ -4047,6 +4047,25 @@ if(btnSacarIsaCoin){
         status: "pendente",
         criadoEm: new Date()
       });
+
+      // Aviso é independente para que uma indisponibilidade temporária da
+      // fila do Telegram não interrompa o pedido de saque, que já foi criado.
+      try {
+        await addDoc(collection(db,"notificacoes"),{
+          userId: auth.currentUser.uid,
+          titulo: "",
+          mensagem: "",
+          lida: true,
+          telegramInterno: true,
+          tipoTelegram: "saque",
+          dadosTelegram: { id: saqueRef.id },
+          criadoPor: auth.currentUser.uid,
+          data: new Date(),
+          statusTelegram: "pendente"
+        });
+      } catch(erroTelegram) {
+        console.warn("Saque criado, mas o alerta Telegram será ignorado:", erroTelegram);
+      }
 
       await criarNotificacao(
         auth.currentUser.uid,

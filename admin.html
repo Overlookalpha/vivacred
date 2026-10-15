@@ -6235,6 +6235,14 @@ prompt(
 );
 
 if(chavePix === null) return;
+
+const scoreNumerico = Number(score);
+const nivelCalculado =
+  !Number.isFinite(scoreNumerico) || scoreNumerico <= 20 ? "Essencial" :
+  scoreNumerico <= 40 ? "Bronze" :
+  scoreNumerico <= 60 ? "Prata" :
+  scoreNumerico <= 80 ? "Ouro" : "Black";
+
 await updateDoc(ref,{
   nome: nome,
   email: email,
@@ -6245,7 +6253,8 @@ await updateDoc(ref,{
 
   moeda: pais === "PT" ? "€" : "R$",
 
-  score: Number(score),
+   score: scoreNumerico,
+   nivel: nivelCalculado,
   limiteBase: Number(limite),
 
   dataNascimento: dataNascimento,

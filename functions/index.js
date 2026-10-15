@@ -42,6 +42,19 @@ function regrasDeCredito(nivel) {
   return regras[nivel] || regras.Essencial;
 }
 
+// O score é a fonte de verdade para a faixa do cliente.  O campo `nivel`
+// antigo pode existir em cadastros anteriores, mas não pode decidir uma
+// solicitação porque ele ficava desatualizado quando o administrador mudava
+// apenas o score.
+function nivelPorScore(score) {
+  const numero = Number(score);
+  if (!Number.isFinite(numero) || numero <= 20) return "Essencial";
+  if (numero <= 40) return "Bronze";
+  if (numero <= 60) return "Prata";
+  if (numero <= 80) return "Ouro";
+  return "Black";
+}
+
 async function codigoIndicacaoUnico(db, nome) {
   const base = String(nome).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z]/g, "").toUpperCase().slice(0, 6) || "USER";
   for (let tentativa = 0; tentativa < 10; tentativa += 1) {
@@ -121,7 +134,8 @@ exports.solicitarCredito = onCall(
       if (!pendentes.empty) throw new HttpsError("already-exists", "Já existe uma solicitação em análise.");
       const pais = usuario.pais === "PT" ? "PT" : "BR";
       const minimo = pais === "PT" ? 30 : 100;
-      const regra = regrasDeCredito(usuario.nivel);
+      const nivelCalculado = nivelPorScore(usuario.score);
+      const regra = regrasDeCredito(nivelCalculado);
       const taxa = regra.juros[parcelas];
       const limite = Number(usuario.limiteBase || 0);
       if (valor < minimo || valor > limite || !taxa || parcelas > regra.maxParcelas) {

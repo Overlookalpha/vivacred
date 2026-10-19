@@ -2,9 +2,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { avaliarCliente, criarIndiceAvaliacoes, avaliacaoHTML } from '../avaliacao-interna.mjs';
+import { calcularNivel } from '../perfil-credito.mjs';
 
 const hoje = new Date(2026, 9, 19, 12);
-const cliente = { limiteBase: 5000, pais: 'BR' };
+const cliente = { score: 100, limiteBase: 5000, pais: 'BR' };
 const parcela = (atraso, extra = {}) => ({ valor: 1000, pago: 1000,
   vencimento: new Date(2026, 7, 1),
   dataPagamentoReal: new Date(2026, 7, 1 + atraso), ...extra });
@@ -56,12 +57,34 @@ test('perda recomenda revisão mesmo com outros pagamentos pontuais', () => {
   assert.match(avaliacaoHTML(resultado), /Revisar antes de liberar/);
 });
 
-test('não inventa limite pelo score, preserva zero e usa euros para Portugal', () => {
-  assert.equal(avaliarCliente({score:100}, [], [parcela(0)], hoje).sugerido, null);
-  assert.equal(avaliarCliente({limiteBase:0}, [], [parcela(0)], hoje).sugerido, 0);
-  const resultado = avaliarCliente({limiteBase:800,pais:'PT'}, [], [parcela(30)], hoje);
+test('usa o limite da área do usuário mesmo quando o cadastro diverge', () => {
+  const resultado = avaliarCliente({score:100,limiteBase:100,pais:'BR'}, [], [parcela(30)], hoje);
+  assert.equal(resultado.limiteAtual, 5000);
+  assert.equal(resultado.sugerido, 2500);
+  assert.equal(avaliarCliente({score:20,limiteBase:5000}, [], [parcela(0)], hoje).limiteAtual, 300);
+  assert.equal(avaliarCliente({limiteBase:5000}, [], [parcela(0)], hoje).sugerido, null);
+  assert.equal(avaliarCliente({score:'inválido',limiteBase:5000}, [], [parcela(0)], hoje).limiteAtual, null);
+});
+
+test('limites de Portugal também seguem o perfil exibido ao usuário', () => {
+  const resultado = avaliarCliente({score:80,limiteBase:100,pais:'PT'}, [], [parcela(30)], hoje);
   assert.equal(resultado.sugerido, 400);
   assert.match(avaliacaoHTML(resultado), /€/);
+});
+
+test('todas as faixas usam a mesma função da área do usuário', () => {
+  const limites = {BR:[300,800,1500,3000,5000], PT:[100,300,500,800,2000]};
+  for (const pais of ['BR','PT']) {
+    for (const [score, faixa] of [[1,0],[20,0],[21,1],[40,1],[41,2],[60,2],[61,3],[80,3],[81,4],[100,4]]) {
+      const resultado = avaliarCliente({score,pais,limiteBase:1}, [], [parcela(30)], hoje);
+      assert.equal(resultado.limiteAtual, limites[pais][faixa]);
+      assert.equal(resultado.limiteAtual, calcularNivel(score,pais).max);
+      assert.equal(resultado.sugerido, limites[pais][faixa] * 0.5);
+    }
+  }
+  const home = readFileSync(new URL('../home.html',import.meta.url),'utf8');
+  assert.match(home, /import \{ calcularNivel \} from "\.\/perfil-credito\.mjs"/);
+  assert.doesNotMatch(home, /function calcularNivel\(/);
 });
 
 test('ignora registros de teste e vencimentos inválidos', () => {

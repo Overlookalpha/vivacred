@@ -1,4 +1,5 @@
 // Demonstrativo administrativo: não grava dados nem altera decisões de crédito.
+import { calcularNivel } from "./perfil-credito.mjs";
 const dados = item => typeof item?.data === "function" ? item.data() : item;
 const teste = item => item?.teste === true || item?.tipoRegistro === "teste";
 const numero = valor => Number.isFinite(Number(valor)) ? Math.max(0, Number(valor)) : 0;
@@ -48,9 +49,9 @@ export function avaliarCliente(cliente, emprestimos, parcelas, agora = new Date(
   const totalContratado = contratos.filter(item =>
     ["ativo", "perdido"].includes(item.status) || item.finalizado === true
   ).reduce((total, item) => total + numero(item.valor), 0);
-  const limiteInformado = cliente?.limiteBase !== undefined && cliente?.limiteBase !== null &&
-    cliente?.limiteBase !== "" && Number.isFinite(Number(cliente.limiteBase)) && Number(cliente.limiteBase) >= 0;
-  const limiteAtual = limiteInformado ? Number(cliente.limiteBase) : null;
+  const limiteInformado = cliente?.score !== undefined && cliente?.score !== null &&
+    cliente?.score !== "" && Number.isFinite(Number(cliente.score));
+  const limiteAtual = limiteInformado ? calcularNivel(Number(cliente.score), cliente.pais || "BR").max : null;
   const evidencias = pontuais + atrasos + atrasosAtuais;
   let nota = null, fator = null;
   const motivos = [];
@@ -76,7 +77,7 @@ export function avaliarCliente(cliente, emprestimos, parcelas, agora = new Date(
   if (semDataReal) motivos.push(`${semDataReal} pagamento(s) sem data real: não usados para avaliar pontualidade.`);
   if (semVencimento) motivos.push(`${semVencimento} parcela(s) sem vencimento válido: análise incompleta.`);
   if (nota === null) motivos.push("Histórico insuficiente para atribuir nota ou sugerir limite.");
-  if (!limiteInformado) motivos.push("Limite efetivo não cadastrado; não foi inferido a partir do score.");
+  if (!limiteInformado) motivos.push("Score do perfil indisponível; não foi possível obter o limite exibido na área do usuário.");
   const faixa = nota === null ? "Histórico insuficiente" : nota >= 90 ? "Bom histórico" : nota >= 75 ? "Acompanhar" :
     nota >= 60 ? "Atenção" : nota >= 40 ? "Atenção elevada" : nota >= 20 ? "Risco elevado" : "Revisão prioritária";
   return { nota, fator, sugerido, limiteAtual, faixa, motivos, concluidas, pontuais, atrasos,
@@ -128,7 +129,7 @@ export function avaliacaoHTML(avaliacao) {
   return `<aside class="avaliacao-interna" aria-label="Avaliação interna do cliente">
     <strong>Avaliação interna · ${a.faixa}</strong>
     <div class="avaliacao-metricas"><span>Nota interna <b>${a.nota === null ? "Sem nota" : a.nota + "/100"}</b></span>
-    <span>Limite atual <b>${moeda(a.limiteAtual)}</b></span>
+    <span>Limite na área do usuário <b>${moeda(a.limiteAtual)}</b></span>
     <span>Sugestão para análise <b>${a.fator === 0 ? "Revisar antes de liberar" : moeda(a.sugerido)}</b></span></div>
     <small>Demonstrativo exclusivo do admin. Não altera limite, score, aprovação ou bloqueio.</small>
     <details><summary>Ver motivos, histórico e critérios</summary>

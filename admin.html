@@ -117,6 +117,15 @@ color:var(--primary-dark);
 @media (min-width:760px){.adminMain{padding:28px}.adminHeader{padding:10px max(28px,calc((100vw - 1120px)/2 + 28px))}.adminBottomNav{left:50%;right:auto;transform:translateX(-50%);width:min(760px,calc(100% - 32px));bottom:14px;border:1px solid var(--border);border-radius:18px;padding:8px;box-shadow:var(--shadow)}body{padding-bottom:105px}.menuItem{font-size:12px}}
 @media (max-width:560px){.adminBrand span{display:none}.adminActions button{padding:8px 9px}.adminActionLabel{display:none}}
 
+.avaliacao-interna{background:#f8fafc;border:1px solid #cbd5e1;border-left:4px solid #b54708;border-radius:10px;padding:12px;margin:12px 0;color:#1e293b;font-size:13px;line-height:1.55;overflow-wrap:anywhere}
+.avaliacao-interna>strong{display:block;font-size:14px}
+.avaliacao-metricas{display:flex;flex-wrap:wrap;gap:8px 20px;margin:9px 0}
+.avaliacao-metricas span{flex:1 1 130px}
+.avaliacao-metricas b{display:block;font-size:15px}
+.avaliacao-interna small{display:block;color:#475569}
+.avaliacao-interna summary{cursor:pointer;font-weight:600;margin-top:10px}
+.avaliacao-interna ul{padding-left:20px}
+.avaliacao-interna p{margin:8px 0}
 </style>
 </head>
 
@@ -481,6 +490,8 @@ window.abrirTela = function(tela){
 
 <script type="module">
 
+import { criarIndiceAvaliacoes, avaliacaoHTML } from "./avaliacao-interna.mjs";
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
 import {
@@ -500,6 +511,14 @@ import {
   orderBy,
   limit
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+let indiceAvaliacoesInternas = { porId: new Map(), porEmail: new Map() };
+function demonstrativoCliente(referencia) {
+ const avaliacao = referencia.userId
+  ? indiceAvaliacoesInternas.porId.get(referencia.userId)
+  : indiceAvaliacoesInternas.porEmail.get(referencia.email);
+ return avaliacaoHTML(avaliacao);
+}
+
  let capitalBR = 1000;
 let capitalPT = 1000;
 
@@ -1786,12 +1805,17 @@ let dinheiroRuaPT = 0;
  const [
  emprestimosSnap,
  parcelasSnap,
-  configuracaoFinanceiraSnap
+  configuracaoFinanceiraSnap,
+  usuariosAvaliacaoSnap
  ] = await Promise.all([
   getDocs(collection(db,"emprestimos")),
   getDocs(collection(db,"parcelas")),
-  getDoc(doc(db,"configuracoes","financeiro"))
+  getDoc(doc(db,"configuracoes","financeiro")),
+  getDocs(collection(db,"usuarios"))
  ]);
+ indiceAvaliacoesInternas = criarIndiceAvaliacoes(
+  usuariosAvaliacaoSnap.docs, emprestimosSnap.docs, parcelasSnap.docs
+ );
  const emprestimosTesteIds = new Set(
   emprestimosSnap.docs
    .filter(docSnap => registroTeste(docSnap.data()))
@@ -2274,6 +2298,7 @@ async function montarListaVencimentos(lista,titulo){
    parcela.vencimento.toDate().toLocaleDateString("pt-BR") +
    "<br>" +
 
+   demonstrativoCliente(emp) +
    "🔔 Cliente pediu aviso com " +
    diasLembreteCliente + (diasLembreteCliente === 1 ? " dia" : " dias") +
    " de antecedência" +
@@ -2898,6 +2923,7 @@ Number(atraso.multa || 0).toFixed(2) +
 Number(atraso.juros || 0).toFixed(2) +
 "<br>" +
 
+demonstrativoCliente(emp) +
 "📌 Total Atualizado: " + moeda + " " +
 Number(
  atraso.restante || atraso.valor || 0
@@ -3651,6 +3677,7 @@ usuarioSistema.pais === "PT"
 "<br><br>" +
 "<b>🧾 Comportamento de pagamento</b><br>" +
 resumoComportamentoHTML(comportamentoPagamento) +
+demonstrativoCliente(dados) +
 
 "</div>" +
   
@@ -3961,6 +3988,7 @@ ${percentual}% Concluído
 <br>
 
 ${statusTexto}
+${demonstrativoCliente(emp)}
 
 <br>
 
@@ -5471,6 +5499,7 @@ window.renderizarUsuarios = async function(){
   getDocs(collection(db,"parcelas"))
  ]);
 
+ const indiceClientes = criarIndiceAvaliacoes(snapshot.docs, emprestimosSnap.docs, parcelasSnap.docs);
  const parcelasPorEmprestimo = new Map();
  parcelasSnap.forEach(function(parcelaDoc){
   const parcela = parcelaDoc.data();
@@ -5554,6 +5583,7 @@ ${user.notasInternas ? "📝 <b>Nota:</b> " + escaparHTML(user.notasInternas) + 
 <div style="background:#F8FAFC;border:1px solid var(--border);border-radius:10px;padding:10px;margin:10px 0;line-height:1.5;">
  <b>🧾 Comportamento de pagamento</b><br>
  ${resumoComportamentoHTML(comportamentoPagamento)}
+ ${avaliacaoHTML(indiceClientes.porId.get(id))}
 </div>
 
     <button onclick="verUsuarioFirestore('${id}')">
@@ -5850,7 +5880,7 @@ window.verUsuarioFirestore = async function(id){
 
 const historicoCliente =
 emprestimosSnap.docs.filter(e =>
- e.data().email === user.email &&
+ (e.data().userId ? e.data().userId === id : !!user.email && e.data().email === user.email) &&
  !registroTeste(e.data())
 );
 
@@ -5903,6 +5933,10 @@ parcelasSnap.docs.filter(p => {
 
 });
 
+const usuariosPerfilSnap = await getDocs(collection(db,"usuarios"));
+const avaliacaoPerfil = criarIndiceAvaliacoes(
+ usuariosPerfilSnap.docs, emprestimosSnap.docs, parcelasSnap.docs
+).porId.get(id);
 const comportamentoPagamento = resumirComportamentoPagamento(parcelasCliente);
 
 const hoje = new Date();
@@ -6121,6 +6155,7 @@ ${totalAtivos > 0 ? "SIM" : "NÃO"}
 <div style="background:#F8FAFC;border:1px solid var(--border);border-radius:10px;padding:12px;margin:10px 0;line-height:1.55;">
 <b>🧾 Comportamento de pagamento</b><br>
 ${resumoComportamentoHTML(comportamentoPagamento)}
+${avaliacaoHTML(avaliacaoPerfil)}
 </div>
 
 `;

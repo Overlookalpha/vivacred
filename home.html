@@ -42,6 +42,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 12px;
       background: var(--surface);
       border-bottom: 1px solid var(--border);
       position: sticky;
@@ -50,6 +51,8 @@
     }
 
     .logo {
+      flex: 1;
+      min-width: 0;
       font-size: 17px;
       font-weight: 800;
       letter-spacing: 0.5px;
@@ -69,7 +72,8 @@
 
     .logout:hover { background: var(--bg); }
 
-    #logoutBtn { color: var(--danger); }
+    .header-acoes { display:flex; align-items:center; gap:10px; flex-shrink:0; }
+    #btnAtualizar { white-space:nowrap; padding:9px 12px; }
 
     .container {
       padding: 22px 16px 60px;
@@ -710,9 +714,9 @@
   </div>
 </div>
 
-  <div style="display:flex; align-items:center; gap:15px;">
+  <div class="header-acoes">
 
-    <div id="sinoNotificacao" style="cursor:pointer; font-size:20px;">
+    <div id="sinoNotificacao" style="cursor:pointer;font-size:20px;position:relative;display:flex;align-items:center;justify-content:center;width:32px;height:36px;flex-shrink:0;">
       🔔
       <span id="contadorNotificacao" style="
         background:red;
@@ -720,12 +724,13 @@
         border-radius:50%;
         padding:2px 6px;
         font-size:12px;
-        margin-left:4px;
+        position:absolute;
+        top:-4px;
+        right:-5px;
         display:none;
       ">0</span>
     </div>
 
-    <button id="logoutBtn" class="logout">Sair</button>
     <button id="btnAtualizar" class="logout">Atualizar</button>
 
   </div>
@@ -1871,20 +1876,12 @@ document.querySelectorAll(".menu-item[data-alvo]").forEach((botao) => {
   });
 
 });
-const logoutBtn = document.getElementById("logoutBtn");
-
-if (logoutBtn) {
-  logoutBtn.addEventListener("click", async () => {
-    await signOut(auth);
-    window.location.replace("login.html");
-  });
-}
-
 const menuSairBtn = document.getElementById("menuSairBtn");
 
-if(menuSairBtn && logoutBtn){
-  menuSairBtn.addEventListener("click", () => {
-    logoutBtn.click();
+if(menuSairBtn){
+  menuSairBtn.addEventListener("click", async () => {
+    await signOut(auth);
+    window.location.replace("login.html");
   });
 }
 
@@ -2171,40 +2168,6 @@ async function carregarCartaoIndicacao(dadosUsuario, uid){
 
 }
 
-// =========================================
-// ATIVIDADE RECENTE (prova social) — mostra em toasts, ao entrar, que
-// outros clientes quitaram empréstimos e ganharam IsaCoins. Os nomes já
-// chegam anonimizados do admin.html (ex: "Maria S."), então aqui só
-// exibimos o que veio, sem nunca guardar/mostrar nome completo de ninguém.
-// Nunca mostra uma atividade do próprio usuário logado.
-// =========================================
-async function mostrarAtividadesQuitacao(uidAtual){
-
-  try {
-
-    const snap = await getDocs(
-      query(collection(db, "atividadesQuitacao"), orderBy("criadoEm", "desc"), limit(15))
-    );
-
-    const atividades = snap.docs
-      .map(d => d.data())
-      .filter(a => a.userId !== uidAtual)
-      .slice(0, 5);
-
-    atividades.forEach((atividade, indice) => {
-      setTimeout(() => {
-        // A atividade continua servindo como incentivo, mas sem expor
-        // informações financeiras ou a identidade de outro cliente.
-        const mensagem = "🎉 Um cliente acabou de concluir um pagamento!";
-        mostrarAviso(mensagem, "info");
-      }, 3000 + indice * 5000);
-    });
-
-  } catch (erro) {
-    console.error("Erro ao carregar atividades de quitação:", erro);
-  }
-
-}
   const btnAtualizar = document.getElementById("btnAtualizar");
 
 if(btnAtualizar){
@@ -2731,7 +2694,6 @@ window.calcularNivel = calcularNivel;
  const data = userSnap.data();
 
  carregarCartaoIndicacao(data, usuarioLogado.uid);
- mostrarAtividadesQuitacao(usuarioLogado.uid);
  renderizarBannerInstalarApp();
 
  const paisUsuario = data.pais || "BR";

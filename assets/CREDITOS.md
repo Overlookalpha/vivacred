@@ -7,3 +7,4 @@ Versão adaptada para o site: 1280 × 720, H.264, sem áudio, comprimida para us
 
 Tela IsaCred fornecida pelo responsável pelo projeto e inserida no celular com
 acompanhamento de perspectiva e máscara para preservar a mão e a iluminação.
+Vídeo girado em 180°, com a orientação da tela do app ajustada para manter a leitura.

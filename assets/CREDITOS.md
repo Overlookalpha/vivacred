@@ -4,3 +4,6 @@ Fonte: https://www.pexels.com/video/person-using-smartphone-while-holding-credit
 Licença: https://www.pexels.com/license/
 
 Versão adaptada para o site: 1280 × 720, H.264, sem áudio, comprimida para uso como fundo.
+
+Tela IsaCred fornecida pelo responsável pelo projeto e inserida no celular com
+acompanhamento de perspectiva e máscara para preservar a mão e a iluminação.

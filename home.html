@@ -2371,6 +2371,21 @@ const gruposEmprestimos = Object.keys(emprestimosMap).map((idEmprestimo) => {
 const gruposEmAberto = gruposEmprestimos.filter(g => !g.quitado);
 const gruposQuitados = gruposEmprestimos.filter(g => g.quitado);
 
+// Mesma regra de encargos de functions/lib/calculoParcela.js.
+// Os resumos e o controle de parcelas devem mostrar o mesmo saldo.
+function obterSituacaoParcela(dados, agora = new Date()) {
+  const valor = Number(dados.valor || 0);
+  const pago = Number(dados.pago || 0);
+  const vencimento = dados.vencimento.toDate();
+  const atrasada = pago < valor && agora > vencimento;
+  const diasAtraso = atrasada
+    ? Math.floor((agora - vencimento) / (1000 * 60 * 60 * 24)) : 0;
+  const aplicarEncargos = atrasada && dados.acordoSemEncargos !== true;
+  const multa = aplicarEncargos ? valor * 0.05 : 0;
+  const juros = aplicarEncargos ? valor * 0.01 * diasAtraso : 0;
+  return { atrasada, multa, juros, restante: Math.max(0, valor + multa + juros - pago) };
+}
+
 function atualizarResumoProximaParcela(){
   const resumo = document.getElementById("resumoProximaParcela");
   if(!resumo) return;
@@ -2387,8 +2402,9 @@ function atualizarResumoProximaParcela(){
   }
 
   const dados = proxima.data();
+  const situacao = obterSituacaoParcela(dados);
   const moeda = paisUsuarioGlobal === "PT" ? "EUR" : "BRL";
-  const valor = Number(dados.valor || 0).toLocaleString("pt-BR", {
+  const valor = situacao.restante.toLocaleString("pt-BR", {
     style: "currency",
     currency: moeda
   });
@@ -2396,8 +2412,8 @@ function atualizarResumoProximaParcela(){
 
   resumo.classList.add("visivel");
   resumo.innerHTML =
-    "<div class='resumo-proxima-parcela-titulo'>PRÓXIMA PARCELA</div>" +
-    "<div class='resumo-proxima-parcela-valor'>" + valor + " · vence em " + vencimento + "</div>" +
+    "<div class='resumo-proxima-parcela-titulo'>" + (situacao.atrasada ? "PARCELA EM ATRASO" : "PRÓXIMA PARCELA") + "</div>" +
+    "<div class='resumo-proxima-parcela-valor'>" + valor + (situacao.atrasada ? " · venceu em " : " · vence em ") + vencimento + "</div>" +
     "<div class='resumo-proxima-parcela-ajuda'>Toque para ver todas as suas parcelas.</div>";
   resumo.onclick = () => document.getElementById("secaoParcelas")?.scrollIntoView({ behavior: "smooth", block: "start" });
   resumo.onkeydown = (event) => {
@@ -2482,33 +2498,15 @@ function renderizarGrupoEmprestimo(grupo){
 
   const dados = docSnap.data();
 
-  let restante = dados.valor - dados.pago;
+  const situacao = obterSituacaoParcela(dados);
+  const { restante, multa, juros } = situacao;
   let status = "🔴 Pendente";
-
-  const hoje = new Date();
-  const vencimento = dados.vencimento.toDate();
-
-  let multa = 0;
-  let juros = 0;
 
   if(restante === 0){
       status = "🟢 Pago";
   }
 
-  else if(hoje > vencimento && restante > 0){
-
-  const diasAtraso = Math.floor(
-  (hoje - vencimento) / (1000 * 60 * 60 * 24)
-  );
-
-  // Um acordo feito pelo administrador retira os encargos somente
-  // desta parcela, sem mudar a data de vencimento.
-  const acordoSemEncargos = dados.acordoSemEncargos === true;
-
-  multa = acordoSemEncargos ? 0 : dados.valor * 0.05;
-  juros = acordoSemEncargos ? 0 : dados.valor * 0.01 * diasAtraso;
-
-  restante = dados.valor + multa + juros - dados.pago;
+  else if(situacao.atrasada){
 
   atualizarCobrancaParcelaNoServidor(docSnap.id);
 
@@ -3613,7 +3611,8 @@ const parcelasPagas = parcelasOrdenadas.filter(
 
 const totalParcelas = parcelasOrdenadas.length;
 const moedaResumo = paisUsuarioGlobal === "PT" ? "EUR" : "BRL";
-const valorProximaParcela = Number(primeiraParcelaPendente.data().valor || 0)
+const situacaoResumo = obterSituacaoParcela(primeiraParcelaPendente.data());
+const valorProximaParcela = situacaoResumo.restante
   .toLocaleString("pt-BR", { style: "currency", currency: moedaResumo });
 const vencimentoProximaParcela = primeiraParcelaPendente.data().vencimento.toDate();
 const dataProximaParcela = vencimentoProximaParcela.toLocaleDateString("pt-BR");
@@ -3634,13 +3633,13 @@ const tituloContrato = Number(dados.valor || 0)
   "Crédito de " + tituloContrato +
 "</div>" +
 "<div style='margin-top:12px;padding:10px;border-radius:9px;background:var(--primary-soft);'>" +
-  "<strong>Próxima parcela:</strong> " + valorProximaParcela + "<br>" +
-  "<span style='font-size:13px;color:var(--text-soft);'>" + textoVencimento + " · " + dataProximaParcela + " · " + parcelasPagas + "/" + totalParcelas + " pagas</span>" +
+  "<strong>" + (situacaoResumo.atrasada ? "Parcela em atraso:" : "Próxima parcela:") + "</strong> " + valorProximaParcela + "<br>" +
+  "<span style='font-size:13px;color:var(--text-soft);'>" + textoVencimento + " · " + (situacaoResumo.atrasada ? "Venceu em " : "Vence em ") + dataProximaParcela + " · " + parcelasPagas + "/" + totalParcelas + " pagas</span>" +
 "</div>" +
 "<div style='margin-top:10px;font-size:13px;color:var(--text-soft);'>Total a pagar: " +
   Number(dados.valorFinal || 0).toLocaleString("pt-BR", { style: "currency", currency: moedaResumo }) +
 "</div>" +
-"<button onclick=\"gerarPagamentoParcela('" + primeiraParcelaPendente.id + "')\" style='width:100%;margin:12px 0 0;background:var(--primary);color:white;border:none;padding:10px 14px;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit;'>💳 Pagar próxima parcela</button>";
+"<button onclick=\"gerarPagamentoParcela('" + primeiraParcelaPendente.id + "')\" style='width:100%;margin:12px 0 0;background:var(--primary);color:white;border:none;padding:10px 14px;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit;'>💳 " + (situacaoResumo.atrasada ? "Pagar parcela em atraso" : "Pagar próxima parcela") + "</button>";
 
     listaDiv.appendChild(item);
 

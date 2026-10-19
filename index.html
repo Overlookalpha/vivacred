@@ -16,7 +16,8 @@
 }
 
 body{
-  height:100vh;
+  min-height:100vh;
+  min-height:100svh;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -31,9 +32,37 @@ body{
 
 body::before{
   content:"";
-  position:absolute;
+  position:fixed;
   inset:0;
   background:rgba(0,0,0,0.65);
+  z-index:1;
+  pointer-events:none;
+}
+
+.video-fundo{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center;
+  pointer-events:none;
+  opacity:0;
+}
+.video-fundo.pronto{opacity:1;}
+.controle-fundo{
+  position:fixed;
+  right:16px;
+  bottom:16px;
+  z-index:3;
+  padding:8px 12px;
+  border:1px solid rgba(255,255,255,.5);
+  border-radius:8px;
+  background:rgba(0,0,0,.5);
+  color:white;
+  font:inherit;
+  font-size:12px;
+  cursor:pointer;
 }
 
 .container{
@@ -70,6 +99,9 @@ h1{
 
 <body>
 
+<video id="videoFundo" class="video-fundo" autoplay muted loop playsinline preload="none" aria-hidden="true" tabindex="-1"></video>
+<button id="controleFundo" class="controle-fundo" type="button" hidden>Pausar fundo</button>
+
 <div class="container">
   <h1>IsaCred 🔥</h1>
   <div class="tag">Crédito inteligente começa aqui</div>
@@ -84,6 +116,44 @@ h1{
 </div>
 
 <script>
+const videoFundo = document.getElementById("videoFundo");
+const controleFundo = document.getElementById("controleFundo");
+const reduzirMovimento = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+function configurarVideoFundo(){
+  if(reduzirMovimento.matches || navigator.connection?.saveData){
+    videoFundo.pause();
+    videoFundo.removeAttribute("src");
+    videoFundo.load();
+    videoFundo.classList.remove("pronto");
+    controleFundo.hidden = true;
+    return;
+  }
+  videoFundo.muted = true;
+  if(!videoFundo.getAttribute("src")) videoFundo.src = "assets/entrada-celular-cartao.mp4";
+  // Reprodução bloqueada ou indisponível: a foto permanece como fundo.
+  videoFundo.play().catch(() => {});
+}
+videoFundo.addEventListener("playing", () => {
+  videoFundo.classList.add("pronto");
+  controleFundo.hidden = false;
+  controleFundo.textContent = "Pausar fundo";
+});
+videoFundo.addEventListener("error", () => {
+  videoFundo.classList.remove("pronto");
+  controleFundo.hidden = true;
+});
+controleFundo.addEventListener("click", () => {
+  if(videoFundo.paused){
+    videoFundo.play().catch(() => {});
+  }else{
+    videoFundo.pause();
+    controleFundo.textContent = "Reproduzir fundo";
+  }
+});
+reduzirMovimento.addEventListener("change", configurarVideoFundo);
+configurarVideoFundo();
+
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("service-worker.js");
 }

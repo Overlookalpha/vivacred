@@ -17,6 +17,7 @@ exatamente a mesma logica ja usada no admin.html do VivaCred, pra os
 numeros baterem com o painel.
 """
 
+import html
 import json
 import os
 from datetime import date, datetime, timedelta
@@ -53,15 +54,26 @@ def inicializar_firebase():
 
 
 def enviar_mensagem(texto):
-    resposta = requests.post(
-        TELEGRAM_API + "/sendMessage",
-        json={"chat_id": TELEGRAM_CHAT_ID, "text": texto, "parse_mode": "HTML"},
-        timeout=15,
-    )
-    resposta.raise_for_status()
-    retorno = resposta.json()
-    if not retorno.get("ok"):
-        raise RuntimeError(retorno.get("description") or "Telegram recusou a mensagem")
+    # O Telegram recusa mensagens com mais de 4096 caracteres: divide por linhas.
+    partes, atual = [], ""
+    for linha in texto.split("\n"):
+        if atual and len(atual) + len(linha) + 1 > 3800:
+            partes.append(atual)
+            atual = ""
+        atual = (atual + "\n" + linha) if atual else linha
+    if atual:
+        partes.append(atual)
+
+    for parte in partes:
+        resposta = requests.post(
+            TELEGRAM_API + "/sendMessage",
+            json={"chat_id": TELEGRAM_CHAT_ID, "text": parte, "parse_mode": "HTML"},
+            timeout=15,
+        )
+        resposta.raise_for_status()
+        retorno = resposta.json()
+        if not retorno.get("ok"):
+            raise RuntimeError(retorno.get("description") or "Telegram recusou a mensagem")
 
 
 def calcular_cobranca_parcela(parcela, hoje):
@@ -441,6 +453,9 @@ def formatar_moeda(valor):
     return "R$ " + ("%.2f" % valor)
 
 def montar_mensagem(d):
+    def esc(valor):
+        return html.escape(str(valor))
+
     hoje_str = date.today().strftime("%d/%m/%Y")
     linhas = ["📊 <b>VivaCred — Resumo do dia " + hoje_str + "</b>", ""]
 
@@ -466,7 +481,7 @@ def montar_mensagem(d):
         for item in sorted(atrasados, key=lambda x: -x["diasAtraso"]):
             linhas.append(
                 "• "
-                + item["nome"]
+                + esc(item["nome"])
                 + " — parcela "
                 + item["parcela"]
                 + " — "
@@ -522,26 +537,26 @@ def montar_mensagem(d):
                 premio = " — +5.000 ISC concedidos ✅"
             elif a.get("bonusStatus") == "negado_atraso":
                 premio = " — sem prêmio: cliente em atraso 🚫"
-            linhas.append("• " + a["nome"] + " (" + str(a["idade"]) + " anos)" + premio)
+            linhas.append("• " + esc(a["nome"]) + " (" + str(a["idade"]) + " anos)" + premio)
         linhas.append("")
 
     if d["aniversarios7Dias"]:
         linhas.append("🎈 <b>Aniversário nos próximos 7 dias:</b>")
         for a in sorted(d["aniversarios7Dias"], key=lambda x: x["diasRestantes"]):
-            linhas.append("• " + a["nome"] + " — em " + str(a["diasRestantes"]) + " dia(s) (" + str(a["idade"]) + " anos)")
+            linhas.append("• " + esc(a["nome"]) + " — em " + str(a["diasRestantes"]) + " dia(s) (" + str(a["idade"]) + " anos)")
         linhas.append("")
 
     if d["proximosSaques"]:
         linhas.append("🪙 <b>Perto dos 10.000 ISAcoins:</b>")
         for c in sorted(d["proximosSaques"], key=lambda x: x["faltam"]):
-            linhas.append("• " + c["nome"] + " — " + ("%.0f" % c["isaCoins"]) + " ISC (faltam " + ("%.0f" % c["faltam"]) + ")")
+            linhas.append("• " + esc(c["nome"]) + " — " + ("%.0f" % c["isaCoins"]) + " ISC (faltam " + ("%.0f" % c["faltam"]) + ")")
         linhas.append("")
 
     if d["melhorCliente"]:
         mc = d["melhorCliente"]
         linhas.append(
             "🏆 <b>Melhor cliente (maior nota de crédito):</b> "
-            + mc["nome"]
+            + esc(mc["nome"])
             + " — nota "
             + ("%.0f" % mc["score"])
             + " • "

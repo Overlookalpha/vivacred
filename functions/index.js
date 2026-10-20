@@ -55,6 +55,16 @@ function nivelPorScore(score) {
   return "Black";
 }
 
+// Alerta para o Telegram: o cliente não pode escrever em `notificacoes`
+// (regras do Firestore), então a fila é sempre alimentada pelo servidor.
+function alertaTelegram(uid, tipo, id) {
+  return {
+    userId: uid, titulo: "", mensagem: "", lida: true, telegramInterno: true,
+    tipoTelegram: tipo, dadosTelegram: { id: id || null }, criadoPor: uid,
+    data: FieldValue.serverTimestamp(), statusTelegram: "pendente"
+  };
+}
+
 async function codigoIndicacaoUnico(db, nome) {
   const base = String(nome).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z]/g, "").toUpperCase().slice(0, 6) || "USER";
   for (let tentativa = 0; tentativa < 10; tentativa += 1) {
@@ -104,6 +114,7 @@ exports.criarPerfilUsuario = onCall(
       codigoIndicacao: codigo, indicadoPor: indicador && !indicador.empty ? indicador.docs[0].id : null,
       indicacaoPremiada: false, criadoEm: FieldValue.serverTimestamp()
     }, { merge: false });
+    await db.collection("notificacoes").add(alertaTelegram(request.auth.uid, "cadastro", null));
     return { codigoIndicacao: codigo };
   }
 );
@@ -150,6 +161,7 @@ exports.solicitarCredito = onCall(
         valor, parcelas, juros, valorFinal: Number((valor + juros).toFixed(2)), status: "aguardando",
         criadoEm: FieldValue.serverTimestamp(), dataAprovacao: null, dataVencimento: null
       });
+      tx.create(db.collection("notificacoes").doc(), alertaTelegram(request.auth.uid, "emprestimo", ref.id));
       return { id: ref.id };
     });
     return resultado;
@@ -175,6 +187,7 @@ exports.solicitarSaque = onCall(
       const ref = db.collection("saques").doc();
       tx.create(ref, { userId: request.auth.uid, nomeCliente: usuario.nome || "", telefoneCliente: usuario.telefone || "", pix: usuario.pix,
         isaCoins: saldo, valor, moeda: pais === "PT" ? "EUR" : "BRL", pais, status: "pendente", criadoEm: FieldValue.serverTimestamp() });
+      tx.create(db.collection("notificacoes").doc(), alertaTelegram(request.auth.uid, "saque", ref.id));
       return { id: ref.id, isaCoins: saldo, valor, pais, nome: usuario.nome || "", pix: usuario.pix };
     });
     return resultado;
@@ -199,11 +212,7 @@ exports.registrarEventoCliente = onCall(
       const negociacao = await db.collection("negociacoes").doc(id).get();
       if (!negociacao.exists || negociacao.data().userId !== request.auth.uid) throw new HttpsError("permission-denied", "Negociação inválida.");
     }
-    await db.collection("notificacoes").add({
-      userId: request.auth.uid, titulo: "", mensagem: "", lida: true, telegramInterno: true,
-      tipoTelegram: tipo, dadosTelegram: { id: id || null }, criadoPor: request.auth.uid,
-      data: FieldValue.serverTimestamp(), statusTelegram: "pendente"
-    });
+    await db.collection("notificacoes").add(alertaTelegram(request.auth.uid, tipo, id));
     return { ok: true };
   }
 );

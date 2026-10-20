@@ -385,24 +385,8 @@ await criarPerfilUsuario({
  cidade, estado, codigoIndicacao: codigoIndicacaoDigitado
 });
 
-// A conta já foi criada neste ponto. O aviso é independente para que uma
-// indisponibilidade temporária da fila não interrompa o novo cadastro.
-try {
- await addDoc(collection(db, "notificacoes"), {
-  userId: cred.user.uid,
-  titulo: "",
-  mensagem: "",
-  lida: true,
-  telegramInterno: true,
-  tipoTelegram: "cadastro",
-  dadosTelegram: {},
-  criadoPor: cred.user.uid,
-  data: new Date(),
-  statusTelegram: "pendente"
- });
-} catch(erroTelegram) {
- console.warn("Conta criada, mas o alerta Telegram será ignorado:", erroTelegram);
-}
+// O alerta de nova conta para o Telegram é criado pelo servidor dentro de
+// criarPerfilUsuario (o cliente não tem permissão de escrita em notificacoes).
 
 window.location.href = "home.html";
 } catch (error) {

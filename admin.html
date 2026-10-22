@@ -505,12 +505,18 @@ import {
   addDoc,
   setDoc,
   writeBatch,
+  runTransaction,
+  serverTimestamp,
+  getDocFromServer,
+  getDocsFromServer,
   increment,
   query,
   where,
   orderBy,
   limit
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+import {canEdit as podeEditarVencimento, dateKey as chaveDataVencimento} from './vencimentos.mjs';
+import {createDateEditor} from './editar-vencimentos.mjs';
 let indiceAvaliacoesInternas = { porId: new Map(), porEmail: new Map() };
 function demonstrativoCliente(referencia) {
  const avaliacao = referencia.userId
@@ -3005,6 +3011,8 @@ async function enviarTelegram(texto){
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const editorVencimentos = createDateEditor({db,auth,doc,collection,query,where,getDocFromServer,getDocsFromServer,runTransaction,serverTimestamp,refresh:id=>window.abrirParcelas(id)});
+window.editarVencimentos = (emprestimoId,parcelaId=null)=>editorVencimentos.open(emprestimoId,parcelaId);
 
 // Mantém o dashboard focado em operações. O painel financeiro existente é
 // reutilizado na sua própria aba, sem duplicar cálculos ou IDs do Firebase.
@@ -4310,6 +4318,17 @@ parcelasSnap.forEach((docParcela)=>{
 
 listaParcelas.sort((a,b)=> a.numero - b.numero);
 
+const avisoEdicao = document.createElement("p");
+avisoEdicao.textContent = "Edição de vencimentos: somente parcelas futuras sem pagamentos e sem acordo ativo. Valores e pagamentos não são alterados.";
+painel.appendChild(avisoEdicao);
+const temParcelasEditaveis = listaParcelas.some(p=>podeEditarVencimento(p,chaveDataVencimento(new Date(),dados.pais),dados.pais));
+if(temParcelasEditaveis){
+ const editarDia = document.createElement("button");
+ editarDia.textContent = "Editar dia das parcelas futuras";
+ editarDia.onclick = ()=>window.editarVencimentos(emprestimoId);
+ painel.appendChild(editarDia);
+}
+
 listaParcelas.forEach((parcela)=>{
 
  const div = document.createElement("div");
@@ -4363,6 +4382,13 @@ parcela.restante ?? (parcela.valor - parcela.pago)
 "Vencimento: "+venc.toLocaleDateString("pt-BR")+"<br>"+
 "<br>"+
 botoes;
+
+if(podeEditarVencimento(parcela,chaveDataVencimento(new Date(),dados.pais),dados.pais)){
+ const editarData = document.createElement("button");
+ editarData.textContent = "Editar vencimento";
+ editarData.onclick = ()=>window.editarVencimentos(emprestimoId,parcela.id);
+ div.appendChild(editarData);
+}
   
  painel.appendChild(div);
 

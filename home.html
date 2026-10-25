@@ -1154,7 +1154,7 @@ color:var(--text);
   </div>
 </div>
 <script type="module">
-import { calcularNivel } from "./perfil-credito.mjs";
+import { calcularNivel, limiteEfetivo, REGRAS_CREDITO } from "./perfil-credito.mjs";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
 import {
   getFirestore,
@@ -1327,7 +1327,7 @@ document.addEventListener("click", async (event) => {
     const score = Number(cliente.score || 20);
     const nivel = calcularNivel(score, pais);
 
-    const limite = Number(nivel.max || 0).toLocaleString(localizacao, {
+    const limite = Number(limiteEfetivo(cliente, pais) || 0).toLocaleString(localizacao, {
       style: "currency",
       currency: moeda
     });
@@ -2176,6 +2176,7 @@ location.reload();
 });
 }
 let nivelNomeGlobal = null;
+let limiteEfetivoGlobal = 0; // o mesmo limite que o servidor aplica ao solicitar
 let paisUsuarioGlobal = "BR";
 let nivelAtualGlobal = "Essencial";
 let usuarioLogado = null;
@@ -2647,38 +2648,8 @@ setTimeout(function(){
 },8000);
 }
   function obterRegrasPorNivel(nivelNome) {
-
-  const regras = {
-
-    "Essencial": {
-      maxParcelas: 2,
-      juros: { 1: 0.35, 2: 0.60 }
-    },
-
-    "Bronze": {
-      maxParcelas: 4,
-      juros: { 1: 0.30, 2: 0.45, 3: 0.60, 4: 0.75 }
-    },
-
-    "Prata": {
-      maxParcelas: 6,
-      juros: { 1: 0.25, 2: 0.40, 3: 0.55, 4: 0.70, 5: 0.85, 6: 1.00 }
-    },
-
-    "Ouro": {
-      maxParcelas: 8,
-      juros: { 1: 0.20, 2: 0.30, 3: 0.45, 4: 0.60, 5: 0.75, 6: 0.90, 7: 1.05, 8: 1.20 }
-    },
-
-    "Black": {
-      maxParcelas: 12,
-      juros: { 1: 0.15, 2: 0.25, 3: 0.35, 4: 0.45, 5: 0.55, 6: 0.65, 7: 0.75, 8: 0.85, 9: 0.95, 10: 1.10, 11: 1.25, 12: 1.40 }
-    }
-
-  };
-
-  return regras[nivelNome];
-}
+    return REGRAS_CREDITO[nivelNome];
+  }
   window.obterRegrasPorNivel = obterRegrasPorNivel;
 window.calcularNivel = calcularNivel;
   
@@ -3008,6 +2979,7 @@ if (scoreValor) {
 }
 
 nivelNomeGlobal = dadosNivel.nome;
+limiteEfetivoGlobal = limiteEfetivo(data, paisUsuario);
 const regrasNivel = obterRegrasPorNivel(nivelNomeGlobal);
 
 const selectParcelas = document.getElementById("parcelasSimuladas");
@@ -3029,7 +3001,7 @@ if (selectParcelas) {
 }
 const nivelEmoji = dadosNivel.emoji;
 const nivelCor = dadosNivel.cor;
-const limiteMaximoNivel = dadosNivel.max;
+const limiteMaximoNivel = limiteEfetivoGlobal;
 
 // O número do Score agora usa a mesma cor do nível da pessoa,
 // igual à barra de progresso logo abaixo.
@@ -3145,7 +3117,7 @@ if (limiteNivelTexto) {
     // Atualizar limite principal da tela
 const limiteElemento = document.getElementById("limiteDisponivel");
 
-if (limiteElemento && data.limiteBase) {
+if (limiteElemento) {
   limiteElemento.classList.remove("skeleton");
   limiteElemento.innerText =
   "Até " + limiteMaximoNivel.toLocaleString("pt-BR", {
@@ -3324,6 +3296,11 @@ if (!valorFinal || valorFinal < valorMinimo) {
 }
 
       try {
+
+if (valorFinal > limiteEfetivoGlobal) {
+  mostrarAviso("Seu limite disponível é " + limiteEfetivoGlobal.toLocaleString("pt-BR", { style: "currency", currency: paisUsuarioGlobal === "PT" ? "EUR" : "BRL" }) + ". Informe um valor até esse limite.");
+  return;
+}
 
 const regras = obterRegrasPorNivel(nivelNomeGlobal);
 
@@ -3920,10 +3897,7 @@ const regras =
 obterRegrasPorNivel(nivelNomeGlobal);
 
 const limiteMaximo =
-calcularNivel(
-Number(document.getElementById("scoreValor").innerText),
-paisUsuarioGlobal
-).max;
+limiteEfetivoGlobal;
 
 if(valor > limiteMaximo){
 

@@ -491,6 +491,7 @@ window.abrirTela = function(tela){
 <script type="module">
 
 import { criarIndiceAvaliacoes, avaliacaoHTML } from "./avaliacao-interna.mjs";
+import { calcularNivel, limiteEfetivo } from "./perfil-credito.mjs";
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
@@ -2409,17 +2410,14 @@ window.emitirFatura = async function(parcelaId){
  // solicitações — só reaproveitada aqui, nenhum valor novo.
  const score = cliente.score || 0;
 
- const nivelInfo =
-  score <= 20 ? { nivel: 1, nome: "Bronze" } :
-  score <= 40 ? { nivel: 2, nome: "Prata" } :
-  score <= 60 ? { nivel: 3, nome: "Ouro" } :
-  score <= 80 ? { nivel: 4, nome: "Platina" } :
-  { nivel: 5, nome: "Diamante" };
+ const nivelInfo = {
+  nivel: ["Essencial","Bronze","Prata","Ouro","Black"].indexOf(calcularNivel(score, emprestimo.pais).nome) + 1,
+  nome: calcularNivel(score, emprestimo.pais).nome
+ };
 
  const limiteAtual =
-  emprestimo.pais === "PT"
-  ? (score <= 20 ? "€100" : score <= 40 ? "€300" : score <= 60 ? "€500" : score <= 80 ? "€800" : "€2.000")
-  : (score <= 20 ? "R$300" : score <= 40 ? "R$800" : score <= 60 ? "R$1.500" : score <= 80 ? "R$3.000" : "R$5.000");
+  (emprestimo.pais === "PT" ? "€" : "R$") +
+  limiteEfetivo(cliente, emprestimo.pais).toLocaleString("pt-BR");
 
  const enderecoCliente =
   [cliente.cidade, cliente.estado].filter(Boolean).join(" / ") || null;
@@ -3633,21 +3631,7 @@ div.innerHTML =
 "📊 Score: <b>" + (usuarioSistema.score || 0) + "</b><br>" +
 
 "💰 Limite: <b>" +
-(
-usuarioSistema.pais === "PT"
-?
-(usuarioSistema.score <= 20 ? "€100" :
- usuarioSistema.score <= 40 ? "€300" :
- usuarioSistema.score <= 60 ? "€500" :
- usuarioSistema.score <= 80 ? "€800" :
- "€2.000")
-:
-(usuarioSistema.score <= 20 ? "R$300" :
- usuarioSistema.score <= 40 ? "R$800" :
- usuarioSistema.score <= 60 ? "R$1.500" :
- usuarioSistema.score <= 80 ? "R$3.000" :
- "R$5.000")
-)
+(usuarioSistema.pais === "PT" ? "€" : "R$") + limiteEfetivo(usuarioSistema).toLocaleString("pt-BR")
 + "</b><br>" +
 
 "📋 Empréstimo Ativo: <b>" +
@@ -3661,19 +3645,7 @@ usuarioSistema.pais === "PT"
 ? "🔴 BLOQUEADO"
 : (
 Number(dados.valor) >
-(
-usuarioSistema.pais === "PT"
-?
-(usuarioSistema.score <= 20 ? 100 :
- usuarioSistema.score <= 40 ? 300 :
- usuarioSistema.score <= 60 ? 500 :
- usuarioSistema.score <= 80 ? 800 : 2000)
-:
-(usuarioSistema.score <= 20 ? 300 :
- usuarioSistema.score <= 40 ? 800 :
- usuarioSistema.score <= 60 ? 1500 :
- usuarioSistema.score <= 80 ? 3000 : 5000)
-)
+limiteEfetivo(usuarioSistema)
 ? "🟡 ACIMA DO LIMITE"
 : "🟢 DENTRO DO LIMITE"
 )
@@ -3737,27 +3709,7 @@ Number((dados.valorFinal / dados.parcelas)).toLocaleString("pt-PT",{
 
 "Limite Calculado: " +
 
-(
-(usuarioSistema.pais === "PT")
-?
-(
-(usuarioSistema.score <= 20 ? 100 :
- usuarioSistema.score <= 40 ? 300 :
- usuarioSistema.score <= 60 ? 500 :
- usuarioSistema.score <= 80 ? 800 :
- 2000)
-)
-:
-(
-(usuarioSistema.score <= 20 ? 300 :
- usuarioSistema.score <= 40 ? 800 :
- usuarioSistema.score <= 60 ? 1500 :
- usuarioSistema.score <= 80 ? 3000 :
- 5000)
-)
-)
-
-+
+limiteEfetivo(usuarioSistema) +
 "<br>" +
 
 "<br>" +
@@ -4073,11 +4025,17 @@ if (!userSnap.exists()) {
 
 const data = userSnap.data();
 
-  const limiteAnterior = data.limiteBase;
-  const novoLimite = data.limiteSolicitado;
+  const limiteAnterior = limiteEfetivo(data);
+  const novoLimite = Number(data.limiteSolicitado);
+
+  if (!Number.isFinite(novoLimite) || novoLimite <= 0) {
+    alert("Este usuário não tem um limite solicitado válido para aprovar.");
+    return;
+  }
 
   await updateDoc(userRef, {
     limiteBase: novoLimite,
+    limiteManual: true,
     limiteAnterior: limiteAnterior,
     statusAumento: "aprovado",
     dataAprovacao: new Date()
@@ -5586,23 +5544,7 @@ window.renderizarUsuarios = async function(){
   "Black"
 }<br>
 
-🔥 Limite Calculado: ${
- user.pais === "PT"
- ? (
-    user.score <= 20 ? 100 :
-    user.score <= 40 ? 300 :
-    user.score <= 60 ? 500 :
-    user.score <= 80 ? 800 :
-    2000
-   )
- : (
-    user.score <= 20 ? 300 :
-    user.score <= 40 ? 800 :
-    user.score <= 60 ? 1500 :
-    user.score <= 80 ? 3000 :
-    5000
-   )
-}<br><br>
+🔥 Limite Calculado: ${limiteEfetivo(user)}<br><br>
 
 ${user.notasInternas ? "📝 <b>Nota:</b> " + escaparHTML(user.notasInternas) + "<br><br>" : ""}
 
@@ -6246,7 +6188,7 @@ if(pais === null) return;
  if(score === null) return;
 
  const limite =
- prompt("Limite:", user.limiteBase || 0);
+ prompt("Limite (deixe o valor do nível para seguir o score automaticamente):", limiteEfetivo({ ...user, score: Number(score), pais: pais, limiteManual: false }));
 
  if(limite === null) return;
 const dataNascimento =
@@ -6317,6 +6259,7 @@ await updateDoc(ref,{
    score: scoreNumerico,
    nivel: nivelCalculado,
   limiteBase: Number(limite),
+  limiteManual: Number(limite) !== calcularNivel(scoreNumerico, pais).max,
 
   dataNascimento: dataNascimento,
   profissao: profissao,

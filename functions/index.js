@@ -4,6 +4,7 @@ const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const { initializeApp, getApps } = require("firebase-admin/app");
 const { calcularCobrancaParcela } = require("./lib/calculoParcela");
+const { limiteEfetivo, REGRAS_CREDITO } = require("./lib/limiteCredito");
 
 if (!getApps().length) initializeApp();
 
@@ -32,14 +33,7 @@ function dataNascimentoValida(valor) {
 }
 
 function regrasDeCredito(nivel) {
-  const regras = {
-    Essencial: { maxParcelas: 3, juros: { 1: 0.15, 2: 0.25, 3: 0.35 } },
-    Bronze: { maxParcelas: 4, juros: { 1: 0.15, 2: 0.25, 3: 0.35, 4: 0.45 } },
-    Prata: { maxParcelas: 6, juros: { 1: 0.15, 2: 0.25, 3: 0.35, 4: 0.45, 5: 0.55, 6: 0.65 } },
-    Ouro: { maxParcelas: 8, juros: { 1: 0.15, 2: 0.25, 3: 0.35, 4: 0.45, 5: 0.55, 6: 0.65, 7: 0.75, 8: 0.85 } },
-    Black: { maxParcelas: 12, juros: { 1: 0.15, 2: 0.25, 3: 0.35, 4: 0.45, 5: 0.55, 6: 0.65, 7: 0.75, 8: 0.85, 9: 0.95, 10: 1.1, 11: 1.25, 12: 1.4 } }
-  };
-  return regras[nivel] || regras.Essencial;
+  return REGRAS_CREDITO[nivel] || REGRAS_CREDITO.Essencial;
 }
 
 // O score é a fonte de verdade para a faixa do cliente.  O campo `nivel`
@@ -110,7 +104,7 @@ exports.criarPerfilUsuario = onCall(
       nome: dados.nome.trim(), email: dados.email.trim(), telefone: dados.telefone.trim(), cpf,
       pais: dados.pais, moeda: dados.pais === "PT" ? "€" : "R$", dataNascimento: dados.dataNascimento.trim(),
       pix: String(dados.pix || "").trim(), profissao: String(dados.profissao || "").trim(), cidade: String(dados.cidade || "").trim(), estado: String(dados.estado || "").trim(),
-      score: 20, nivel: "Essencial", limiteBase: 100, status: "ativo", isaCoins: 0, diasLembrete: 3,
+      score: 20, nivel: "Essencial", limiteBase: dados.pais === "PT" ? 100 : 300, limiteManual: false, status: "ativo", isaCoins: 0, diasLembrete: 3,
       codigoIndicacao: codigo, indicadoPor: indicador && !indicador.empty ? indicador.docs[0].id : null,
       indicacaoPremiada: false, criadoEm: FieldValue.serverTimestamp()
     }, { merge: false });
@@ -148,7 +142,7 @@ exports.solicitarCredito = onCall(
       const nivelCalculado = nivelPorScore(usuario.score);
       const regra = regrasDeCredito(nivelCalculado);
       const taxa = regra.juros[parcelas];
-      const limite = Number(usuario.limiteBase || 0);
+      const limite = limiteEfetivo(usuario, pais, nivelCalculado);
       if (valor < minimo || valor > limite || !taxa || parcelas > regra.maxParcelas) {
         throw new HttpsError("invalid-argument", "Valor ou parcelamento não permitido para este perfil.");
       }

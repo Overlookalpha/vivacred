@@ -83,7 +83,7 @@ test('todas as faixas usam a mesma função da área do usuário', () => {
     }
   }
   const home = readFileSync(new URL('../home.html',import.meta.url),'utf8');
-  assert.match(home, /import \{ calcularNivel \} from "\.\/perfil-credito\.mjs"/);
+  assert.match(home, /import \{ calcularNivel(, limiteEfetivo)?(, REGRAS_CREDITO)? \} from "\.\/perfil-credito\.mjs"/);
   assert.doesNotMatch(home, /function calcularNivel\(/);
 });
 

@@ -5,6 +5,7 @@ const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const { initializeApp, getApps } = require("firebase-admin/app");
 const { calcularCobrancaParcela } = require("./lib/calculoParcela");
 const { limiteEfetivo, REGRAS_CREDITO } = require("./lib/limiteCredito");
+const { reservar: reservarIsaCoins } = require("./lib/isaCoins");
 
 if (!getApps().length) initializeApp();
 
@@ -163,7 +164,7 @@ exports.solicitarCredito = onCall(
 );
 
 exports.solicitarSaque = onCall(
-  { region: "europe-west1", timeoutSeconds: 30, memory: "256MiB" },
+  { region: "europe-west1", timeoutSeconds: 30, memory: "256MiB", maxInstances: 20, concurrency: 80, cpu: 1 },
   async (request) => {
     if (!request.auth) throw new HttpsError("unauthenticated", "É necessário iniciar sessão.");
     const db = getFirestore();
@@ -176,13 +177,16 @@ exports.solicitarSaque = onCall(
       if (!Number.isFinite(saldo) || saldo < 10000 || !texto(usuario.pix, 120)) throw new HttpsError("failed-precondition", "Você não tem saldo disponível ou chave de pagamento cadastrada.");
       const pendente = await tx.get(db.collection("saques").where("userId", "==", request.auth.uid).where("status", "==", "pendente").limit(1));
       if (!pendente.empty) throw new HttpsError("already-exists", "Já existe uma solicitação de saque em andamento.");
-      const pais = usuario.pais === "PT" ? "PT" : "BR";
-      const valor = Number((saldo * (pais === "PT" ? 0.002 : 0.01)).toFixed(2));
+      let reserva;
+      try { reserva = reservarIsaCoins(usuario); }
+      catch { throw new HttpsError("failed-precondition", "Saldo de moedas inconsistente; solicite conferência ao administrador."); }
+      const { pais, valor } = reserva;
       const ref = db.collection("saques").doc();
+      tx.update(userRef, { isaCoins: reserva.saldo, isaCoinsReservadas: reserva.reservado });
       tx.create(ref, { userId: request.auth.uid, nomeCliente: usuario.nome || "", telefoneCliente: usuario.telefone || "", pix: usuario.pix,
-        isaCoins: saldo, valor, moeda: pais === "PT" ? "EUR" : "BRL", pais, status: "pendente", criadoEm: FieldValue.serverTimestamp() });
+        isaCoins: reserva.moedas, valor, moeda: pais === "PT" ? "EUR" : "BRL", pais, status: "pendente", moedasReservadas: true, versaoMoedas: 2, criadoEm: FieldValue.serverTimestamp() });
       tx.create(db.collection("notificacoes").doc(), alertaTelegram(request.auth.uid, "saque", ref.id));
-      return { id: ref.id, isaCoins: saldo, valor, pais, nome: usuario.nome || "", pix: usuario.pix };
+      return { id: ref.id, isaCoins: reserva.moedas, saldoRestante: reserva.saldo, valor, pais, nome: usuario.nome || "", pix: usuario.pix };
     });
     return resultado;
   }

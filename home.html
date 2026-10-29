@@ -1158,6 +1158,7 @@ import { calcularNivel, limiteEfetivo, REGRAS_CREDITO } from "./perfil-credito.m
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
 import {
   getFirestore,
+  onSnapshot,
   doc,
   getDoc,
   updateDoc,
@@ -2183,7 +2184,106 @@ let usuarioLogado = null;
 let isaCoinsGlobal = 0;
 let dadosExtratoGlobal = null;
 let primeiraParcelaAtrasadaId = null;
+let pararSaldoIsaCoins = null;
+function atualizarSaldoIsaCoins(data){
+ const paisUsuario = data.pais === "PT" ? "PT" : "BR";
+ const moedaUsuario = paisUsuario === "PT" ? "EUR" : "BRL";
+ const localizacaoMoeda = paisUsuario === "PT" ? "pt-PT" : "pt-BR";
+ const isaCoins = data.isaCoins || 0;
+isaCoinsGlobal = isaCoins;
+
+const saldoIsaCoin =
+document.getElementById("isaCoinsSaldo");
+
+const saldoModalIsaCoin =
+document.getElementById("saldoModalIsaCoin");
+
+const valorModalIsaCoin =
+document.getElementById("valorModalIsaCoin");
+
+if(saldoIsaCoin){
+saldoIsaCoin.classList.remove("skeleton");
+saldoIsaCoin.innerText =
+isaCoins.toLocaleString("pt-BR") + " ISC";
+}
+
+const valorIsaCoin =
+document.getElementById("isaCoinsValor");
+
+if(valorIsaCoin){
+
+ const valorConvertido = isaCoins * (paisUsuario === "PT" ? 0.002 : 0.01);
+
+ valorIsaCoin.classList.remove("skeleton");
+ valorIsaCoin.innerHTML =
+ "💵 " +
+ valorConvertido.toLocaleString(localizacaoMoeda,{
+  style:"currency",
+  currency: moedaUsuario
+ });
+
+}
+
+if(saldoModalIsaCoin){
+saldoModalIsaCoin.innerText =
+isaCoins.toLocaleString("pt-BR") + " ISC";
+}
+
+if(valorModalIsaCoin){
+
+const valorConvertido =
+isaCoins * (paisUsuario === "PT" ? 0.002 : 0.01);
+
+valorModalIsaCoin.innerText =
+valorConvertido.toLocaleString(localizacaoMoeda,{
+style:"currency",
+currency: moedaUsuario
+});
+
+}
+
+const faltamIsaCoins = document.getElementById("faltamIsaCoins");
+const cotacaoIsaCoin = document.getElementById("cotacaoIsaCoin");
+const proximoSaqueIsaCoin = document.getElementById("proximoSaqueIsaCoin");
+
+const minimoSaqueIsaCoin = 10000;
+
+/* Brasil: 10.000 ISC = R$100
+   Portugal: 10.000 ISC = €20 */
+const valorPorIsaCoin = paisUsuario === "PT" ? 0.002 : 0.01;
+
+const valorSaqueMinimo = minimoSaqueIsaCoin * valorPorIsaCoin;
+
+const faltamParaSaque =
+      Math.max(0, minimoSaqueIsaCoin - isaCoinsGlobal);
+
+const valorSaqueFormatado = valorSaqueMinimo.toLocaleString(localizacaoMoeda, {
+  style: "currency",
+  currency: moedaUsuario
+});
+
+if(cotacaoIsaCoin){
+  cotacaoIsaCoin.innerText =
+    "1 ISC = " +
+    valorPorIsaCoin.toLocaleString(localizacaoMoeda, {
+      style: "currency",
+      currency: moedaUsuario
+    });
+}
+
+if(proximoSaqueIsaCoin){
+  proximoSaqueIsaCoin.innerText = valorSaqueFormatado;
+}
+
+if(faltamIsaCoins){
+  faltamIsaCoins.innerText =
+    faltamParaSaque.toLocaleString("pt-BR") + " ISC";
+}
+
+
+}
 onAuthStateChanged(auth, async (user) => {
+  if(pararSaldoIsaCoins){ pararSaldoIsaCoins(); pararSaldoIsaCoins = null; }
   
 
   if (!user) {
@@ -2856,97 +2956,16 @@ if(dadosCadastroRenda){
 const moedaUsuario = paisUsuario === "PT" ? "EUR" : "BRL";
 const localizacaoMoeda = paisUsuario === "PT" ? "pt-PT" : "pt-BR";   
 
- const isaCoins = data.isaCoins || 0;
-isaCoinsGlobal = isaCoins;
-
-const saldoIsaCoin =
-document.getElementById("isaCoinsSaldo");
-
-const saldoModalIsaCoin =
-document.getElementById("saldoModalIsaCoin");
-
-const valorModalIsaCoin =
-document.getElementById("valorModalIsaCoin");
-
-if(saldoIsaCoin){
-saldoIsaCoin.classList.remove("skeleton");
-saldoIsaCoin.innerText =
-isaCoins.toLocaleString("pt-BR") + " ISC";
-}
-
-const valorIsaCoin =
-document.getElementById("isaCoinsValor");
-
-if(valorIsaCoin){
-
- const valorConvertido = isaCoins * 0.01;
-
- valorIsaCoin.classList.remove("skeleton");
- valorIsaCoin.innerHTML =
- "💵 " +
- valorConvertido.toLocaleString(localizacaoMoeda,{
-  style:"currency",
-  currency: moedaUsuario
+ atualizarSaldoIsaCoins(data);
+ if(pararSaldoIsaCoins) pararSaldoIsaCoins();
+ pararSaldoIsaCoins = onSnapshot(userRef, snapshot => {
+   if(snapshot.exists()) atualizarSaldoIsaCoins(snapshot.data());
+ }, erro => {
+   console.error("Falha ao atualizar saldo ISAcoin", erro.code);
+   const area = document.getElementById("isaCoinsSaldo");
+   if(area) area.innerText = "Saldo indisponível; atualize a página";
+   isaCoinsGlobal = 0;
  });
-
-}
-
-if(saldoModalIsaCoin){
-saldoModalIsaCoin.innerText =
-isaCoins.toLocaleString("pt-BR") + " ISC";
-}
-
-if(valorModalIsaCoin){
-
-const valorConvertido =
-isaCoins * 0.01;
-
-valorModalIsaCoin.innerText =
-valorConvertido.toLocaleString(localizacaoMoeda,{
-style:"currency",
-currency: moedaUsuario
-});
-
-}
-
-const faltamIsaCoins = document.getElementById("faltamIsaCoins");
-const cotacaoIsaCoin = document.getElementById("cotacaoIsaCoin");
-const proximoSaqueIsaCoin = document.getElementById("proximoSaqueIsaCoin");
-
-const minimoSaqueIsaCoin = 10000;
-
-/* Brasil: 10.000 ISC = R$100
-   Portugal: 10.000 ISC = €20 */
-const valorPorIsaCoin = paisUsuario === "PT" ? 0.002 : 0.01;
-
-const valorSaqueMinimo = minimoSaqueIsaCoin * valorPorIsaCoin;
-
-const faltamParaSaque =
-      Math.max(0, minimoSaqueIsaCoin - isaCoinsGlobal);
-
-const valorSaqueFormatado = valorSaqueMinimo.toLocaleString(localizacaoMoeda, {
-  style: "currency",
-  currency: moedaUsuario
-});
-
-if(cotacaoIsaCoin){
-  cotacaoIsaCoin.innerText =
-    "1 ISC = " +
-    valorPorIsaCoin.toLocaleString(localizacaoMoeda, {
-      style: "currency",
-      currency: moedaUsuario
-    });
-}
-
-if(proximoSaqueIsaCoin){
-  proximoSaqueIsaCoin.innerText = valorSaqueFormatado;
-}
-
-if(faltamIsaCoins){
-  faltamIsaCoins.innerText =
-    faltamParaSaque.toLocaleString("pt-BR") + " ISC";
-}
-    
  paisUsuarioGlobal = paisUsuario;
  
  if(paisUsuario === "PT"){
@@ -3792,15 +3811,15 @@ if(btnSacarIsaCoin){
     try{
 
       const valorAtualFormatado =
-        (isaCoinsGlobal * valorPorIsaCoin).toLocaleString(localizacaoSaque, {
+        (minimoSaqueIsaCoin * valorPorIsaCoin).toLocaleString(localizacaoSaque, {
           style: "currency",
           currency: moedaSaque
         });
 
       const confirmar = await confirmarModal(
         "Deseja solicitar o saque de " + valorAtualFormatado +
-        " referente a " + isaCoinsGlobal.toLocaleString("pt-BR") +
-        " ISAcoins?\n\nSuas moedas serão descontadas assim que o pagamento for confirmado."
+        " referente a " + minimoSaqueIsaCoin.toLocaleString("pt-BR") +
+        " ISAcoins?\n\n10.000 moedas serão reservadas agora. O restante continuará disponível. A reserva será liquidada quando o pagamento for confirmado."
       );
 
       if(!confirmar){

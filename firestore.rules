@@ -14,6 +14,40 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys()
         .hasOnly(['comprovanteUrl', 'comprovanteEnviadoEm']);
     }
+    // Saques legados: moedas no saldo até a baixa. V2: moedas já reservadas
+    // pelo backend; uma aba antiga NÃO pode debitar o saldo disponível de novo.
+    function validSaque(data) {
+      return data.keys().hasAll(['userId', 'isaCoins', 'valor', 'pais', 'status']) &&
+        data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128 &&
+        data.isaCoins is int && data.isaCoins >= 10000 && data.isaCoins <= 9007199254740991 &&
+        data.valor is number && data.valor > 0 && data.valor <= 90071992547409 &&
+        data.pais in ['BR', 'PT'] && data.status in ['pendente', 'pago'];
+    }
+    function validSaquePayment(id) {
+      let old = resource.data;
+      let next = request.resource.data;
+      let user = get(/databases/$(database)/documents/usuarios/$(old.userId)).data;
+      let userAfter = getAfter(/databases/$(database)/documents/usuarios/$(old.userId)).data;
+      let cash = get(/databases/$(database)/documents/configuracoes/financeiro).data;
+      let cashAfter = getAfter(/databases/$(database)/documents/configuracoes/financeiro).data;
+      let movementPath = /databases/$(database)/documents/movimentacoesCaixa/$("saque-" + id);
+      let movement = getAfter(movementPath).data;
+      let reserved = old.get('moedasReservadas', false) == true;
+      return old.status == 'pendente' && next.status == 'pago' &&
+        next.diff(old).affectedKeys().hasOnly(['status', 'pagoEm', 'baixaMoedasEm']) &&
+        next.pagoEm == request.time && next.baixaMoedasEm == request.time &&
+        user.isaCoins is int && user.isaCoins >= 0 &&
+        userAfter.isaCoins == (reserved ? user.isaCoins : user.isaCoins - old.isaCoins) &&
+        userAfter.isaCoins >= 0 &&
+        userAfter.get('isaCoinsSacadas', 0) == user.get('isaCoinsSacadas', 0) + old.isaCoins &&
+        userAfter.get('isaCoinsReservadas', 0) ==
+          (reserved ? user.get('isaCoinsReservadas', 0) - old.isaCoins : user.get('isaCoinsReservadas', 0)) &&
+        userAfter.get('isaCoinsReservadas', 0) >= 0 &&
+        (!reserved || (old.isaCoins == 10000 && old.get('versaoMoedas', 0) == 2)) &&
+        cashAfter.get('impactoCaixa' + old.pais, 0) == cash.get('impactoCaixa' + old.pais, 0) - old.valor &&
+        !exists(movementPath) && movement.saqueId == id && movement.pais == old.pais &&
+        movement.tipo == 'saqueIsaCoin' && movement.valor == -old.valor;
+    }
 
     // Perfis, documentos financeiros e notificações são criados por funções
     // administrativas (que ignoram Rules). O cliente só pode ler seus próprios dados.
@@ -39,7 +73,10 @@ service cloud.firestore {
     }
     match /saques/{id} {
       allow read: if signedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow write: if isAdmin();
+      allow create: if isAdmin() && validSaque(request.resource.data) &&
+        request.resource.data.status == 'pendente' && !request.resource.data.get('moedasReservadas', false);
+      allow update: if isAdmin() && validSaque(request.resource.data) && validSaquePayment(id);
+      allow delete: if isAdmin() && resource.data.status != 'pago' && !resource.data.get('moedasReservadas', false);
     }
     match /negociacoes/{id} {
       allow read: if signedIn() && (resource.data.userId == request.auth.uid || isAdmin());
@@ -57,6 +94,9 @@ service cloud.firestore {
       allow create, delete: if isAdmin();
     }
     match /atividadesQuitacao/{id} { allow read: if signedIn(); allow write: if isAdmin(); }
-    match /{document=**} { allow read, write: if isAdmin(); }
+    // Não deixar a permissão administrativa genérica contornar a baixa acima.
+    match /{collectionName}/{document=**} {
+      allow read, write: if isAdmin() && collectionName != 'saques';
+    }
   }
 }

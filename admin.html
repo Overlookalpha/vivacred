@@ -518,6 +518,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
 import {canEdit as podeEditarVencimento, dateKey as chaveDataVencimento} from './vencimentos.mjs';
 import {createDateEditor} from './editar-vencimentos.mjs';
+import {registrarPagamentoSaque} from './saque-pagamento.mjs';
 let indiceAvaliacoesInternas = { porId: new Map(), porEmail: new Map() };
 function demonstrativoCliente(referencia) {
  const avaliacao = referencia.userId
@@ -5365,48 +5366,13 @@ window.marcarSaquePago = async (id)=>{
      return;
    }
 
-   const userRef = doc(db,"usuarios",dados.userId);
-   const userSnap = await getDoc(userRef);
-
-   const lote = writeBatch(db);
-
-   if(userSnap.exists()){
-
-     const userData = userSnap.data();
-     const saldoAtual = userData.isaCoins || 0;
-     const novoSaldo = Math.max(0, saldoAtual - (dados.isaCoins || 0));
-
-     lote.update(userRef,{
-       isaCoins: novoSaldo,
-       isaCoinsSacadas: (userData.isaCoinsSacadas || 0) + (dados.isaCoins || 0)
-     });
-
+   const resultadoBaixa = await registrarPagamentoSaque({db,id,doc,runTransaction,serverTimestamp,increment});
+   if(resultadoBaixa.jaPago){
+     if(janela) janela.close();
+     alert("Este saque já foi marcado como pago. Nenhum novo débito foi feito.");
+     await carregarSaques();
+     return;
    }
-
-   lote.update(ref,{
-     status: "pago",
-     pagoEm: new Date()
-   });
-
-   // Baixa do Caixa: esse dinheiro saiu de verdade pra pessoa, então desconta
-   // do Caixa Disponível do país correspondente - do mesmo jeito que um aporte
-   // soma e um novo empréstimo desembolsado subtrai.
-   acumularFinanceiroNoLote(lote, dados.pais || "BR", {
-     impactoCaixa: -valorSaque
-   });
-
-   lote.set(doc(collection(db,"movimentacoesCaixa")),{
-     tipo: "saqueIsaCoin",
-     pais: dados.pais || "BR",
-     moeda: moeda,
-     valor: -valorSaque,
-     motivo: "Saque Clube ISAcoin - " + (dados.nomeCliente || "Cliente"),
-     criadoEm: new Date(),
-     origem: "admin",
-     saqueId: id
-   });
-
-   await lote.commit();
 
    const telefone = (dados.telefoneCliente || "").replace(/\D/g,"");
 

@@ -9,7 +9,18 @@ export function createPaymentFollowup(api){
  function cardHTML(id,parcel,loan){
   if(!id)return '';
   const found=keys(id,loan).map(k=>notices.get(k)).filter(n=>n?.status==='ativa');
-  const labels=found.map(n=>{const state=noticeState(n);return `<div style="padding:10px;margin:8px 0;border-radius:8px;background:${state.active?'#fff7ed':'#fef2f2'};color:#7c2d12;border:1px solid #fed7aa"><strong>${esc(state.label)}</strong><br><small>${n.scope==='cliente'?'Aviso para as cobranças deste cliente':'Aviso desta parcela'}${n.observacao?' · '+esc(n.observacao):''}</small></div>`;}).join('');
+  const labels=found.map(n=>{const state=noticeState(n,api.now?.()||new Date());
+   let forecast='';
+   if(!state.invalid&&!state.expired){
+    try{
+     const reference=api.now?.()||new Date();
+     const estimate=projection(parcel,loan,n.data,api.calculate,reference);
+     const current=api.calculate(parcel,reference);
+     const extra=Math.max(0,Number((estimate.juros-current.juros).toFixed(2)));
+     forecast=`<div style="margin-top:10px;line-height:1.7"><strong>Estimativa para ${esc(displayDate(n.data))}</strong><br>Juros totais até a data: <strong>${esc(money(estimate.juros,loan))}</strong><br>Juros adicionais de hoje até a data: ${esc(money(extra,loan))}<br>Multa: ${esc(money(estimate.multa,loan))}<br><strong>Total estimado para pagar: ${esc(money(estimate.totalAtualizado,loan))}</strong><br><small>Calculado com os dados atuais, sem novos pagamentos. O vencimento original permanece.</small></div>`;
+    }catch{forecast='<p>Não foi possível calcular a estimativa desta parcela. Confira os dados antes de informar o valor ao cliente.</p>';}
+   }
+   return `<div style="padding:10px;margin:8px 0;border-radius:8px;background:${state.active?'#fff7ed':'#fef2f2'};color:#7c2d12;border:1px solid #fed7aa"><strong>${esc(state.label)}</strong><br><small>${n.scope==='cliente'?'Aviso para as cobranças deste cliente':'Aviso desta parcela'}${n.observacao?' · '+esc(n.observacao):''}</small>${forecast}</div>`;}).join('');
   return `<div data-acompanhamento-pagamento style="margin:10px 0">${loadError?'<p role="alert">Não foi possível consultar os avisos. Confira antes de cobrar.</p>':labels}<button type="button" data-estimar-parcela="${esc(id)}" style="background:#0369a1;color:white;margin:4px">📅 Estimar para outra data</button><button type="button" data-promessa-parcela="${esc(id)}" style="background:#b45309;color:white;margin:4px">🗓️ ${found.length?'Ver / editar promessa':'Registrar promessa de pagamento'}</button></div>`;
  }
  async function load(id){
@@ -64,18 +75,18 @@ export function createPaymentFollowup(api){
    }else{
     node('p','É um aviso de contato: não altera a dívida nem interrompe juros. O prazo inclui o fim da data informada. A partir do dia seguinte, o aviso aparece como vencido e o contato volta a ficar disponível; nenhuma mensagem é enviada automaticamente.',body);
     const label=node('label','Aplicar a',body),scope=node('select',null,label);scope.style.cssText='display:block;padding:10px;margin:6px 0;width:100%';
-    if(loan.userId){const option=node('option','Cobranças deste cliente',scope);option.value='cliente';}
     const option=node('option','Somente esta parcela',scope);option.value='parcela';
     const original=new Map();for(const kind of loan.userId?['cliente','parcela']:['parcela']){const s=await api.getDocFromServer(api.doc(api.db,'promessasPagamento',noticeKey(kind,kind==='cliente'?loan.userId:id)));original.set(kind,s.exists()?s.data():null);}
+    if(original.get('cliente')?.status==='ativa'){const old=node('option','Aviso antigo do cliente — apenas cancelar',scope);old.value='cliente';}
     const date=field(body,'Cliente informou que vai pagar em','date');date.min=today;
     const note=field(body,'Observação do combinado (opcional)','textarea');note.maxLength=500;
     const detail=node('p',null,body),save=node('button','Salvar aviso',body),cancel=node('button','Cancelar aviso existente',body);save.type=cancel.type='button';cancel.style.marginLeft='8px';
-    function show(){const value=original.get(scope.value);date.value=value?.data||today;note.value=value?.observacao||'';cancel.disabled=value?.status!=='ativa';detail.textContent=value?.status==='ativa'?noticeState(value).label:'Nenhum aviso ativo nesta opção.';}
+    function show(){save.disabled=scope.value!=='parcela';const value=original.get(scope.value);date.value=value?.data||today;note.value=value?.observacao||'';cancel.disabled=value?.status!=='ativa';detail.textContent=value?.status==='ativa'?noticeState(value).label:'Nenhum aviso ativo nesta opção.';}
     scope.onchange=show;show();status.textContent='Confira a data e o alcance do aviso antes de salvar.';
     async function persist(state){
-     if(saving)return;saving=true;save.disabled=cancel.disabled=scope.disabled=date.disabled=note.disabled=close.disabled=true;
+     if(saving)return;if(state==='ativa'&&scope.value!=='parcela'){status.textContent='Registre a promessa somente para a parcela escolhida.';return;}saving=true;save.disabled=cancel.disabled=scope.disabled=date.disabled=note.disabled=close.disabled=true;
      try{await saveNotice(api,{...expected,notice:original.get(scope.value)},{scope:scope.value,status:state,data:date.value,observacao:note.value},actor,crypto.randomUUID());await refresh();await api.refresh();saving=false;dismiss();}
-     catch(e){status.textContent=e.message;saving=false;save.disabled=scope.disabled=date.disabled=note.disabled=close.disabled=false;cancel.disabled=original.get(scope.value)?.status!=='ativa';}
+     catch(e){status.textContent=e.message;saving=false;save.disabled=scope.disabled=date.disabled=note.disabled=close.disabled=false;cancel.disabled=original.get(scope.value)?.status!=='ativa';save.disabled=scope.value!=='parcela';}
     }
     save.onclick=()=>void persist('ativa');cancel.onclick=()=>{if(confirm('Cancelar este aviso e liberar os contatos de cobrança abrangidos por ele?'))void persist('cancelada');};
    }

@@ -2,9 +2,12 @@
 
 No dashboard administrativo, em Próximo Vencimento e nos itens em atraso:
 - Estimar para outra data: consulta parcela e empréstimo atuais; reaproveita a regra do administrador, extraída sem alterar taxas. Mostra data, dias de atraso, multa, juros, pagamentos e total; permite copiar o texto, sem enviá-lo.
-- Registrar promessa: data, observação e alcance (cliente ou parcela). Persiste aviso e histórico em transação administrativa, sem escrever dívida, vencimento ou saldo. Prazo inclui o fim do dia no país BR/PT do empréstimo; no dia seguinte aparece como vencido.
+- Registrar promessa: data e observação somente para a parcela escolhida. Avisos antigos de cliente continuam visíveis com opção de cancelamento, sem criar novas promessas globais. Persiste aviso e histórico em transação administrativa, sem escrever dívida, vencimento ou saldo. Prazo inclui o fim do dia no país BR/PT do empréstimo; no dia seguinte aparece como vencido.
 - Contatos pelos atalhos WhatsApp/Cobrar Agora do dashboard são conferidos em dados atuais e bloqueados durante o prazo. Falha de consulta não libera a cobrança. Esta integração não pausa sistemas externos ou contatos fora destes atalhos.
 
 Persistência: promessasPagamento e historicoPromessasPagamento, sob a autorização administrativa já existente em firestore.rules. Não foram alteradas regras, funções de empréstimo, saques, juros ou pagamentos. O cancelamento mantém histórico e não apaga documentos.
 
 Verificação: 51 testes passaram com node --experimental-vm-modules --test tests/*.test.mjs; 10 testes de emulador preexistentes foram ignorados por falta de configuração desse ambiente. Conferência visual com dados fictícios, sem Firebase real: projeção de R$1.000 de 01/11 para 10/11/2026 resultou em R$1.140 conforme a regra existente; aviso para 10/11 apareceu no dashboard. Nenhum cliente real foi alterado e nenhuma mensagem foi enviada.
+
+## Complemento: valores no cartão da promessa
+O cartão calcula, com os dados atuais da parcela e a regra existente, os juros totais até a data prometida, os juros adicionais em relação a hoje, a multa e o total previsto. Não depende de salvar novamente avisos já existentes e não grava valores financeiros. Promessas vencidas ou inválidas não mostram uma projeção fictícia. Conferência visual com dados fictícios: R$350 com vencimento 03/11/2026 e promessa para 09/11/2026 apresenta juros totais R$21, multa R$17,50 e total R$388,50; em 04/11, juros adicionais R$17,50. Função de editar vencimentos permanece intacta.

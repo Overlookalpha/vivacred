@@ -517,6 +517,8 @@ import {
   limit
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
 import {canEdit as podeEditarVencimento, dateKey as chaveDataVencimento} from './vencimentos.mjs';
+import {calcularCobrancaParcela} from './cobranca-parcela.mjs';
+import {createPaymentFollowup} from './acompanhamento-pagamento-ui.mjs';
 import {createDateEditor} from './editar-vencimentos.mjs';
 import {registrarPagamentoSaque} from './saque-pagamento.mjs';
 let indiceAvaliacoesInternas = { porId: new Map(), porEmail: new Map() };
@@ -534,95 +536,6 @@ let capitalPT = 1000;
 // 🧮 UTILITÁRIOS COMPARTILHADOS (multa, juros, cálculo de parcela)
 // Usado por várias telas — dashboard, empréstimos, fatura.
 // ================================================
-function calcularCobrancaParcela(parcela, hojeReferencia = new Date()){
-
- if(!parcela){
-  return {
-   valorOriginal: 0,
-   valorPago: 0,
-   diasAtraso: 0,
-   multa: 0,
-   juros: 0,
-   totalAtualizado: 0
-  };
- }
-
- const valorOriginal = Number(parcela.valor || 0);
- const valorPago = Number(parcela.pago || 0);
-
- if(["pago","perdido"].includes(parcela.status)){
-  return {
-   valorOriginal,
-   valorPago,
-   diasAtraso: 0,
-   multa: 0,
-   juros: 0,
-   totalAtualizado: 0
-  };
- }
-
- if(!parcela.vencimento){
-  return {
-   valorOriginal,
-   valorPago,
-   diasAtraso: 0,
-   multa: 0,
-   juros: 0,
-   totalAtualizado: Math.max(0, valorOriginal - valorPago)
-  };
- }
-
- const vencimento = parcela.vencimento.toDate
-  ? parcela.vencimento.toDate()
-  : new Date(parcela.vencimento);
-
- const inicioHoje = new Date(
-  hojeReferencia.getFullYear(),
-  hojeReferencia.getMonth(),
-  hojeReferencia.getDate()
- );
-
- const inicioVencimento = new Date(
-  vencimento.getFullYear(),
-  vencimento.getMonth(),
-  vencimento.getDate()
- );
-
- const diasAtraso = Math.max(
-  0,
-  Math.floor(
-   (inicioHoje - inicioVencimento) /
-   (1000 * 60 * 60 * 24)
-  )
- );
-
- // Um acordo sem encargos vale apenas para esta parcela. A data de
- // vencimento continua intacta e as demais parcelas seguem cobrando normal.
- const acordoSemEncargos = parcela.acordoSemEncargos === true;
-
- const multa = diasAtraso > 0 && !acordoSemEncargos
-  ? Number((valorOriginal * 0.05).toFixed(2))
-  : 0;
-
- const juros = diasAtraso > 0 && !acordoSemEncargos
-  ? Number((valorOriginal * 0.01 * diasAtraso).toFixed(2))
-  : 0;
-
- const restanteBase = Math.max(0, valorOriginal - valorPago);
-
- const totalAtualizado = Number(
-  (restanteBase + multa + juros).toFixed(2)
- );
-
- return {
-  valorOriginal,
-  valorPago,
-  diasAtraso,
-  multa,
-  juros,
-  totalAtualizado
- };
-}
 
 // Registros classificados como teste continuam guardados no Firebase para
 // conferência, mas ficam completamente fora da contabilidade.
@@ -1795,6 +1708,7 @@ function renderizarInteligencia(dados){
 }
 
 async function calcularFinanceiro(){
+ await acompanhamentoPagamento.refresh();
 
  let totalEmprestadoBR = 0;
 let totalEmprestadoPT = 0;
@@ -1967,6 +1881,7 @@ if (diasRestantes < 0 && emAberto) {
     const cobranca = calcularCobrancaParcela(dados, hoje);
 
     atrasados.push({
+        ...dados,
         emprestimoId: dados.emprestimoId,
         parcelaId: docSnap.id,
         diasAtraso: cobranca.diasAtraso,
@@ -2126,6 +2041,7 @@ ${proximaParcela.vencimento.toLocaleDateString()}
 <br><br>
 
 <a
+data-contato-parcela="${proximaParcela.id}"
 href="https://wa.me/${telefoneWhats}"
 target="_blank"
 style="
@@ -2152,6 +2068,7 @@ color:white;
 `;
 
   window.proximaParcelaDashboard = proximaParcela;
+  document.getElementById('proximoVencimentoInfo').insertAdjacentHTML('beforeend',acompanhamentoPagamento.cardHTML(proximaParcela.id,proximaParcela,emp));
  }
 
 }
@@ -2906,6 +2823,7 @@ if(atrasados.length === 0){
  
      htmlAtrasados +=
 
+acompanhamentoPagamento.cardHTML(atraso.parcelaId,atraso,emp) +
 "👤 " + (emp.nomeCliente || "Cliente") +
 "<br>" +
 
@@ -2939,7 +2857,7 @@ Number(
  ? "🤝 Acordo sem multa e juros ativo<br>"
  : "") +
 (telefoneWhats
- ? "<a href=\"https://wa.me/" + telefoneWhats + "\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"display:inline-block;margin-top:8px;margin-right:5px;background:#25D366;color:white;padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px;\">💬 WhatsApp</a>"
+ ? "<a data-contato-parcela=\"" + atraso.parcelaId + "\" href=\"https://wa.me/" + telefoneWhats + "\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"display:inline-block;margin-top:8px;margin-right:5px;background:#25D366;color:white;padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px;\">💬 WhatsApp</a>"
  : "") +
 "<button onclick=\"emitirFatura('" + atraso.parcelaId + "')\" style=\"margin-top:8px;background:#2563eb;color:white;\">🧾 Emitir Fatura</button> " +
 (!atraso.acordoSemEncargos
@@ -3010,6 +2928,7 @@ async function enviarTelegram(texto){
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const acompanhamentoPagamento = createPaymentFollowup({db,auth,doc,collection,query,where,getDocFromServer,getDocsFromServer,runTransaction,serverTimestamp,calculate:calcularCobrancaParcela,refresh:()=>calcularFinanceiro()});
 const editorVencimentos = createDateEditor({db,auth,doc,collection,query,where,getDocFromServer,getDocsFromServer,runTransaction,serverTimestamp,refresh:id=>window.abrirParcelas(id)});
 window.editarVencimentos = (emprestimoId,parcelaId=null)=>editorVencimentos.open(emprestimoId,parcelaId);
 
@@ -4989,6 +4908,7 @@ window.cobrarCliente = async (parcelaId)=>{
  }
 
  const emprestimo = emprestimoSnap.data();
+ if(!await acompanhamentoPagamento.canContact(parcelaId,parcela,emprestimo)) return;
 
 const mensagem =
 "👩‍💼 Evellyn - Assistente Virtual IsaCred\n\n"+

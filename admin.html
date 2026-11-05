@@ -489,6 +489,8 @@ window.abrirTela = function(tela){
 </script>
 
 <script type="module">
+import {detalhesExtrato} from "./extrato-detalhes.mjs";
+
 
 import { criarIndiceAvaliacoes, avaliacaoHTML } from "./avaliacao-interna.mjs";
 import { calcularNivel, limiteEfetivo } from "./perfil-credito.mjs";
@@ -5598,7 +5600,7 @@ window.gerarExtratoCliente = async function(id){
         <td>${moeda(Math.max(0, Number(parcela.valor || 0) - Number(parcela.pago || 0)), emprestimo.pais)}</td>
         <td>${escaparHtml(parcela.status || (Number(parcela.pago || 0) >= Number(parcela.valor || 0) ? "pago" : "pendente"))}</td>
         <td>${dataHoraFormatada(parcela.pagoEm || parcela.dataPagamento)}</td>
-       </tr>`).join("")
+       </tr>${detalhesExtrato(parcela,v=>moeda(v,emprestimo.pais)) ? `<tr><td colspan="7">${detalhesExtrato(parcela,v=>moeda(v,emprestimo.pais))}</td></tr>` : ""}`).join("")
      : "<tr><td colspan='7'>Ainda não há parcelas geradas para este empréstimo.</td></tr>";
     const pagamentos = parcelas
      .filter((parcela) => Number(parcela.pago || 0) > 0)

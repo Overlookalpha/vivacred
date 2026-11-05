@@ -1154,6 +1154,8 @@ color:var(--text);
   </div>
 </div>
 <script type="module">
+import {linhaExtrato} from "./extrato-detalhes.mjs";
+
 import { calcularNivel, limiteEfetivo, REGRAS_CREDITO } from "./perfil-credito.mjs";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
 import {
@@ -2006,7 +2008,7 @@ if(btnBaixarExtrato){
     const moeda = paisUsuarioGlobal === "PT" ? "€" : "R$";
 
     function moedaFmt(valor){
-      return moeda + " " + Number(valor || 0).toFixed(2);
+      return Number(valor || 0).toLocaleString("pt-BR", {style:"currency",currency:paisUsuarioGlobal === "PT" ? "EUR" : "BRL"});
     }
 
     let linhasHTML = "";
@@ -2034,18 +2036,7 @@ if(btnBaixarExtrato){
       grupo.parcelas.forEach((docSnap) => {
 
         const p = docSnap.data();
-        const pago = (p.valor - p.pago) <= 0;
-        const vencimento = p.vencimento ? p.vencimento.toDate().toLocaleDateString("pt-BR") : "-";
-
-        linhasHTML += `
-          <tr style="border-top:1px solid #E3E8EF;">
-            <td style="padding:6px 4px;">${p.numero}</td>
-            <td style="padding:6px 4px;">${vencimento}</td>
-            <td style="padding:6px 4px;">${moedaFmt(p.valor)}</td>
-            <td style="padding:6px 4px;">${moedaFmt(p.pago)}</td>
-            <td style="padding:6px 4px;">${pago ? "🟢 Pago" : "🔴 Em aberto"}</td>
-          </tr>
-        `;
+        linhasHTML += linhaExtrato(p, moedaFmt);
 
       });
 
@@ -2061,7 +2052,8 @@ if(btnBaixarExtrato){
 <title>Extrato - ${cliente.nome || usuarioLogado.email}</title>
 <style>
 body{font-family:Arial,sans-serif;background:#F5F7FA;margin:0;padding:24px;color:#101828;}
-.folha{max-width:640px;margin:0 auto;background:white;border-radius:14px;padding:26px;box-shadow:0 4px 20px rgba(0,0,0,.1);}
+.folha{max-width:840px;margin:0 auto;background:white;border-radius:14px;padding:26px;box-shadow:0 4px 20px rgba(0,0,0,.1);}
+td{padding:6px 4px;border-top:1px solid #E3E8EF;vertical-align:top;} .detalhesParcela{font-size:12px;line-height:1.6;background:#fff7ed;border-left:3px solid #f97316;padding:10px;margin:4px 0 12px;overflow-wrap:anywhere;}
 .cabecalho{text-align:center;border-bottom:1px solid #E3E8EF;padding-bottom:16px;margin-bottom:16px;}
 .cabecalho h1{margin:0;font-size:20px;}
 .cabecalho span{font-size:13px;color:#667085;}

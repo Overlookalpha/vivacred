@@ -3,7 +3,12 @@ name: Resumo diario VivaCred (Telegram)
 on:
   schedule:
     - cron: "0 7 * * *"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      previa:
+        description: "Enviar prévia ao administrador sem processar bônus"
+        type: boolean
+        default: true
 
 jobs:
   resumo:
@@ -22,6 +27,7 @@ jobs:
 
       - name: Enviar resumo diario
         env:
+          PREVIA_TELEGRAM: ${{ github.event.inputs.previa || 'false' }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}

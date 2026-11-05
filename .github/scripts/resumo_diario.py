@@ -21,6 +21,7 @@ import html
 import json
 import os
 from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import firebase_admin
 import requests
@@ -89,8 +90,8 @@ def calcular_cobranca_parcela(parcela, hoje):
     vencimento_data = vencimento.date() if hasattr(vencimento, "date") else vencimento
     dias_atraso = max(0, (hoje - vencimento_data).days)
 
-    multa = round(valor_original * 0.05, 2) if dias_atraso > 0 else 0
-    juros = round(valor_original * 0.01 * dias_atraso, 2) if dias_atraso > 0 else 0
+    multa = round(valor_original * 0.05, 2) if dias_atraso > 0 and not parcela.get("acordoSemEncargos") else 0
+    juros = round(valor_original * 0.01 * dias_atraso, 2) if dias_atraso > 0 and not parcela.get("acordoSemEncargos") else 0
     restante_base = max(0, valor_original - valor_pago)
     total_atualizado = round(restante_base + multa + juros, 2)
 
@@ -249,7 +250,7 @@ def parcela_encerrada(dados):
     return dados.get("status") in {"pago", "perdido"}
 
 def gerar_diagnostico(db):
-    hoje = date.today()
+    hoje = datetime.now(ZoneInfo("America/Sao_Paulo")).date()
 
     usuarios_snap = list(db.collection("usuarios").stream())
     usuarios_por_id = {doc.id: (doc.to_dict() or {}) for doc in usuarios_snap}
@@ -315,6 +316,10 @@ def gerar_diagnostico(db):
     # ---- Pagamentos em aberto / vencendo / atrasados (colecao "parcelas") ----
     parcelas_snap = list(db.collection("parcelas").stream())
 
+    promessas = {doc.id: doc.to_dict() or {} for doc in db.collection("promessasPagamento").stream()}
+    saques_pendentes = [doc.to_dict() or {} for doc in db.collection("saques").where("status", "==", "pendente").stream()]
+    pedidos_pendentes = [e for e in emprestimos_por_id.values() if e.get("status") == "pendente" and not registro_teste(e)]
+
     abertos_qtd = 0
     abertos_valor = 0.0
     atrasados = []
@@ -327,8 +332,14 @@ def gerar_diagnostico(db):
         if parcela_encerrada(parcela):
             continue
 
+        emprestimo = emprestimos_por_id.get(parcela.get("emprestimoId"), {})
+        if emprestimo.get("status") != "ativo":
+            continue
+        saldo = max(0, float(parcela.get("restante") if parcela.get("restante") is not None else float(parcela.get("valor") or 0) - float(parcela.get("pago") or 0)))
+        if saldo <= 0:
+            continue
         abertos_qtd += 1
-        abertos_valor += float(parcela.get("restante") if parcela.get("restante") is not None else parcela.get("valor") or 0)
+        abertos_valor += saldo
 
         vencimento = parcela.get("vencimento")
         if vencimento is None:
@@ -336,7 +347,7 @@ def gerar_diagnostico(db):
         vencimento_data = vencimento.date() if hasattr(vencimento, "date") else vencimento
         dias = (vencimento_data - hoje).days
 
-        user = usuarios_por_id.get(parcela.get("userId"), {})
+        user = usuarios_por_id.get(parcela.get("userId") or emprestimo.get("userId"), {})
         nome = user.get("nome", "Cliente")
 
         # Preferencia de aviso que o proprio cliente escolheu (1, 3 ou 7
@@ -346,13 +357,25 @@ def gerar_diagnostico(db):
 
         emprestimo = emprestimos_por_id.get(parcela.get("emprestimoId"), {})
         parcela_label = formatar_parcela(parcela.get("numero"), emprestimo.get("parcelas"))
-        valor_parcela = float(parcela.get("restante") if parcela.get("restante") is not None else parcela.get("valor") or 0)
+        valor_parcela = saldo
+        pais = emprestimo.get("pais") or parcela.get("pais") or "BR"
+        hoje_pais = datetime.now(ZoneInfo("Europe/Lisbon" if pais == "PT" else "America/Sao_Paulo")).date()
+        dias = (vencimento_data - hoje_pais).days
+        from relatorio_telegram import promessa_atual
+        promessa = promessa_atual(promessas, doc.id, parcela.get("userId") or emprestimo.get("userId"), hoje_pais)
 
         if dias < 0:
-            cobranca = calcular_cobranca_parcela(parcela, hoje)
+            cobranca = calcular_cobranca_parcela(parcela, hoje_pais)
             atrasados.append(
                 {
                     "nome": nome,
+                    "pais": pais,
+                    "telefone": user.get("telefone") or "Não informado",
+                    "vencimento": vencimento_data.strftime("%d/%m/%Y"),
+                    "promessa": promessa,
+                    "estimativaPromessa": calcular_cobranca_parcela(parcela, date.fromisoformat(promessa["data"])) if promessa and not promessa.get("invalida") else None,
+                    "multa": cobranca["multa"], "juros": cobranca["juros"],
+                    "original": float(parcela.get("valor") or 0),
                     "parcela": parcela_label,
                     "diasAtraso": cobranca["diasAtraso"],
                     "valor": cobranca["totalAtualizado"],
@@ -366,6 +389,7 @@ def gerar_diagnostico(db):
                     "parcela": parcela_label,
                     "valor": valor_parcela,
                     "diasRestantes": dias,
+                    "pais": pais,
                     "diasAviso": dias_aviso,
                 }
             )
@@ -429,6 +453,9 @@ def gerar_diagnostico(db):
     }
 
     return {
+        "pedidosPendentes": pedidos_pendentes,
+        "saquesPendentes": saques_pendentes,
+        "clientesBloqueados": sum(u.get("status") == "bloqueado" for u in usuarios_por_id.values()),
         "clientesTotal": clientes_total,
         "clientesAtivos": clientes_ativos,
         "isacoinTotalCirculacao": isacoin_total_circulacao,
@@ -579,12 +606,17 @@ def montar_mensagem(d):
 
 def main():
     db = inicializar_firebase()
-    resultado_bonus = processar_bonus_aniversario(db)
-    print("Bonus de aniversario: " + json.dumps(resultado_bonus, ensure_ascii=False))
+    previa = os.environ.get("PREVIA_TELEGRAM") == "true"
+    if not previa:
+        resultado_bonus = processar_bonus_aniversario(db)
+        print("Bonus de aniversario: " + json.dumps(resultado_bonus, ensure_ascii=False))
     diagnostico = gerar_diagnostico(db)
-    mensagem = montar_mensagem(diagnostico)
-    print(mensagem)
-    enviar_mensagem(mensagem)
+    from relatorio_telegram import montar_relatorio
+    mensagens = montar_relatorio(diagnostico, previa=previa)
+    for mensagem in mensagens:
+        enviar_mensagem(mensagem)
+    print(f"Relatório entregue: {len(mensagens)} mensagens; prévia: {previa}")
+
 
 
 if __name__ == "__main__":

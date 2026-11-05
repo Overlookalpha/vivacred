@@ -6,6 +6,7 @@ sys.modules.setdefault('firebase_admin', types.ModuleType('firebase_admin'))
 sys.modules.setdefault('firebase_admin.credentials', types.ModuleType('credentials'))
 sys.modules.setdefault('firebase_admin.firestore', types.ModuleType('firestore'))
 sys.modules.setdefault('requests', types.ModuleType('requests'))
+sys.modules['firebase_admin.firestore'].transactional=lambda fn: fn
 spec=importlib.util.spec_from_file_location('alertas',Path(__file__).resolve().parents[1]/'.github/scripts/processar_telegram.py')
 a=importlib.util.module_from_spec(spec);spec.loader.exec_module(a)
 class AlertasTest(unittest.TestCase):

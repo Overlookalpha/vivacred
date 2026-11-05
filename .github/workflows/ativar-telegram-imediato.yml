@@ -1,0 +1,34 @@
+name: Ativar envio imediato de clientes
+on:
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  ativar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Preparar ferramentas
+        run: |
+          npm install --global firebase-tools
+          npm ci --prefix functions
+      - name: Ativar somente o emissor Telegram
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          credentials="$RUNNER_TEMP/firebase-telegram.json"
+          trap 'rm -f "$credentials"' EXIT
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$credentials"
+          export GOOGLE_APPLICATION_CREDENTIALS="$credentials"
+          printf '%s' "$TELEGRAM_BOT_TOKEN" | firebase functions:secrets:set TELEGRAM_BOT_TOKEN --project vivacred-5a5b8 --data-file - --non-interactive
+          printf '%s' "$TELEGRAM_CHAT_ID" | firebase functions:secrets:set TELEGRAM_CHAT_ID --project vivacred-5a5b8 --data-file - --non-interactive
+          firebase deploy --only functions:enviarTelegramClienteImediato --project vivacred-5a5b8 --non-interactive

@@ -233,6 +233,30 @@ def horario_pronto(valor, agora):
     return True
 
 
+@firestore.transactional
+def reservar_aviso(transaction, ref, agora):
+    snap = ref.get(transaction=transaction)
+    if not snap.exists:
+        return None
+    evento = snap.to_dict() or {}
+    status = evento.get("statusTelegram")
+    if status == "processando":
+        inicio = evento.get("processandoEm")
+        if inicio is not None and inicio > agora - timedelta(minutes=15):
+            return None
+    elif status == "pendente":
+        if not horario_pronto(evento.get("proximaTentativaTelegramEm"), agora):
+            return None
+    elif status == "erro":
+        if not recuperavel(evento, agora):
+            return None
+    else:
+        return None
+    transaction.update(ref, {"statusTelegram": "processando", "processandoEm": firestore.SERVER_TIMESTAMP,
+                             "tentativasTelegram": int(evento.get("tentativasTelegram") or 0) + 1})
+    return evento
+
+
 def main():
     conta = json.loads(os.environ["FIREBASE_SERVICE_ACCOUNT_JSON"])
     firebase_admin.initialize_app(credentials.Certificate(conta))
@@ -277,11 +301,11 @@ def main():
         evento = snap.to_dict() or {}
         tentativas = int(evento.get("tentativasTelegram") or 0) + 1
         try:
-            ref.update({
-                "statusTelegram": "processando",
-                "processandoEm": firestore.SERVER_TIMESTAMP,
-                "tentativasTelegram": tentativas
-            })
+            evento_reservado = reservar_aviso(db.transaction(), ref, datetime.now(timezone.utc))
+            if evento_reservado is None:
+                continue
+            evento = evento_reservado
+            tentativas = int(evento.get("tentativasTelegram") or 0) + 1
             texto = preparar_aviso(db, evento, snap.id)
             resposta = requests.post(url, json={"chat_id": chat_id, "text": texto}, timeout=20)
             resposta.raise_for_status()

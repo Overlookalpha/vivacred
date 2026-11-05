@@ -259,3 +259,22 @@ exports.recalcularParcelaVencida = onCall(
     return cobranca;
   }
 );
+
+// Avisos de clientes são imediatos; o resumo diário permanece no GitHub.
+const { onDocumentCreated } = require("firebase-functions/v2/firestore");
+const { defineSecret } = require("firebase-functions/params");
+const { entregar: entregarTelegramImediato } = require("./lib/telegramImediato");
+const telegramBotToken = defineSecret("TELEGRAM_BOT_TOKEN");
+const telegramChatId = defineSecret("TELEGRAM_CHAT_ID");
+exports.enviarTelegramClienteImediato = onDocumentCreated({
+  document: "notificacoes/{avisoId}", region: "europe-west1",
+  secrets: [telegramBotToken, telegramChatId], timeoutSeconds: 60,
+  memory: "256MiB", maxInstances: 2, concurrency: 10, retry: false
+}, async event => {
+  if (!event.data) return;
+  const resultado = await entregarTelegramImediato({
+    db: getFirestore(), ref: event.data.ref, token: telegramBotToken.value(),
+    chatId: telegramChatId.value(), FieldValue
+  });
+  console.log("Aviso cliente", event.params.avisoId, JSON.stringify(resultado));
+});

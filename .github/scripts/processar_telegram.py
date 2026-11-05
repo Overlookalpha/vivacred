@@ -1,5 +1,7 @@
 import json
 import os
+import re
+from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta, timezone
 
 import firebase_admin
@@ -44,7 +46,9 @@ def mensagem_cliente(db, tipo, dados_evento, uid):
     if tipo == "cadastro":
         indicador = ""
         if usuario.get("indicadoPor"):
-            indicador = "\n🤝 Cadastro realizado por indicação"
+            indicador_snap = db.collection("usuarios").document(str(usuario["indicadoPor"])).get()
+            indicador_dados = indicador_snap.to_dict() or {} if indicador_snap.exists else {}
+            indicador = "\n🤝 Indicado por: " + str(indicador_dados.get("nome") or "Cadastro por indicação")
         return (
             "🆕 NOVA CONTA ISACRED\n\n"
             f"👤 Cliente: {nome}\n"
@@ -69,7 +73,7 @@ def mensagem_cliente(db, tipo, dados_evento, uid):
             f"📊 Parcelas: {item.get('parcelas')}x\n"
             f"👨 Avalista: {item.get('nomeAvalista') or 'Não informado'}\n"
             f"📞 Avalista: {item.get('telefoneAvalista') or 'Não informado'}\n\n"
-            "⏳ Status: AGUARDANDO ANÁLISE"
+            f"📌 Situação atual: {item.get('status') or 'não informada'}\n👉 Confira o pedido no administrador antes de decidir."
         )
 
     if tipo == "negociacao":
@@ -102,13 +106,13 @@ def mensagem_cliente(db, tipo, dados_evento, uid):
             f"💰 Valor: {moeda(item.get('valor'), pais)}\n"
             f"🔑 Pix: {item.get('pix') or 'Não informado'}\n"
             f"🌍 País: {pais}\n\n"
-            "⏳ Status: AGUARDANDO PAGAMENTO"
+            f"📌 Situação atual: {item.get('status') or 'não informada'}\n👉 Confira o saque no administrador antes de pagar."
         )
 
     if tipo in ("pagamento_aberto", "pagamento_confirmado"):
         item = carregar_do_usuario(db, "parcelas", dados_evento.get("id"), uid)
         pais = item.get("pais") or usuario.get("pais") or "BR"
-        valor = moeda(item.get("restante") or item.get("valor"), pais)
+        valor = moeda(item.get("restante") if item.get("restante") is not None else max(0, float(item.get("valor") or 0) - float(item.get("pago") or 0)), pais)
         if tipo == "pagamento_aberto":
             return (
                 "👀 CLIENTE ABRIU PAGAMENTO\n\n"
@@ -179,6 +183,39 @@ def montar_mensagem(db, evento):
     return mensagem_cliente(db, tipo, dados, uid)
 
 
+def preparar_aviso(db, evento, aviso_id):
+    texto = montar_mensagem(db, evento)
+    data = evento.get("data")
+    horario = data.astimezone(ZoneInfo("America/Sao_Paulo")).strftime("%d/%m/%Y às %H:%M") if isinstance(data, datetime) else "Não registrado"
+    recuperado = "📬 AVISO RECUPERADO — ação anterior, confira a situação atual\n\n" if evento.get("statusTelegram") == "erro" else ""
+    rodape = (f"\n\n🕒 Ação registrada: {horario} (Brasília)\n"
+              f"🔎 Aviso: {aviso_id}\n"
+              "🔗 Administrador: https://overlookalpha.github.io/vivacred/admin.html\n"
+              "Este aviso é somente para o administrador.")
+    # Preservar contexto e limite, inclusive para textos livres longos.
+    limite = 3900 - len(recuperado) - len(rodape)
+    if len(texto) > limite:
+        texto = texto[:limite - 45] + "\n[…] Veja os detalhes no administrador."
+    return recuperado + texto + rodape
+
+
+def erro_seguro(erro, token):
+    texto = str(erro)
+    if token:
+        texto = texto.replace(token, "[TOKEN OCULTO]")
+    return re.sub(r"bot[0-9]+:[A-Za-z0-9_-]+", "bot[TOKEN OCULTO]", texto)[:300]
+
+
+def recuperavel(evento, agora):
+    # Não repetir erros de dados ou permissão; recuperar falhas reais de entrega.
+    erro = str(evento.get("erroTelegram") or "").lower()
+    transporte = any(p in erro for p in ("401", "403", "429", "500", "502", "503", "504", "timeout", "connection", "telegram recusou"))
+    if not transporte:
+        return False
+    ultima = evento.get("processadoEm")
+    return ultima is None or ultima <= agora - timedelta(hours=6)
+
+
 LIMITE_POR_EXECUCAO = 50
 MAX_TENTATIVAS = 3
 
@@ -224,6 +261,13 @@ def main():
             candidatos.append(snap)
             vistos.add(snap.id)
 
+    # Falhas de entrega antigas voltam à fila sem reenviar avisos já confirmados.
+    for snap in db.collection("notificacoes").where("statusTelegram", "==", "erro").limit(LIMITE_POR_EXECUCAO).stream():
+        evento = snap.to_dict() or {}
+        if snap.id not in vistos and recuperavel(evento, agora):
+            candidatos.append(snap)
+            vistos.add(snap.id)
+
     pendentes = candidatos[:LIMITE_POR_EXECUCAO]
     print(f"Alertas prontos para envio: {len(pendentes)}")
     enviados = 0
@@ -238,7 +282,7 @@ def main():
                 "processandoEm": firestore.SERVER_TIMESTAMP,
                 "tentativasTelegram": tentativas
             })
-            texto = montar_mensagem(db, evento)
+            texto = preparar_aviso(db, evento, snap.id)
             resposta = requests.post(url, json={"chat_id": chat_id, "text": texto}, timeout=20)
             resposta.raise_for_status()
             retorno = resposta.json()
@@ -252,7 +296,8 @@ def main():
             })
             enviados += 1
         except Exception as erro:
-            mensagem_erro = str(erro)[:300]
+            mensagem_erro = erro_seguro(erro, token)
+            print(f"Falha no aviso {snap.id}: {mensagem_erro}")
             if tentativas < MAX_TENTATIVAS:
                 espera = 15 * (2 ** (tentativas - 1))
                 ref.update({
@@ -269,6 +314,8 @@ def main():
                 })
             erros += 1
     print(f"Alertas enviados: {enviados}; alertas com erro: {erros}")
+    if erros:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

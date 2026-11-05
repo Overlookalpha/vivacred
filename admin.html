@@ -238,7 +238,7 @@ Saldo:<br>
 </div>
 
 <div class="card">
-<h3>📅 Esta Semana</h3>
+<h3>📅 Entradas previstas nos próximos 7 dias</h3>
 <div id="proximos7Dias">R$ 0</div>
 </div>
 
@@ -1601,7 +1601,7 @@ if(d.aniversarios.proximos7Dias.length > 0){
   
 // ================================================
 // 🏠 ABA: DASHBOARD — Cálculo financeiro
-// (Caixa, Na Rua, Esta Semana, Em Atraso, Próximo Vencimento,
+// (Caixa, Na Rua, Entradas previstas nos próximos 7 dias, Em Atraso, Próximo Vencimento,
 // Central de Vencimentos)
 // ================================================
 function renderizarInteligencia(dados){
@@ -1756,7 +1756,7 @@ const vencemAmanha = [];
 const vencemHoje = [];
 const atrasados = [];
 
-// Acumuladores só pra preencher os cards "Esta Semana" e
+// Acumuladores só pra preencher os cards "Entradas previstas nos próximos 7 dias" e
 // "Em Atraso" do resumo — não mexem nas listas acima.
 let valorEstaSemana = 0;
 const emprestimosAtrasadosSet = new Set();
@@ -1895,17 +1895,16 @@ if (diasRestantes < 0 && emAberto) {
     emprestimosAtrasadosSet.add(dados.emprestimoId);
 }
 
-// "Esta Semana" = parcelas que vencem de hoje até os
+// "Entradas previstas nos próximos 7 dias" = parcelas que vencem de hoje até os
 // próximos 7 dias (ainda não vencidas).
 if (
     emAberto &&
+    emprestimoDaParcela?.status === "ativo" &&
     diasRestantes >= 0 &&
     diasRestantes <= 7 &&
     (dados.pais || "BR") !== "PT"
 ) {
-    valorEstaSemana += Number(
-        dados.restante ?? dados.valor ?? 0
-    );
+    valorEstaSemana += restanteContratado;
 }
 
 }
@@ -2142,7 +2141,7 @@ document.getElementById("saldoPT").innerText =
 // Esses dois cards existiam na tela mas nunca eram
 // preenchidos — ficavam sempre com o valor inicial (zero).
 document.getElementById("proximos7Dias").innerHTML =
-"📅 Esta Semana<br>" +
+"📅 Entradas previstas nos próximos 7 dias<br>" +
 "R$ " + valorEstaSemana.toFixed(2);
 
 document.getElementById("clientesAtraso").innerHTML =

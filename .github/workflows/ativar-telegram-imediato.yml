@@ -14,8 +14,7 @@ jobs:
           node-version: '22'
       - name: Preparar ferramentas
         run: |
-          npm install --global firebase-tools
-          npm ci --prefix functions
+          pip install google-auth requests
       - name: Ativar somente o emissor Telegram
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
@@ -30,6 +29,18 @@ jobs:
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$credentials"
           export GOOGLE_APPLICATION_CREDENTIALS="$credentials"
           python - <<'PY'
-          import json, os
-          print("CONTA_IMPLANTACAO=" + json.loads(os.environ["FIREBASE_SERVICE_ACCOUNT_JSON"])["client_email"])
+          import json, os, base64
+          from google.oauth2 import service_account
+          from google.auth.transport.requests import AuthorizedSession
+          credentials = service_account.Credentials.from_service_account_info(json.loads(os.environ["FIREBASE_SERVICE_ACCOUNT_JSON"]), scopes=["https://www.googleapis.com/auth/cloud-platform"])
+          session = AuthorizedSession(credentials)
+          for name in ("TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"):
+              value = os.environ[name].strip()
+              if not value:
+                  raise RuntimeError("Configuração ausente: " + name)
+              payload = base64.b64encode(value.encode()).decode()
+              response = session.post("https://secretmanager.googleapis.com/v1/projects/vivacred-5a5b8/secrets/" + name + ":addVersion", json={"payload": {"data": payload}}, timeout=30)
+              if response.status_code != 200:
+                  raise RuntimeError("Falha ao configurar " + name + ": HTTP " + str(response.status_code))
+              print(name + ": versão configurada")
           PY

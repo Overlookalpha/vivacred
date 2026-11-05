@@ -4039,7 +4039,12 @@ ${parcelasMaximas}x.
 
 }
 
+let abrindoPagamentoParcela = false;
 window.gerarPagamentoParcela = async function(parcelaId){
+  const aberto = document.getElementById("modalPagamentoParcela");
+  if(aberto || abrindoPagamentoParcela) return;
+  abrindoPagamentoParcela = true;
+  try {
 
   const parcelaRef = doc(db, "parcelas", parcelaId);
   const parcelaSnap = await getDoc(parcelaRef);
@@ -4064,7 +4069,6 @@ const cliente = clienteSnap.exists() ? clienteSnap.data() : {};
     currency: moeda
   });
 
- await enviarTelegram("pagamento_aberto", { id: parcelaId });
  const modalPagamento = document.createElement("div");
 
 modalPagamento.id = "modalPagamentoParcela";
@@ -4150,7 +4154,7 @@ modalPagamento.innerHTML = `
             ">
         </div>
 
-        <button id="btnConfirmarPagamentoParcela" style="
+        <button type="button" id="btnConfirmarPagamentoParcela" style="
             width:100%;
             margin-top:14px;
             padding:15px;
@@ -4165,7 +4169,7 @@ modalPagamento.innerHTML = `
             ✅ Já efetuei o pagamento
         </button>
 
-        <button id="btnFecharPagamentoParcela" style="
+        <button type="button" id="btnFecharPagamentoParcela" style="
             width:100%;
             margin-top:10px;
             padding:12px;
@@ -4183,11 +4187,12 @@ modalPagamento.innerHTML = `
 
 document.body.appendChild(modalPagamento);
 
-document.getElementById("btnFecharPagamentoParcela").onclick = function(){
+modalPagamento.querySelector("#btnFecharPagamentoParcela").addEventListener("click", function(event){
+    event.preventDefault();
     modalPagamento.remove();
-};
+});
 
-document.getElementById("btnConfirmarPagamentoParcela").onclick = async function(){
+modalPagamento.querySelector("#btnConfirmarPagamentoParcela").onclick = async function(){
 
     const confirmou = await confirmarModal(
         "Confirma que você já realizou o pagamento da parcela " +
@@ -4253,8 +4258,25 @@ document.getElementById("btnConfirmarPagamentoParcela").onclick = async function
 
     }
 
-};
+ };
 
+// Registrar abertura sem prender os controles do modal à resposta do servidor.
+const statusAviso = document.createElement("p");
+statusAviso.style.cssText = "font-size:12px;color:#555;";
+statusAviso.textContent = "Registrando abertura da tela…";
+modalPagamento.querySelector("#btnFecharPagamentoParcela").before(statusAviso);
+enviarTelegram("pagamento_aberto", { id: parcelaId }).then(() => {
+    statusAviso.textContent = "Abertura registrada. O administrador será avisado pela fila de notificações.";
+}).catch(erro => {
+    console.error("Falha ao registrar abertura do pagamento:", erro);
+    statusAviso.textContent = "Não foi possível avisar o administrador da abertura. Isso não confirma pagamento.";
+});
+  } catch(erro) {
+    console.error("Erro ao abrir pagamento:", erro);
+    mostrarAviso("Não foi possível abrir o pagamento agora. Tente novamente.", "error");
+  } finally {
+    abrindoPagamentoParcela = false;
+  }
 }
   
 </script>

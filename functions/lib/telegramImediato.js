@@ -1,4 +1,5 @@
 "use strict";
+const NAO_ENVIAR_ANTES = Date.parse("2026-11-06T12:06:14.613982+00:00");
 const TIPOS = new Set(["cadastro", "emprestimo", "saque", "atendimento", "negociacao", "pagamento_aberto", "pagamento_confirmado"]);
 const TITULOS = {cadastro:"🆕 NOVO CADASTRO",emprestimo:"📥 PEDIDO DE EMPRÉSTIMO",saque:"🪙 PEDIDO DE SAQUE",atendimento:"💬 ATENDIMENTO SOLICITADO",negociacao:"🤝 PEDIDO DE NEGOCIAÇÃO",pagamento_aberto:"👀 CLIENTE ABRIU PAGAR PARCELA",pagamento_confirmado:"📎 CLIENTE INFORMOU PAGAMENTO"};
 const COLECOES = {emprestimo:"emprestimos",saque:"saques",negociacao:"negociacoes",pagamento_aberto:"parcelas",pagamento_confirmado:"parcelas"};
@@ -41,6 +42,10 @@ async function entregar({db,ref,token,chatId,FieldValue,fetchImpl=fetch}){
  const reservado=await db.runTransaction(async tx=>{
   const snap=await tx.get(ref);if(!snap.exists)return null;
   const e=snap.data();if(!TIPOS.has(e.tipoTelegram)||e.statusTelegram!=="pendente")return null;
+  const data=e.data?.toDate?.()?.getTime?.();
+  if(!Number.isFinite(data)||data<NAO_ENVIAR_ANTES||Date.now()-data>3600000||data>Date.now()+300000){
+   tx.update(ref,{statusTelegram:"expirado",motivoExpiracaoTelegram:"Aviso antigo ou sem data válida; não reenviar"});return null;
+  }
   tx.update(ref,{statusTelegram:"processando",processandoEm:FieldValue.serverTimestamp(),tentativasTelegram:Number(e.tentativasTelegram||0)+1});return e;
  });
  if(!reservado)return {ignorado:true};

@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import mod from '../functions/lib/telegramImediato.js';
 function fixture(tipo='pagamento_aberto'){
- let state={tipoTelegram:tipo,criadoPor:'u',dadosTelegram:{id:'p'},statusTelegram:'pendente'};
+ let state={tipoTelegram:tipo,criadoPor:'u',dadosTelegram:{id:'p'},data:{toDate:()=>new Date()},statusTelegram:'pendente'};
  let sends=0;
  const ref={id:'e',update:async p=>Object.assign(state,p)};
  const db={runTransaction:async fn=>fn({get:async()=>({exists:true,data:()=>({...state})}),update:(r,p)=>Object.assign(state,p)}),collection:c=>({doc:id=>({get:async()=>({exists:true,data:()=>c==='usuarios'?{nome:'Cliente',telefone:'000'}:{userId:'u',valor:100,restante:0,numero:1}})})})};
@@ -20,4 +20,9 @@ test('falha mantém fila de recuperação sem vazar segredo',async()=>{
 });
 test('não envia resumo diário ou evento administrativo',async()=>{
  const f=fixture('admin_texto');assert.deepEqual(await mod.entregar(f),{ignorado:true});assert.equal(f.sends,0);
+});
+
+test('evento antigo n�o � enviado pelo emissor imediato',async()=>{
+ const f=fixture();f.state.data={toDate:()=>new Date('2026-01-01')};
+ assert.deepEqual(await mod.entregar(f),{ignorado:true});assert.equal(f.sends,0);assert.equal(f.state.statusTelegram,'expirado');
 });

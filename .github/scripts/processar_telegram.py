@@ -187,7 +187,7 @@ def preparar_aviso(db, evento, aviso_id):
     texto = montar_mensagem(db, evento)
     data = evento.get("data")
     horario = data.astimezone(ZoneInfo("America/Sao_Paulo")).strftime("%d/%m/%Y às %H:%M") if isinstance(data, datetime) else "Não registrado"
-    recuperado = "📬 AVISO RECUPERADO — ação anterior, confira a situação atual\n\n" if evento.get("statusTelegram") == "erro" else ""
+    recuperado = ""
     rodape = (f"\n\n🕒 Ação registrada: {horario} (Brasília)\n"
               f"🔎 Aviso: {aviso_id}\n"
               "🔗 Administrador: https://overlookalpha.github.io/vivacred/admin.html\n"
@@ -206,14 +206,13 @@ def erro_seguro(erro, token):
     return re.sub(r"bot[0-9]+:[A-Za-z0-9_-]+", "bot[TOKEN OCULTO]", texto)[:300]
 
 
-def recuperavel(evento, agora):
-    # Não repetir erros de dados ou permissão; recuperar falhas reais de entrega.
-    erro = str(evento.get("erroTelegram") or "").lower()
-    transporte = any(p in erro for p in ("401", "403", "429", "500", "502", "503", "504", "timeout", "connection", "telegram recusou"))
-    if not transporte:
+NAO_ENVIAR_ANTES = datetime.fromisoformat("2026-11-06T12:06:14.613982+00:00")
+
+def aviso_atual(evento, agora):
+    data = evento.get("data")
+    if not isinstance(data, datetime) or data.tzinfo is None:
         return False
-    ultima = evento.get("processadoEm")
-    return ultima is None or ultima <= agora - timedelta(hours=6)
+    return NAO_ENVIAR_ANTES <= data <= agora + timedelta(minutes=5) and agora - data <= timedelta(hours=1)
 
 
 LIMITE_POR_EXECUCAO = 50
@@ -223,8 +222,8 @@ MAX_TENTATIVAS = 3
 def horario_pronto(valor, agora):
     """Retorna se a mensagem pode ser tentada agora.
 
-    Registros antigos não tinham data de tentativa; eles são tratados como
-    prontos para recuperar a fila que existia antes desta correção.
+    Somente avisos recentes passam pela validação de idade na reserva.
+    Avisos em erro não voltam automaticamente à fila.
     """
     if valor is None:
         return True
@@ -240,15 +239,17 @@ def reservar_aviso(transaction, ref, agora):
         return None
     evento = snap.to_dict() or {}
     status = evento.get("statusTelegram")
+    if status not in ("pendente", "processando"):
+        return None
+    if not aviso_atual(evento, agora):
+        transaction.update(ref, {"statusTelegram": "expirado", "motivoExpiracaoTelegram": "Aviso anterior ao corte ou com mais de uma hora; não reenviar", "processadoEm": firestore.SERVER_TIMESTAMP})
+        return None
     if status == "processando":
         inicio = evento.get("processandoEm")
         if inicio is not None and inicio > agora - timedelta(minutes=15):
             return None
     elif status == "pendente":
         if not horario_pronto(evento.get("proximaTentativaTelegramEm"), agora):
-            return None
-    elif status == "erro":
-        if not recuperavel(evento, agora):
             return None
     else:
         return None
@@ -282,13 +283,6 @@ def main():
         evento = snap.to_dict() or {}
         iniciou = evento.get("processandoEm")
         if (iniciou is None or iniciou <= limite_processando) and snap.id not in vistos:
-            candidatos.append(snap)
-            vistos.add(snap.id)
-
-    # Falhas de entrega antigas voltam à fila sem reenviar avisos já confirmados.
-    for snap in db.collection("notificacoes").where("statusTelegram", "==", "erro").limit(LIMITE_POR_EXECUCAO).stream():
-        evento = snap.to_dict() or {}
-        if snap.id not in vistos and recuperavel(evento, agora):
             candidatos.append(snap)
             vistos.add(snap.id)
 

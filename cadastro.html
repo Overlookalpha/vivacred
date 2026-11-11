@@ -199,6 +199,7 @@ import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/
 import {
 getFirestore,
 doc,
+getDoc,
 setDoc,
 query,
 where,
@@ -326,6 +327,23 @@ let cadastrando = false;
 
 const btnCadastrar = document.getElementById("btnCadastrar");
 
+// 11/11/2026 – modo de emergência: com os cadastros suspensos o botão nem cria a conta de autenticação.
+// O bloqueio verdadeiro está no servidor (criarPerfilUsuario); isto só evita contas soltas e explica o motivo.
+const MSG_CADASTROS_SUSPENSOS = "Novos cadastros temporariamente suspensos para manutenção de segurança.";
+async function cadastrosSuspensos(){
+try {
+const snap = await getDoc(doc(db, "configuracoes", "seguranca"));
+return !snap.exists() || snap.data().cadastrosSuspensos !== false;
+} catch (e) {
+return true;
+}
+}
+if (await cadastrosSuspensos()) {
+btnCadastrar.disabled = true;
+btnCadastrar.textContent = "Cadastros suspensos";
+mostrarErroCadastro("<strong>" + MSG_CADASTROS_SUSPENSOS + "</strong><br>Se já é cliente, entre normalmente na sua conta.");
+}
+
 btnCadastrar.addEventListener("click", async () => {
 if (cadastrando) return;
 
@@ -370,6 +388,11 @@ alert("Digite a data de nascimento no formato DD/MM/AAAA.");
 return;
 }
 
+if (await cadastrosSuspensos()) {
+mostrarErroCadastro("<strong>" + MSG_CADASTROS_SUSPENSOS + "</strong>");
+return;
+}
+
 cadastrando = true;
 btnCadastrar.disabled = true;
 btnCadastrar.textContent = "Criando conta...";
@@ -405,6 +428,13 @@ if (error.code === "functions/already-exists") {
   '<a href="login.html?email=' + emailLogin + '">Entrar na conta</a> · ' +
   '<a href="login.html?email=' + emailLogin + '#recuperar">Recuperar senha</a>'
  );
+} else if (error.code === "functions/unavailable") {
+ // servidor em modo de emergência: não deixar a conta de autenticação solta
+ if (contaCriadaAgora) {
+  try { await deleteUser(contaCriadaAgora); }
+  catch (erroLimpeza) { console.warn("Não foi possível limpar a conta incompleta:", erroLimpeza); }
+ }
+ mostrarErroCadastro("<strong>" + MSG_CADASTROS_SUSPENSOS + "</strong>");
 } else {
  mostrarErroCadastro(traduzErro(error.code));
 }

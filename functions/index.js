@@ -60,6 +60,17 @@ function alertaTelegram(uid, tipo, id) {
   };
 }
 
+// 11/11/2026 – MODO DE EMERGÊNCIA. Documento público configuracoes/seguranca (só o admin escreve).
+// Fecha por defeito: enquanto o admin não gravar explicitamente `false`, novos cadastros e novas
+// solicitações de crédito ficam suspensos. Clientes existentes continuam a entrar e a consultar tudo.
+const MSG_CADASTROS_SUSPENSOS = "Novos cadastros temporariamente suspensos para manutenção de segurança.";
+const MSG_SOLICITACOES_SUSPENSAS = "Novas solicitações de crédito temporariamente suspensas para manutenção de segurança.";
+async function estadoSeguranca(db) {
+  const snap = await db.collection("configuracoes").doc("seguranca").get();
+  const d = snap.exists ? snap.data() : {};
+  return { cadastrosSuspensos: d.cadastrosSuspensos !== false, solicitacoesSuspensas: d.solicitacoesSuspensas !== false };
+}
+
 async function codigoIndicacaoUnico(db, nome) {
   const base = String(nome).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z]/g, "").toUpperCase().slice(0, 6) || "USER";
   for (let tentativa = 0; tentativa < 10; tentativa += 1) {
@@ -91,6 +102,14 @@ exports.criarPerfilUsuario = onCall(
     }
     const db = getFirestore();
     const perfilRef = db.collection("usuarios").doc(request.auth.uid);
+    // Um perfil existente nunca é recriado: antes, chamar esta função de novo repunha status "ativo",
+    // apagava o bloqueio de solicitação, trocava o CPF/NIF e permitia escolher quem o indicou.
+    if ((await perfilRef.get()).exists) {
+      throw new HttpsError("already-exists", "Este utilizador já tem perfil.");
+    }
+    if ((await estadoSeguranca(db)).cadastrosSuspensos) {
+      throw new HttpsError("unavailable", MSG_CADASTROS_SUSPENSOS);
+    }
     const cpf = String(dados.cpf).replace(/\D/g, "");
     const existente = await db.collection("usuarios").where("cpf", "==", cpf).limit(1).get();
     if (!existente.empty && existente.docs[0].id !== request.auth.uid) {
@@ -126,6 +145,9 @@ exports.solicitarCredito = onCall(
       throw new HttpsError("invalid-argument", "Dados da solicitação inválidos.");
     }
     const db = getFirestore();
+    if ((await estadoSeguranca(db)).solicitacoesSuspensas) {
+      throw new HttpsError("unavailable", MSG_SOLICITACOES_SUSPENSAS);
+    }
     const userRef = db.collection("usuarios").doc(request.auth.uid);
     const emprestimosRef = db.collection("emprestimos");
     const resultado = await db.runTransaction(async (tx) => {

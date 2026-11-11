@@ -145,6 +145,16 @@ color:var(--primary-dark);
 
 <h2>Painel Administrativo VivaCred</h2>
 <p class="adminDashboardIntro">Comece pelos vencimentos e pedidos que precisam de atenção. Os indicadores financeiros continuam disponíveis nas seções abaixo.</p>
+<!-- 11/11/2026: modo de emergência de segurança -->
+<div class="card" id="cardSegurancaEmergencia" style="border:2px solid #b42318;">
+<h3>🛡️ Modo de emergência de segurança</h3>
+<p id="segurancaEstado" style="margin:6px 0 12px;">A verificar…</p>
+<div style="display:flex;flex-wrap:wrap;gap:8px;">
+<button type="button" id="btnSegCadastros"></button>
+<button type="button" id="btnSegSolicitacoes"></button>
+</div>
+<p style="font-size:13px;opacity:.8;margin-top:10px;">Clientes já cadastrados continuam a entrar, ver parcelas e empréstimos. Isto só trava contas novas e novos pedidos de crédito.</p>
+</div>
 <div class="card" id="cardProximoVencimento">
 
 <h3>🎯 Próximo Vencimento</h3>
@@ -3345,6 +3355,37 @@ let emprestimoRecusaId = null;
 // diagnóstico + Telegram, carrega o dashboard e a lista de
 // solicitações de crédito.
 // ================================================
+// 11/11/2026 – modo de emergência. Sem documento, ou sem `false` explícito, conta como SUSPENSO
+// (o servidor faz a mesma leitura; este painel só liga e desliga).
+async function iniciarPainelSeguranca(user){
+  const ref = doc(db, "configuracoes", "seguranca");
+  const estado = document.getElementById("segurancaEstado");
+  const bCad = document.getElementById("btnSegCadastros");
+  const bSol = document.getElementById("btnSegSolicitacoes");
+  if (!estado || !bCad || !bSol) return;
+  let atual = { cadastrosSuspensos: true, solicitacoesSuspensas: true };
+  async function carregar(){
+    try {
+      const snap = await getDocFromServer(ref);
+      const d = snap.exists() ? snap.data() : {};
+      atual = { cadastrosSuspensos: d.cadastrosSuspensos !== false, solicitacoesSuspensas: d.solicitacoesSuspensas !== false };
+    } catch (e) { console.error("seguranca:", e); }
+    estado.innerHTML = "Novos cadastros: <b>" + (atual.cadastrosSuspensos ? "SUSPENSOS" : "abertos") + "</b> · Novas solicitações de crédito: <b>" + (atual.solicitacoesSuspensas ? "SUSPENSAS" : "abertas") + "</b>";
+    bCad.textContent = atual.cadastrosSuspensos ? "Reabrir cadastros" : "Suspender cadastros";
+    bSol.textContent = atual.solicitacoesSuspensas ? "Reabrir solicitações" : "Suspender solicitações";
+  }
+  async function gravar(campo, valor){
+    const rotulo = campo === "cadastrosSuspensos" ? "cadastros" : "solicitações de crédito";
+    if (!valor && !window.confirm("Reabrir " + rotulo + "? Faça-o só depois de rever os cadastros suspeitos.")) return;
+    const dados = {}; dados[campo] = valor; dados.atualizadoEm = serverTimestamp(); dados.atualizadoPor = user.email || user.uid;
+    await setDoc(ref, dados, { merge: true });
+    await carregar();
+  }
+  bCad.onclick = function(){ gravar("cadastrosSuspensos", !atual.cadastrosSuspensos); };
+  bSol.onclick = function(){ gravar("solicitacoesSuspensas", !atual.solicitacoesSuspensas); };
+  await carregar();
+}
+
 onAuthStateChanged(auth, async (user) => {
 
  if (!user) {
@@ -3374,6 +3415,7 @@ if (!adminSnap.exists()) {
 }
 
    console.log("Admin autenticado");
+   iniciarPainelSeguranca(user);
    const identidadeAdmin = document.getElementById("adminIdentity");
    if(identidadeAdmin) identidadeAdmin.textContent = user.email || "Administrador";
 

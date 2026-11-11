@@ -6,6 +6,10 @@ service cloud.firestore {
       return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
     function ownsUser(userId) { return signedIn() && request.auth.uid == userId; }
+    // Conta de autenticação com perfil criado pelo servidor (contas "soltas" não chegam a dados de clientes).
+    function hasProfile() {
+      return signedIn() && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid));
+    }
     function onlyProfileFields() {
       return request.resource.data.diff(resource.data).affectedKeys()
         .hasOnly(['nome', 'telefone', 'pix', 'profissao', 'cidade', 'estado', 'diasLembrete', 'fotoBase64']);
@@ -80,7 +84,10 @@ service cloud.firestore {
     }
     match /negociacoes/{id} {
       allow read: if signedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if signedIn() && request.resource.data.userId == request.auth.uid &&
+      allow create: if hasProfile() && request.resource.data.userId == request.auth.uid &&
+        request.resource.data.parcelaId is string &&
+        exists(/databases/$(database)/documents/parcelas/$(request.resource.data.parcelaId)) &&
+        get(/databases/$(database)/documents/parcelas/$(request.resource.data.parcelaId)).data.userId == request.auth.uid &&
         request.resource.data.keys().hasOnly(['userId', 'nomeCliente', 'telefoneCliente', 'parcelaId', 'numeroParcela', 'motivo', 'status', 'criadoEm']) &&
         request.resource.data.status == 'pendente' && request.resource.data.motivo is string && request.resource.data.motivo.size() <= 1000;
       allow update, delete: if isAdmin();
@@ -93,7 +100,10 @@ service cloud.firestore {
       );
       allow create, delete: if isAdmin();
     }
-    match /atividadesQuitacao/{id} { allow read: if signedIn(); allow write: if isAdmin(); }
+    match /atividadesQuitacao/{id} { allow read: if hasProfile() || isAdmin(); allow write: if isAdmin(); }
+    // Modo de emergência (11/11/2026): o cadastro precisa de o ler antes de haver sessão; só o admin escreve
+    // (pela regra administrativa genérica abaixo). A fonte de verdade do bloqueio são as funções do servidor.
+    match /configuracoes/seguranca { allow read: if true; }
     // Não deixar a permissão administrativa genérica contornar a baixa acima.
     match /{collectionName}/{document=**} {
       allow read, write: if isAdmin() && collectionName != 'saques';

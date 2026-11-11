@@ -153,7 +153,13 @@ color:var(--primary-dark);
 <button type="button" id="btnSegCadastros"></button>
 <button type="button" id="btnSegSolicitacoes"></button>
 </div>
-<p style="font-size:13px;opacity:.8;margin-top:10px;">Clientes já cadastrados continuam a entrar, ver parcelas e empréstimos. Isto só trava contas novas e novos pedidos de crédito.</p>
+<p style="font-size:13px;opacity:.8;margin-top:10px;">Use só em emergência. No dia a dia, as contas novas ficam à espera da sua aprovação (cartão abaixo).</p>
+</div>
+
+<div class="card" id="cardContasPendentes" style="border:2px solid #7c3aed;">
+<h3>🆕 Novas contas por aprovar</h3>
+<p style="font-size:13px;opacity:.8;margin:4px 0 10px;">Quem cria conta só consegue entrar depois de aprovado aqui. Recusar não apaga nada.</p>
+<div id="listaContasPendentes">A carregar…</div>
 </div>
 <div class="card" id="cardProximoVencimento">
 
@@ -3355,20 +3361,60 @@ let emprestimoRecusaId = null;
 // diagnóstico + Telegram, carrega o dashboard e a lista de
 // solicitações de crédito.
 // ================================================
-// 11/11/2026 – modo de emergência. Sem documento, ou sem `false` explícito, conta como SUSPENSO
-// (o servidor faz a mesma leitura; este painel só liga e desliga).
+// 11/11/2026 – aprovação de contas novas (a decisão é feita no servidor pela função decidirConta,
+// que também ativa ou mantém desativado o login da pessoa).
+async function iniciarContasPendentes(){
+  const caixa = document.getElementById("listaContasPendentes");
+  if (!caixa) return;
+  const { getFunctions, httpsCallable } = await import("https://www.gstatic.com/firebasejs/12.10.0/firebase-functions.js");
+  const decidirConta = httpsCallable(getFunctions(app, "europe-west1"), "decidirConta");
+  async function carregar(){
+    let snap;
+    try { snap = await getDocsFromServer(query(collection(db, "usuarios"), where("status", "==", "pendente_aprovacao"))); }
+    catch (e) { caixa.textContent = "Não foi possível carregar as contas pendentes."; console.error(e); return; }
+    caixa.innerHTML = "";
+    if (snap.empty) { caixa.textContent = "Nenhuma conta à espera de aprovação."; return; }
+    snap.forEach(function(d){
+      const u = d.data();
+      const linha = document.createElement("div");
+      linha.style.cssText = "display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid rgba(127,127,127,.25);";
+      const info = document.createElement("div");
+      info.style.cssText = "flex:1;min-width:220px;";
+      const criado = u.criadoEm && u.criadoEm.toDate ? u.criadoEm.toDate().toLocaleString("pt-PT") : "";
+      info.innerHTML = "<b></b><br><span></span>";
+      info.querySelector("b").textContent = (u.nome || "(sem nome)") + " · " + (u.pais || "");
+      info.querySelector("span").textContent = (u.email || "") + " · " + (u.telefone || "") + " · CPF/NIF " + (u.cpf || "") + (u.indicadoPor ? " · indicado por um cliente" : "") + (criado ? " · " + criado : "");
+      const ok = document.createElement("button"); ok.type = "button"; ok.textContent = "Aprovar";
+      const no = document.createElement("button"); no.type = "button"; no.textContent = "Recusar";
+      async function decidir(aprovar){
+        if (!aprovar && !window.confirm("Recusar a conta de " + (u.nome || u.email) + "? A pessoa não vai conseguir entrar.")) return;
+        ok.disabled = true; no.disabled = true;
+        try { await decidirConta({ uid: d.id, aprovar: aprovar }); await carregar(); }
+        catch (e) { alert("Não foi possível concluir: " + (e.message || e)); ok.disabled = false; no.disabled = false; }
+      }
+      ok.onclick = function(){ decidir(true); };
+      no.onclick = function(){ decidir(false); };
+      linha.appendChild(info); linha.appendChild(ok); linha.appendChild(no);
+      caixa.appendChild(linha);
+    });
+  }
+  await carregar();
+  setInterval(carregar, 60000);
+}
+
+// 11/11/2026 – modo de emergência: só `true` explícito suspende (o servidor faz a mesma leitura).
 async function iniciarPainelSeguranca(user){
   const ref = doc(db, "configuracoes", "seguranca");
   const estado = document.getElementById("segurancaEstado");
   const bCad = document.getElementById("btnSegCadastros");
   const bSol = document.getElementById("btnSegSolicitacoes");
   if (!estado || !bCad || !bSol) return;
-  let atual = { cadastrosSuspensos: true, solicitacoesSuspensas: true };
+  let atual = { cadastrosSuspensos: false, solicitacoesSuspensas: false };
   async function carregar(){
     try {
       const snap = await getDocFromServer(ref);
       const d = snap.exists() ? snap.data() : {};
-      atual = { cadastrosSuspensos: d.cadastrosSuspensos !== false, solicitacoesSuspensas: d.solicitacoesSuspensas !== false };
+      atual = { cadastrosSuspensos: d.cadastrosSuspensos === true, solicitacoesSuspensas: d.solicitacoesSuspensas === true };
     } catch (e) { console.error("seguranca:", e); }
     estado.innerHTML = "Novos cadastros: <b>" + (atual.cadastrosSuspensos ? "SUSPENSOS" : "abertos") + "</b> · Novas solicitações de crédito: <b>" + (atual.solicitacoesSuspensas ? "SUSPENSAS" : "abertas") + "</b>";
     bCad.textContent = atual.cadastrosSuspensos ? "Reabrir cadastros" : "Suspender cadastros";
@@ -3416,6 +3462,7 @@ if (!adminSnap.exists()) {
 
    console.log("Admin autenticado");
    iniciarPainelSeguranca(user);
+   iniciarContasPendentes();
    const identidadeAdmin = document.getElementById("adminIdentity");
    if(identidadeAdmin) identidadeAdmin.textContent = user.email || "Administrador";
 

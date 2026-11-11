@@ -2283,6 +2283,18 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 usuarioLogado = user;
+
+  // 11/11/2026: contas novas só entram depois de aprovadas pelo administrador
+  try {
+    const perfilAprov = await getDoc(doc(db, "usuarios", user.uid));
+    const st = perfilAprov.exists() ? perfilAprov.data().status : "";
+    if (st === "pendente_aprovacao" || st === "recusado") {
+      await signOut(auth);
+      alert(st === "recusado" ? "O seu cadastro não foi aprovado." : "A sua conta ainda não foi aprovada pelo administrador. Assim que for aprovada poderá entrar.");
+      window.location.replace("login.html");
+      return;
+    }
+  } catch (e) { console.error("verificar aprovação:", e); }
   
   document.getElementById("userEmail").innerText =
     "Logado como: " + user.email;

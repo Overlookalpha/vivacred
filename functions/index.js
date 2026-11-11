@@ -2,6 +2,7 @@
 
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
+const { getAuth } = require("firebase-admin/auth");
 const { initializeApp, getApps } = require("firebase-admin/app");
 const { calcularCobrancaParcela } = require("./lib/calculoParcela");
 const { limiteEfetivo, REGRAS_CREDITO } = require("./lib/limiteCredito");
@@ -60,15 +61,24 @@ function alertaTelegram(uid, tipo, id) {
   };
 }
 
-// 11/11/2026 – MODO DE EMERGÊNCIA. Documento público configuracoes/seguranca (só o admin escreve).
-// Fecha por defeito: enquanto o admin não gravar explicitamente `false`, novos cadastros e novas
-// solicitações de crédito ficam suspensos. Clientes existentes continuam a entrar e a consultar tudo.
+// 11/11/2026 – APROVAÇÃO DE CONTAS. Toda a conta nova nasce "pendente_aprovacao" e com o login
+// desativado no Authentication; só entra depois de o admin a aprovar (função decidirConta).
+// Interruptor de emergência (documento público configuracoes/seguranca, só o admin escreve):
+// com `true` explícito suspende por completo novos cadastros ou novas solicitações.
 const MSG_CADASTROS_SUSPENSOS = "Novos cadastros temporariamente suspensos para manutenção de segurança.";
 const MSG_SOLICITACOES_SUSPENSAS = "Novas solicitações de crédito temporariamente suspensas para manutenção de segurança.";
+const STATUS_SEM_ACESSO = ["pendente_aprovacao", "recusado"];
 async function estadoSeguranca(db) {
   const snap = await db.collection("configuracoes").doc("seguranca").get();
   const d = snap.exists ? snap.data() : {};
-  return { cadastrosSuspensos: d.cadastrosSuspensos !== false, solicitacoesSuspensas: d.solicitacoesSuspensas !== false };
+  return { cadastrosSuspensos: d.cadastrosSuspensos === true, solicitacoesSuspensas: d.solicitacoesSuspensas === true };
+}
+async function exigirContaAprovada(db, uid) {
+  const snap = await db.collection("usuarios").doc(uid).get();
+  if (!snap.exists || STATUS_SEM_ACESSO.includes(snap.data().status)) {
+    throw new HttpsError("permission-denied", "A sua conta ainda não foi aprovada.");
+  }
+  return snap;
 }
 
 async function codigoIndicacaoUnico(db, nome) {
@@ -124,12 +134,15 @@ exports.criarPerfilUsuario = onCall(
       nome: dados.nome.trim(), email: dados.email.trim(), telefone: dados.telefone.trim(), cpf,
       pais: dados.pais, moeda: dados.pais === "PT" ? "€" : "R$", dataNascimento: dados.dataNascimento.trim(),
       pix: String(dados.pix || "").trim(), profissao: String(dados.profissao || "").trim(), cidade: String(dados.cidade || "").trim(), estado: String(dados.estado || "").trim(),
-      score: 20, nivel: "Essencial", limiteBase: dados.pais === "PT" ? 100 : 300, limiteManual: false, status: "ativo", isaCoins: 0, diasLembrete: 3,
+      score: 20, nivel: "Essencial", limiteBase: dados.pais === "PT" ? 100 : 300, limiteManual: false, status: "pendente_aprovacao", isaCoins: 0, diasLembrete: 3,
       codigoIndicacao: codigo, indicadoPor: indicador && !indicador.empty ? indicador.docs[0].id : null,
       indicacaoPremiada: false, criadoEm: FieldValue.serverTimestamp()
     }, { merge: false });
+    // sem aprovação não há login: a conta fica desativada no Authentication até o admin decidir
+    try { await getAuth().updateUser(request.auth.uid, { disabled: true }); }
+    catch (erro) { console.error("Não foi possível desativar a conta pendente", request.auth.uid, erro.message); }
     await db.collection("notificacoes").add(alertaTelegram(request.auth.uid, "cadastro", null));
-    return { codigoIndicacao: codigo };
+    return { codigoIndicacao: codigo, pendenteAprovacao: true };
   }
 );
 
@@ -190,6 +203,7 @@ exports.solicitarSaque = onCall(
   async (request) => {
     if (!request.auth) throw new HttpsError("unauthenticated", "É necessário iniciar sessão.");
     const db = getFirestore();
+    await exigirContaAprovada(db, request.auth.uid);
     const userRef = db.collection("usuarios").doc(request.auth.uid);
     const resultado = await db.runTransaction(async (tx) => {
       const usuarioSnap = await tx.get(userRef);
@@ -223,6 +237,7 @@ exports.registrarEventoCliente = onCall(
     const permitidos = ["atendimento", "negociacao", "pagamento_aberto", "pagamento_confirmado"];
     if (!permitidos.includes(tipo)) throw new HttpsError("invalid-argument", "Tipo de solicitação inválido.");
     const db = getFirestore();
+    await exigirContaAprovada(db, request.auth.uid);
     const id = String(dados.id || "");
     if (["pagamento_aberto", "pagamento_confirmado"].includes(tipo)) {
       const parcela = await db.collection("parcelas").doc(id).get();
@@ -234,6 +249,29 @@ exports.registrarEventoCliente = onCall(
     }
     await db.collection("notificacoes").add(alertaTelegram(request.auth.uid, tipo, id));
     return { ok: true };
+  }
+);
+
+// Admin aprova ou recusa uma conta nova. Aprovar: status "ativo" e login reativado. Recusar: status
+// "recusado" e login continua desativado. Nada é apagado.
+exports.decidirConta = onCall(
+  { region: "europe-west1", timeoutSeconds: 30, memory: "256MiB" },
+  async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "É necessário iniciar sessão.");
+    const db = getFirestore();
+    if (!(await db.collection("admins").doc(request.auth.uid).get()).exists) throw new HttpsError("permission-denied", "Só o administrador decide contas.");
+    const uid = String(request.data?.uid || "");
+    const aprovar = request.data?.aprovar === true;
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(uid)) throw new HttpsError("invalid-argument", "Conta inválida.");
+    const ref = db.collection("usuarios").doc(uid);
+    const snap = await ref.get();
+    if (!snap.exists) throw new HttpsError("not-found", "Conta não encontrada.");
+    if (!STATUS_SEM_ACESSO.includes(snap.data().status)) throw new HttpsError("failed-precondition", "Esta conta já estava aprovada.");
+    await ref.update(aprovar
+      ? { status: "ativo", aprovadoEm: FieldValue.serverTimestamp(), aprovadoPor: request.auth.uid }
+      : { status: "recusado", recusadoEm: FieldValue.serverTimestamp(), recusadoPor: request.auth.uid });
+    await getAuth().updateUser(uid, { disabled: !aprovar });
+    return { uid, status: aprovar ? "ativo" : "recusado" };
   }
 );
 

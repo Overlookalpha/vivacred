@@ -181,7 +181,11 @@ if (user.email === "over@vivacred.com") {
     window.location.href = "home.html";
 }
   } catch (error) {
-    alert("Erro no login: " + error.message);
+    if (error.code === "auth/user-disabled") {
+      alert("A sua conta ainda não foi aprovada pelo administrador. Assim que for aprovada poderá entrar.");
+    } else {
+      alert("Erro no login: " + error.message);
+    }
   }
 });
 </script>

@@ -22,7 +22,8 @@ async function mensagem(db,evento,id){
  if(tipo==="cadastro"){
   linhas.push(`📍 ${user.cidade||"Cidade não informada"}`,`📧 ${user.email||"Não informado"}`);
   if(user.indicadoPor){const snap=await db.collection("usuarios").doc(user.indicadoPor).get();linhas.push(`🤝 Indicado por: ${snap.exists?snap.data().nome||"Cliente cadastrado":"Cadastro por indicação"}`);}
-  linhas.push("👉 Cadastro disponível para conferência no administrador.");
+  if(user.status==="pendente_aprovacao"){linhas[0]="🆕 NOVA CONTA PARA APROVAR";linhas.push("⏳ A pessoa só consegue entrar depois de aprovada.","👉 Aprove ou recuse no painel: https://overlookalpha.github.io/vivacred/admin.html#cardContasPendentes");}
+  else linhas.push("👉 Cadastro disponível para conferência no administrador.");
  }
  if(tipo==="emprestimo")linhas.push(`💰 ${moeda(item.valor,pais)}`,`📄 ${item.parcelas} parcela(s)`,`👤 Avalista: ${item.nomeAvalista||"Não informado"}`,`📞 Avalista: ${item.telefoneAvalista||"Não informado"}`,`Situação atual: ${item.status||"Não informada"}`,"👉 Analise o pedido no administrador.");
  if(tipo==="saque")linhas.push(`🪙 ${item.isaCoins} ISC`,`💰 ${moeda(item.valor,pais)}`,`🔑 Pix: ${item.pix||"Não informado"}`,`Situação atual: ${item.status||"Não informada"}`,"👉 Confira o pedido antes de realizar o pagamento.");

@@ -190,6 +190,7 @@ text-align:left;
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
 import {
 getAuth,
+signOut,
 createUserWithEmailAndPassword,
 deleteUser,
 setPersistence,
@@ -333,9 +334,9 @@ const MSG_CADASTROS_SUSPENSOS = "Novos cadastros temporariamente suspensos para 
 async function cadastrosSuspensos(){
 try {
 const snap = await getDoc(doc(db, "configuracoes", "seguranca"));
-return !snap.exists() || snap.data().cadastrosSuspensos !== false;
+return snap.exists() && snap.data().cadastrosSuspensos === true;
 } catch (e) {
-return true;
+return false;
 }
 }
 if (await cadastrosSuspensos()) {
@@ -411,7 +412,14 @@ await criarPerfilUsuario({
 // O alerta de nova conta para o Telegram é criado pelo servidor dentro de
 // criarPerfilUsuario (o cliente não tem permissão de escrita em notificacoes).
 
-window.location.href = "home.html";
+// 11/11/2026: a conta nova fica à espera de aprovação do administrador (o login só funciona depois).
+try { await signOut(auth); } catch (e) {}
+const area = document.getElementById("erroCadastro");
+area.innerHTML = "<strong>Conta criada!</strong><br>O seu cadastro foi enviado para aprovação. Assim que for aprovado poderá entrar com o seu e-mail e senha.";
+area.classList.add("visivel");
+area.style.background = "#14532d"; area.style.color = "#fff";
+btnCadastrar.textContent = "Cadastro enviado";
+return;
 } catch (error) {
 if (error.code === "functions/already-exists") {
  // O perfil recusou o CPF/NIF porque pertence a outra conta. Como esse

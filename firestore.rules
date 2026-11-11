@@ -10,6 +10,11 @@ service cloud.firestore {
     function hasProfile() {
       return signedIn() && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid));
     }
+    // Conta já aprovada pelo admin (contas novas ficam "pendente_aprovacao" até ele decidir).
+    function approvedProfile() {
+      return hasProfile() &&
+        !(get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.get('status', '') in ['pendente_aprovacao', 'recusado']);
+    }
     function onlyProfileFields() {
       return request.resource.data.diff(resource.data).affectedKeys()
         .hasOnly(['nome', 'telefone', 'pix', 'profissao', 'cidade', 'estado', 'diasLembrete', 'fotoBase64']);
@@ -84,7 +89,7 @@ service cloud.firestore {
     }
     match /negociacoes/{id} {
       allow read: if signedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if hasProfile() && request.resource.data.userId == request.auth.uid &&
+      allow create: if approvedProfile() && request.resource.data.userId == request.auth.uid &&
         request.resource.data.parcelaId is string &&
         exists(/databases/$(database)/documents/parcelas/$(request.resource.data.parcelaId)) &&
         get(/databases/$(database)/documents/parcelas/$(request.resource.data.parcelaId)).data.userId == request.auth.uid &&
@@ -100,7 +105,7 @@ service cloud.firestore {
       );
       allow create, delete: if isAdmin();
     }
-    match /atividadesQuitacao/{id} { allow read: if hasProfile() || isAdmin(); allow write: if isAdmin(); }
+    match /atividadesQuitacao/{id} { allow read: if approvedProfile() || isAdmin(); allow write: if isAdmin(); }
     // Modo de emergência (11/11/2026): o cadastro precisa de o ler antes de haver sessão; só o admin escreve
     // (pela regra administrativa genérica abaixo). A fonte de verdade do bloqueio são as funções do servidor.
     match /configuracoes/seguranca { allow read: if true; }

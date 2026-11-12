@@ -2246,6 +2246,10 @@ async function montarListaVencimentos(lista,titulo){
    " de antecedência" +
    "<br>" +
 
+   acompanhamentoPagamento.cardHTML(parcela.parcelaId,parcela,emp) +
+   (emp.telefoneCliente
+    ? "<a data-contato-parcela=\"" + parcela.parcelaId + "\" href=\"#\" style=\"display:inline-block;margin-top:8px;margin-right:5px;background:#25D366;color:white;padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px;\">💬 WhatsApp · mensagem pronta</a>"
+    : "<small>Telefone não informado para WhatsApp.</small><br>") +
    "<button onclick=\"emitirFatura('" + parcela.parcelaId + "')\" style=\"" +
    "margin-top:6px;background:#2563eb;color:white;\">" +
    "🧾 Emitir Fatura" +
@@ -2874,7 +2878,7 @@ Number(
  ? "🤝 Acordo sem multa e juros ativo<br>"
  : "") +
 (telefoneWhats
- ? "<a data-contato-parcela=\"" + atraso.parcelaId + "\" href=\"https://wa.me/" + telefoneWhats + "\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"display:inline-block;margin-top:8px;margin-right:5px;background:#25D366;color:white;padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px;\">💬 WhatsApp</a>"
+ ? "<a data-contato-parcela=\"" + atraso.parcelaId + "\" href=\"https://wa.me/" + telefoneWhats + "\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"display:inline-block;margin-top:8px;margin-right:5px;background:#25D366;color:white;padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px;\">💬 WhatsApp · mensagem pronta</a>"
  : "") +
 "<button onclick=\"emitirFatura('" + atraso.parcelaId + "')\" style=\"margin-top:8px;background:#2563eb;color:white;\">🧾 Emitir Fatura</button> " +
 (!atraso.acordoSemEncargos
@@ -4977,64 +4981,8 @@ console.log("Erro Telegram:", erro);
   // ================================================
 // 🏠 ABA: DASHBOARD — Cobrar cliente pelo WhatsApp
 // ================================================
-window.cobrarCliente = async (parcelaId)=>{
+window.cobrarCliente = (parcelaId)=>acompanhamentoPagamento.openContact(parcelaId);
 
- const ref = doc(db,"parcelas",parcelaId);
- const snap = await getDoc(ref);
-
- if(!snap.exists()){
-   alert("Parcela não encontrada");
-   return;
- }
-
- const parcela = snap.data();
-
- const emprestimoRef = doc(db,"emprestimos",parcela.emprestimoId);
- const emprestimoSnap = await getDoc(emprestimoRef);
-
- if(!emprestimoSnap.exists()){
-   alert("Empréstimo não encontrado");
-   return;
- }
-
- const emprestimo = emprestimoSnap.data();
- if(!await acompanhamentoPagamento.canContact(parcelaId,parcela,emprestimo)) return;
-
-const mensagem =
-"👩‍💼 Evellyn - Assistente Virtual IsaCred\n\n"+
-
-"Olá "+(emprestimo.nomeCliente || "Cliente")+".\n\n"+
-
-"⚠️ Identificamos uma parcela em atraso.\n\n"+
-
-"📄 Parcela: "+parcela.numero+"\n"+
-"💰 Valor: R$ "+Number(parcela.valor).toFixed(2)+"\n"+
-"➕ Multa: R$ "+Number(parcela.multa || 0).toFixed(2)+"\n"+
-"➕ Juros: R$ "+Number(parcela.juros || 0).toFixed(2)+"\n\n"+
-
-"📌 Total atualizado: R$ "+Number(parcela.restante || parcela.valor).toFixed(2)+"\n\n"+
-
-"💳 Chave Pix para pagamento:\n"+
-"51998920455\n\n"+
-
-"📄 Após o pagamento envie o comprovante para confirmação.\n\n"+
-
-"📱 Acompanhe seu empréstimo:\n"+
-"https://overlookalpha.github.io/vivacred/\n\n"+
-
-"Obrigado por utilizar a IsaCred.";
-
- const telefone = emprestimo.telefoneCliente || "";
-
-const link =
-"https://wa.me/" +
-telefone.replace(/\D/g,"") +
-"?text=" +
-encodeURIComponent(mensagem);
-
-window.open(link,"_blank");
-
-}
  // ================================================
 // 📲 NOTIFICAÇÕES MANUAIS DE WHATSAPP (pedido / aprovação / parcela paga)
 // ================================================

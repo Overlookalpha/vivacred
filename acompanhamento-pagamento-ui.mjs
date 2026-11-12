@@ -1,3 +1,4 @@
+import {prepararWhatsAppParcela} from './mensagem-cobranca-whatsapp.mjs';
 import {noticeKey,noticeState,projection,saveNotice,displayDate} from './acompanhamento-pagamento.mjs';
 import {dateKey} from './vencimentos.mjs';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -41,6 +42,19 @@ export function createPaymentFollowup(api){
    }
    return true;
   }catch{alert('Não foi possível conferir os avisos atualizados. Nenhum contato de cobrança foi aberto.');return false;}
+ }
+ async function openContact(id){
+  // Open during the click so mobile browsers do not block the async navigation.
+  const popup=window.open('about:blank','_blank');
+  if(!popup){alert('Permita abrir o WhatsApp nas configurações de pop-ups do navegador.');return false;}
+  popup.opener=null;
+  try{
+   if(!await canContact(id)){popup.close();return false;}
+   const {parcel,loan}=await load(id);
+   const prepared=prepararWhatsAppParcela(parcel,loan,api.now?.()||new Date());
+   popup.location.replace(prepared.url);
+   return true;
+  }catch(e){popup.close();alert(e.message||'Não foi possível preparar a mensagem. Nenhuma mensagem foi enviada.');return false;}
  }
  function node(tag,text,parent){const e=document.createElement(tag);if(text!=null)e.textContent=text;if(parent)parent.append(e);return e;}
  function field(parent,label,type){const wrap=node('label',label,parent);wrap.style.cssText='display:block;margin:12px 0';const e=node(type==='textarea'?'textarea':'input',null,wrap);if(type!=='textarea')e.type=type;e.style.cssText='display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:10px;border:1px solid #cbd5e1;border-radius:8px';return e;}
@@ -95,8 +109,8 @@ export function createPaymentFollowup(api){
  document.addEventListener('click',event=>{
   const target=event.target.closest?.('[data-estimar-parcela],[data-promessa-parcela],[data-contato-parcela]');if(!target)return;
   event.preventDefault();
-  if(target.dataset.contatoParcela){event.stopImmediatePropagation();const id=target.dataset.contatoParcela;void canContact(id).then(ok=>{if(ok)window.open(target.href,'_blank','noopener,noreferrer');});}
+  if(target.dataset.contatoParcela){event.stopImmediatePropagation();const id=target.dataset.contatoParcela;void openContact(id);}
   else void open(target.dataset.estimarParcela||target.dataset.promessaParcela,target.dataset.estimarParcela?'estimate':'promise');
  },true);
- return {refresh,cardHTML,canContact,open};
+ return {refresh,cardHTML,canContact,openContact,open};
 }

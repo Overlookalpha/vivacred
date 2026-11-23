@@ -1,5 +1,6 @@
-// Demonstrativo administrativo: não grava dados nem altera decisões de crédito.
-import { calcularNivel } from "./perfil-credito.mjs";
+// Resumo administrativo da regra aplicada pelo servidor; não grava dados.
+import { limiteEfetivo } from "./perfil-credito.mjs";
+import { limitesRecuperacao } from "./functions/lib/recuperacaoCredito.mjs";
 const dados = item => typeof item?.data === "function" ? item.data() : item;
 const teste = item => item?.teste === true || item?.tipoRegistro === "teste";
 const numero = valor => Number.isFinite(Number(valor)) ? Math.max(0, Number(valor)) : 0;
@@ -32,7 +33,8 @@ export function avaliarCliente(cliente, emprestimos, parcelas, agora = new Date(
       if (!pagamento) { semDataReal++; continue; }
       const atraso = Math.max(0, Math.round((dia(pagamento) - dia(vencimento)) / 86400000));
       maiorAtraso = Math.max(maiorAtraso, atraso);
-      if (atraso > 3) atrasos++; else pontuais++;
+      if (atraso > 3) atrasos++;
+      if (atraso === 0) pontuais++;
     } else if (parcela.status !== "perdido" && valor > pago) {
       const atraso = Math.max(0, Math.round((dia(agora) - dia(vencimento)) / 86400000));
       if (atraso > 0) {
@@ -51,36 +53,23 @@ export function avaliarCliente(cliente, emprestimos, parcelas, agora = new Date(
   ).reduce((total, item) => total + numero(item.valor), 0);
   const limiteInformado = cliente?.score !== undefined && cliente?.score !== null &&
     cliente?.score !== "" && Number.isFinite(Number(cliente.score));
-  const limiteAtual = limiteInformado ? calcularNivel(Number(cliente.score), cliente.pais || "BR").max : null;
-  const evidencias = pontuais + atrasos + atrasosAtuais;
-  let nota = null, fator = null;
-  const motivos = [];
-  if (perdas) {
-    nota = 0;
-    motivos.push(`${perdas} contrato(s) registrado(s) como perda. Revisar antes de nova liberação.`);
-  } else if (evidencias > 0) {
-    nota = maiorAtraso > 60 ? 10 : maiorAtraso > 30 ? 28 : maiorAtraso > 10 ? 48 :
-      maiorAtraso > 3 ? 68 : maiorAtraso > 0 ? 82 : 95;
-    const penalidadeReincidencia = Math.min(15, Math.max(0, atrasos - 1) * 5);
-    const penalidadeSemQuitacao = concluidas === 0 && maiorAtraso > 3 ? 10 : 0;
-    // Recuperação gradual, sem apagar o atraso: exige três pagamentos comprovados.
-    const bonus = Math.min(5, Math.floor(pontuais / 3));
-    nota = Math.max(0, Math.min(100, nota - penalidadeReincidencia - penalidadeSemQuitacao + bonus));
-    motivos.push(maiorAtraso ? `Maior atraso observado: ${maiorAtraso} dia(s).` : "Pagamentos comprovados sem atraso.");
-    if (penalidadeReincidencia) motivos.push(`Reincidência em ${atrasos} parcelas com atraso acima de 3 dias: −${penalidadeReincidencia} pontos.`);
-    if (penalidadeSemQuitacao) motivos.push("Ainda não concluiu nenhuma parcela: −10 pontos.");
-    if (bonus) motivos.push(`Pagamentos pontuais comprovados: +${bonus} ponto(s).`);
-  }
-  if (nota !== null) fator = nota >= 75 ? 1 : nota >= 60 ? 0.75 : nota >= 40 ? 0.5 : nota >= 20 ? 0.25 : 0;
-  const sugerido = fator !== null && limiteAtual !== null ? Math.floor(limiteAtual * fator * 100) / 100 : null;
-  if (atrasosAtuais) motivos.push(`${atrasosAtuais} parcela(s) atualmente vencida(s); avaliar regularização antes de nova liberação.`);
-  if (semDataReal) motivos.push(`${semDataReal} pagamento(s) sem data real: não usados para avaliar pontualidade.`);
-  if (semVencimento) motivos.push(`${semVencimento} parcela(s) sem vencimento válido: análise incompleta.`);
-  if (nota === null) motivos.push("Histórico insuficiente para atribuir nota ou sugerir limite.");
-  if (!limiteInformado) motivos.push("Score do perfil indisponível; não foi possível obter o limite exibido na área do usuário.");
+  const limiteAtual = limiteInformado ? limiteEfetivo(cliente) : null;
+  const recuperacao = limitesRecuperacao(cliente || {}, limiteAtual || 0, contratos, itens, agora);
+  const {nota, fator} = recuperacao;
+  const sugerido = limiteAtual === null || nota === null ? null : recuperacao.limiteAvaliado;
+  const motivos = [
+    `Maior atraso observado: ${recuperacao.maiorAtraso} dia(s); soma por parcela: ${recuperacao.diasAcumulados} dia(s).`,
+    `Recuperação: ${recuperacao.pontuaisRecuperacao} pagamento(s) de +3 e ${recuperacao.antecipadasRecuperacao} de +5 após o último atraso.`
+  ];
+  if(recuperacao.atrasosAtuais) motivos.push('Existem parcelas vencidas: novas solicitações suspensas até regularização.');
+  if(recuperacao.perda) motivos.push('Perda registrada: revisão obrigatória pelo administrador.');
+  if(recuperacao.manual) motivos.push('Limite manual preservado; não sofre redução automática pela nota.');
+  if(recuperacao.semDataReal) motivos.push(`${recuperacao.semDataReal} pagamento(s) sem data real válida: pontualidade não comprovada.`);
+  if(recuperacao.semVencimento) motivos.push(`${recuperacao.semVencimento} parcela(s) sem vencimento válido.`);
+  if(nota === null) motivos.push('Histórico insuficiente para atribuir nota.');
   const faixa = nota === null ? "Histórico insuficiente" : nota >= 90 ? "Bom histórico" : nota >= 75 ? "Acompanhar" :
     nota >= 60 ? "Atenção" : nota >= 40 ? "Atenção elevada" : nota >= 20 ? "Risco elevado" : "Revisão prioritária";
-  return { nota, fator, sugerido, limiteAtual, faixa, motivos, concluidas, pontuais, atrasos,
+  return { nota, fator, sugerido, limiteAtual, disponivel:recuperacao.disponivel, recuperacao, faixa, motivos, concluidas, pontuais, atrasos,
     atrasosAtuais, maiorAtraso, maiorAtrasoAtual, semDataReal, semVencimento, totalContratado,
     totalPago, saldoVencido, perdas, pais: cliente?.pais || "BR" };
 }
@@ -130,20 +119,21 @@ export function avaliacaoHTML(avaliacao) {
     <strong>Avaliação interna · ${a.faixa}</strong>
     <div class="avaliacao-metricas"><span>Nota interna <b>${a.nota === null ? "Sem nota" : a.nota + "/100"}</b></span>
     <span>Limite na área do usuário <b>${moeda(a.limiteAtual)}</b></span>
-    <span>Sugestão para análise <b>${a.fator === 0 ? "Revisar antes de liberar" : moeda(a.sugerido)}</b></span></div>
-    <small>Demonstrativo exclusivo do admin. Não altera limite, score, aprovação ou bloqueio.</small>
+    <span>Limite após avaliação <b>${a.fator === 0 ? "Revisar antes de liberar" : moeda(a.sugerido)}</b></span></div>
+    <small>Nota de pagamentos aplicada às novas solicitações pelo servidor. Limites manuais preservados. Não altera contratos existentes.</small>
     <details><summary>Ver motivos, histórico e critérios</summary>
       <p>Contratado: ${moeda(a.totalContratado)} · Pago em parcelas (inclui encargos recebidos): ${moeda(a.totalPago)}.<br>
-      Parcelas concluídas: ${a.concluidas} · Pontuais comprovadas (até 3 dias): ${a.pontuais}.<br>
+      Parcelas concluídas: ${a.concluidas} · Pontuais comprovadas (sem atraso): ${a.pontuais}.<br>
       Maior atraso atual: ${a.maiorAtrasoAtual} dia(s) · Saldo original vencido: ${moeda(a.saldoVencido)}.</p>
       <ul>${a.motivos.map(motivo => `<li>${escapar(motivo)}</li>`).join("")}</ul>
-      <p>Critérios v1: sem atraso 95 pontos; 1–3 dias 82; 4–10 dias 68; 11–30 dias 48;
-      31–60 dias 28; mais de 60 dias 10; perda registrada 0. Cada reincidência acima de 3 dias
-      desconta 5 pontos (até 15). Sem parcela concluída e atraso acima de 3 dias: −10.
-      A cada 3 parcelas pontuais comprovadas: +1 (até 5). Perdas mantêm nota 0.
-      Nota 75–100: sugerir 100% do limite atual; 60–74: 75%; 40–59: 50%; 20–39: 25%;
-      0–19: revisar antes de liberar. Não sugere aumento. Usa todo o histórico real disponível;
-      sem evidência, não atribui nota. Atualizado ao carregar os dados do painel.</p>
+      <p>Nota-base: sem atraso 95; 1–3 dias 82; 4–10 dias 68; 11–30 dias 48;
+      31–60 dias 28; mais de 60 dias 10; perda 0. Reincidência acima de 3 dias: −5 (até −15).
+      Sem parcela concluída e atraso acima de 3 dias: −10.
+      Depois do último atraso regularizado: pagamento em dia ou antecipado menos de 5 dias +3;
+      antecipado pelo menos 5 dias +5. Máximo 100. Sem bônus em pagamento atrasado.
+      Nota 75–100: 100% do limite normal; 60–74: 75%; 40–59: 50%; 20–39: 25%; abaixo de 20: revisão.
+      Parcela vencida suspende novas solicitações; promessa não muda vencimento nem nota.
+      Disponível agora: ${moeda(a.disponivel)}. Pagamentos sem data real não comprovam pontualidade.</p>
     </details>
   </aside>`;
 }

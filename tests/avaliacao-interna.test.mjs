@@ -7,8 +7,8 @@ import { calcularNivel } from '../perfil-credito.mjs';
 const hoje = new Date(2026, 9, 19, 12);
 const cliente = { score: 100, limiteBase: 5000, pais: 'BR' };
 const parcela = (atraso, extra = {}) => ({ valor: 1000, pago: 1000,
-  vencimento: new Date(2026, 7, 1),
-  dataPagamentoReal: new Date(2026, 7, 1 + atraso), ...extra });
+  vencimento: new Date(2026, 7, 1, 12),
+  dataPagamentoReal: new Date(2026, 7, 1 + atraso, 12), ...extra });
 const doc = (id, valor) => ({ id, data: () => valor });
 
 test('faixas propostas mantêm ou reduzem somente a sugestão', () => {
@@ -32,7 +32,7 @@ test('sem histórico e pagamentos sem data real não produzem nota otimista', ()
 
 test('atraso em aberto e pagamento parcial entram no demonstrativo', () => {
   const resultado = avaliarCliente(cliente, [{status:'ativo',valor:3000}], [
-    parcela(0, { pago: 200, vencimento: new Date(2026,8,19) })], hoje);
+    parcela(0, { pago: 200, vencimento: new Date(2026,8,19,12) })], hoje);
   assert.equal(resultado.maiorAtrasoAtual, 30);
   assert.equal(resultado.concluidas, 0);
   assert.equal(resultado.nota, 38);
@@ -46,7 +46,8 @@ test('reincidência pesa e recuperação exige pagamentos comprovados', () => {
   const recorrente = avaliarCliente(cliente, [], Array.from({length:10}, () => parcela(10)), hoje);
   assert.equal(recorrente.nota, 53);
   const recuperado = avaliarCliente(cliente, [], [parcela(30), ...Array.from({length:9}, () => parcela(0))], hoje);
-  assert.equal(recuperado.nota, 51);
+  // Os nove pagamentos ocorreram antes do atraso, portanto não recuperam a nota.
+  assert.equal(recuperado.nota, 48);
   assert.equal(recuperado.sugerido, 2500);
 });
 

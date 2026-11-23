@@ -750,7 +750,8 @@
 
     <div class="card card-acao-principal">
       <div style="font-weight:700;">Seu limite disponível</div>
-      <div class="limit skeleton" id="limiteDisponivel">Até R$ 100,00</div>
+      <div class="limit skeleton" id="limiteDisponivel">A consultar…</div>
+      <section id="resumoLimitePagamento" aria-label="Seu limite e pagamentos" aria-live="polite" style="line-height:1.65;overflow-wrap:anywhere"><p>A consultar seu histórico de pagamentos…</p></section>
       <p class="card-subtitulo">Simule as opções antes de solicitar. A análise continua seguindo as regras atuais do seu perfil.</p>
       <button id="btnSolicitar" class="btn-credit">Solicitar Crédito</button>
       <button id="btnIrSimulador" class="btn-secondary" type="button">🧮 Simular Crédito</button>
@@ -793,7 +794,7 @@
     <div class="hero-text">
       Quanto melhor seu histórico, maior seu limite.
     </div>
-    <p class="card-subtitulo">Para evoluir: mantenha os pagamentos em dia e acompanhe suas parcelas por aqui.</p>
+    <p class="card-subtitulo">Seu nível define o limite normal. No cartão de limite, veja como seus pagamentos afetam o valor disponível.</p>
 
     <div class="trilha-niveis" id="trilhaNiveis">
       <div class="trilha-etapa" data-nivel="Essencial">
@@ -1156,6 +1157,7 @@ color:var(--text);
 <script type="module">
 import {linhaExtrato} from "./extrato-detalhes.mjs";
 
+import { mostrarResumoLimite } from "./resumo-limite.mjs";
 import { calcularNivel, limiteEfetivo, REGRAS_CREDITO } from "./perfil-credito.mjs";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
 import {
@@ -1363,6 +1365,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 const functions = getFunctions(app, "europe-west1");
+const obterPerfilCreditoNoServidor = httpsCallable(functions, "obterPerfilCredito");
 const recalcularParcelaVencida = httpsCallable(functions, "recalcularParcelaVencida");
 const solicitarCreditoNoServidor = httpsCallable(functions, "solicitarCredito");
 const solicitarSaqueNoServidor = httpsCallable(functions, "solicitarSaque");
@@ -3002,7 +3005,14 @@ if (scoreValor) {
 }
 
 nivelNomeGlobal = dadosNivel.nome;
-limiteEfetivoGlobal = limiteEfetivo(data, paisUsuario);
+let perfilPagamentos = null;
+try { perfilPagamentos = (await obterPerfilCreditoNoServidor({})).data; }
+catch { /* Sem resposta não se anuncia um limite não verificado. */ }
+if (!auth.currentUser || auth.currentUser.uid !== user.uid) return;
+limiteEfetivoGlobal = perfilPagamentos?.disponivel ?? 0;
+mostrarResumoLimite(document.getElementById("resumoLimitePagamento"), perfilPagamentos, paisUsuario);
+const solicitarBotao = document.getElementById("btnSolicitar");
+if(solicitarBotao) solicitarBotao.disabled = !perfilPagamentos || perfilPagamentos.bloqueado;
 const regrasNivel = obterRegrasPorNivel(nivelNomeGlobal);
 
 const selectParcelas = document.getElementById("parcelasSimuladas");
@@ -3130,8 +3140,8 @@ if (faltamPontosTexto) {
 
 if (limiteNivelTexto) {
   limiteNivelTexto.innerText =
-    "Seu perfil permite até " +
-    limiteMaximoNivel.toLocaleString("pt-BR", {
+    "Seu limite normal é " +
+    limiteEfetivo(data, paisUsuario).toLocaleString("pt-BR", {
       style: "currency",
       currency: paisUsuario === "PT" ? "EUR" : "BRL"
     });

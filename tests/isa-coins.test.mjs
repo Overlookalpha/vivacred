@@ -10,7 +10,7 @@ test('função real solicitarSaque: autenticação, reserva atômica e pedido du
  const localRequire=createRequire(new URL('../functions/index.js',import.meta.url));
  const rows=new Map([['usuarios/u1',{isaCoins:10020,pais:'BR',pix:'TESTE-SINTETICO'}]]);
  let serial=Promise.resolve(),sequence=0;
- const db={collection(name){return {doc(id){return {key:name+'/'+(id??'new'+(++sequence))};},where(){return {where(){return {limit(){return {pending:true};}};}};}};},
+ const db={collection(name){return {doc(id){const key=name+'/'+(id??'new'+(++sequence));return {key, get:async()=>({exists:rows.has(key),data:()=>rows.get(key)})};},where(){return {where(){return {limit(){return {pending:true};}};}};}};},
  runTransaction(fn){const result=serial.then(async()=>{const changes=[];const tx={
   get:async ref=>ref.pending?{empty:![...rows.entries()].some(([k,v])=>k.startsWith('saques/')&&v.status==='pendente')}:{exists:rows.has(ref.key),data:()=>rows.get(ref.key)},
   update:(ref,value)=>changes.push([ref.key,{...rows.get(ref.key),...value}]),create:(ref,value)=>changes.push([ref.key,value])};

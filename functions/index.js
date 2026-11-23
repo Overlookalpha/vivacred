@@ -7,6 +7,7 @@ const { initializeApp, getApps } = require("firebase-admin/app");
 const { calcularCobrancaParcela } = require("./lib/calculoParcela");
 const { limiteEfetivo, REGRAS_CREDITO } = require("./lib/limiteCredito");
 const { reservar: reservarIsaCoins } = require("./lib/isaCoins");
+const { perfilCredito } = require("./lib/perfilCredito");
 
 if (!getApps().length) initializeApp();
 
@@ -146,6 +147,20 @@ exports.criarPerfilUsuario = onCall(
   }
 );
 
+exports.obterPerfilCredito = onCall(
+  { region: "europe-west1", timeoutSeconds: 30, memory: "256MiB", maxInstances: 10 },
+  async request => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "É necessário iniciar sessão.");
+    const db=getFirestore();
+    return db.runTransaction(async tx=>{
+      const snap=await tx.get(db.collection('usuarios').doc(request.auth.uid));
+      if(!snap.exists)throw new HttpsError('failed-precondition','Cadastro não encontrado.');
+      const usuario=snap.data(),pais=usuario.pais==='PT'?'PT':'BR';
+      return perfilCredito(db,tx,request.auth.uid,usuario,pais,nivelPorScore(usuario.score));
+    });
+  }
+);
+
 exports.solicitarCredito = onCall(
   { region: "europe-west1", timeoutSeconds: 30, memory: "256MiB" },
   async (request) => {
@@ -178,7 +193,9 @@ exports.solicitarCredito = onCall(
       const nivelCalculado = nivelPorScore(usuario.score);
       const regra = regrasDeCredito(nivelCalculado);
       const taxa = regra.juros[parcelas];
-      const limite = limiteEfetivo(usuario, pais, nivelCalculado);
+      const perfil = await perfilCredito(db, tx, request.auth.uid, usuario, pais, nivelCalculado);
+      if (perfil.bloqueado) throw new HttpsError("failed-precondition", perfil.perda ? "Seu perfil precisa de revisão pelo administrador antes de uma nova solicitação." : "Regularize as parcelas vencidas ou aguarde a revisão do seu limite para solicitar novamente.");
+      const limite = perfil.disponivel;
       if (valor < minimo || valor > limite || !taxa || parcelas > regra.maxParcelas) {
         throw new HttpsError("invalid-argument", "Valor ou parcelamento não permitido para este perfil.");
       }

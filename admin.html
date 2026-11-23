@@ -4783,7 +4783,8 @@ bonusISC += bonusAntecipacao;
  }
 
  const camposUsuario = {
-   score: scoreAtual + 5,
+   // A nota de pagamentos é recuperada pelo histórico; não aumenta o limite normal.
+   score: scoreAtual,
 
    isaCoins: (userData.isaCoins || 0) + bonusISC,
 

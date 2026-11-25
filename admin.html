@@ -96,6 +96,8 @@ flex:1;
 #cardCentralVencimentos h3{margin:0 0 4px}
 #cardCentralVencimentos [id^="vencimentos"]{margin:0;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--bg);min-height:54px}
 #cardCentralVencimentos [id^="vencimentos"][hidden]{display:none}
+#vencimentos5Dias{border-left:4px solid #818cf8!important}
+#vencimentos4Dias{border-left:4px solid #38bdf8!important}
 #vencimentos3Dias{border-left:4px solid #facc15!important}
 #vencimentos2Dias{border-left:4px solid #fb923c!important}
 #vencimentos1Dia{border-left:4px solid #60a5fa!important}
@@ -181,6 +183,10 @@ Nenhum vencimento encontrado.
   <span><i></i> Hoje: acompanhar</span>
   <span class="proximo"><i></i> Próximos dias: prevenir</span>
 </div>
+
+<div id="vencimentos5Dias"></div>
+
+<div id="vencimentos4Dias"></div>
 
 <div id="vencimentos3Dias"></div>
 
@@ -1768,6 +1774,8 @@ let dinheiroRuaPT = 0;
   ])
  );
 let proximaParcela = null;
+const vencemEm5Dias = [];
+const vencemEm4Dias = [];
 const vencemEm3Dias = [];
 const vencemEm2Dias = [];
 const vencemAmanha = [];
@@ -1862,6 +1870,22 @@ const diasRestantes = Math.round(
     (vencimento.getTime() - hoje.getTime()) / 86400000
 );
 const emAberto = parcelaEmAberto(dados);
+
+if (emAberto && diasRestantes === 5) {
+    vencemEm5Dias.push({
+        ...dados,
+        parcelaId: docSnap.id,
+        emprestimoId: dados.emprestimoId
+    });
+}
+
+if (emAberto && diasRestantes === 4) {
+    vencemEm4Dias.push({
+        ...dados,
+        parcelaId: docSnap.id,
+        emprestimoId: dados.emprestimoId
+    });
+}
 
 if (emAberto && diasRestantes === 3) {
     vencemEm3Dias.push({
@@ -2189,7 +2213,7 @@ document.getElementById("lucroLiquido").innerHTML =
 
 // ================================================
 // 🏠 ABA: DASHBOARD — Renderização das listas de vencimento
-// (vence em 3/2/1 dia, hoje) — usada pela Central de Vencimentos
+// (vence em 5/4/3/2/1 dia, hoje) — usada pela Central de Vencimentos
 // ================================================
 async function montarListaVencimentos(lista,titulo){
 
@@ -2801,6 +2825,14 @@ async function atualizarGrupoVencimentos(id, lista, titulo){
   grupo.innerHTML = await montarListaVencimentos(lista,titulo);
  }
 }
+
+await atualizarGrupoVencimentos(
+ "vencimentos5Dias", vencemEm5Dias, "🟣 Vence em 5 dias:"
+);
+
+await atualizarGrupoVencimentos(
+ "vencimentos4Dias", vencemEm4Dias, "🔵 Vence em 4 dias:"
+);
 
 await atualizarGrupoVencimentos(
  "vencimentos3Dias", vencemEm3Dias, "🟡 Vence em 3 dias:"

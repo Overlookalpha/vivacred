@@ -6,6 +6,15 @@ const now=new Date('2026-11-12T12:00:00Z');
 const loan={nomeCliente:'Maria',telefoneCliente:'+55 (51) 99999-1234',pais:'BR',status:'ativo'};
 const parcel={valor:350,pago:0,status:'pendente',numero:2,vencimento:new Date('2026-11-15T12:00:00Z')};
 const text=(p={},l={},n=now)=>prepararWhatsAppParcela({...parcel,...p},{...loan,...l},n).mensagem.replaceAll('\u00a0',' ');
+test('mensagens prontas de cinco a um dia, hoje e atraso',()=>{
+ for(const dias of [5,4,3,2,1,0,-1]){
+  const vencimento=new Date(now.getTime()+dias*86400000);
+  const result=prepararWhatsAppParcela({...parcel,vencimento},loan,now);
+  assert.equal(result.diasRestantes,dias);
+  assert.equal(new URL(result.url).searchParams.get('text'),result.mensagem);
+  assert.match(result.mensagem,dias>1?new RegExp(`vence em ${dias} dias`):dias===1?/vence amanhã/:dias===0?/vence hoje/:/em aberto há 1 dia/);
+ }
+});
 test('futuro e hoje usam mensagens próprias e URL codificada',()=>{
  assert.match(text(),/vence em 3 dias, em 15\/11\/2026/);assert.doesNotMatch(text(),/atraso|Multa/);
  const today=text({vencimento:now});assert.match(today,/vence hoje, 12\/11\/2026/);assert.match(today,/R\$ 350,00/);

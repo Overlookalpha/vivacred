@@ -13,6 +13,13 @@ test('prazo vencido libera contato sem enviar mensagem',async()=>{const f=fixtur
 test('falha na conferência dos avisos não abre cobrança',async()=>{const f=fixture(null,true);assert.equal(await f.panel.canContact('p'),false);assert.ok(f.alerts[0].includes('Nenhum contato'));});
 test('observação aparece como texto escapado no dashboard',async()=>{const f=fixture({status:'ativa',data:key,pais:'BR',scope:'cliente',observacao:'<img src=x onerror=alert(1)>'});await f.panel.refresh();const html=f.panel.cardHTML('p',{}, {userId:'u'});assert.ok(html.includes('&lt;img'));assert.ok(!html.includes('<img'));assert.ok(html.includes('data-estimar-parcela="p"'));});
 import {calcularCobrancaParcela} from '../cobranca-parcela.mjs';
+test('promessa cumprida preserva total combinado e não aparece como vencida',async()=>{
+ globalThis.document={addEventListener(){}};
+ const api={db:{},collection:(_,c)=>c,calculate:calcularCobrancaParcela,now:()=>new Date('2026-11-26T12:00:00Z'),getDocsFromServer:async()=>({docs:[{id:'parcela-p',data:()=>({status:'ativa',data:'2026-11-25',pais:'BR',scope:'parcela',totalPrevisto:388.5})}]})};
+ const panel=createPaymentFollowup(api);await panel.refresh();
+ const html=panel.cardHTML('p',{valor:350,pago:350,status:'pago',dataPagamentoReal:'2026-11-25'},{pais:'BR'}).replaceAll('\u00a0',' ');
+ assert.match(html,/Promessa cumprida no prazo/);assert.match(html,/Data combinada: 25\/11\/2026/);assert.match(html,/Total previsto no combinado: R\$ 388,50/);assert.doesNotMatch(html,/Prazo prometido vencido/);
+});
 test('cartão do aviso mostra juros futuros, adicionais, multa e total sem alterar a parcela',async()=>{
  const f=fixture({status:'ativa',data:'2026-11-09',pais:'BR',scope:'parcela'});
  const parcel={valor:350,pago:0,status:'pendente',vencimento:new Date('2026-11-03T12:00:00Z'),emprestimoId:'e',userId:'u'};

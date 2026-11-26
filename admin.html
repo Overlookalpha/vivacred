@@ -2992,7 +2992,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const historicoCobrancas = criarHistoricoCobrancas({db,auth,doc,collection,query,where,getDocsFromServer,runTransaction,serverTimestamp});
-const acompanhamentoPagamento = createPaymentFollowup({recordContact:historicoCobrancas.registrar,db,auth,doc,collection,query,where,getDocFromServer,getDocsFromServer,runTransaction,serverTimestamp,calculate:calcularCobrancaParcela,refresh:()=>calcularFinanceiro()});
+const acompanhamentoPagamento = createPaymentFollowup({recordContact:historicoCobrancas.registrar,db,auth,doc,collection,query,where,getDocFromServer,getDocsFromServer,runTransaction,serverTimestamp,calculate:calcularCobrancaParcela,refresh:async()=>{await calcularFinanceiro();const modal=document.getElementById("modalParcelas");if(modal?.style.display==="flex"&&modal.dataset.emprestimoId)await window.abrirParcelas(modal.dataset.emprestimoId);}});
 const editorVencimentos = createDateEditor({db,auth,doc,collection,query,where,getDocFromServer,getDocsFromServer,runTransaction,serverTimestamp,refresh:id=>window.abrirParcelas(id)});
 window.editarVencimentos = (emprestimoId,parcelaId=null)=>editorVencimentos.open(emprestimoId,parcelaId);
 
@@ -4343,6 +4343,8 @@ window.abrirParcelas = async (emprestimoId)=>{
 const moeda = dados.pais === "PT" ? "€" : "R$";
 
  document.getElementById("modalParcelas").style.display = "flex";
+ document.getElementById("modalParcelas").dataset.emprestimoId = emprestimoId;
+ await acompanhamentoPagamento.refresh();
 
  const painel = document.getElementById("conteudoParcelas");
 
@@ -4428,11 +4430,9 @@ parcela.restante ?? (parcela.valor - parcela.pago)
 "<br>"+
 botoes;
 
-const historicoContato = document.createElement("button");
-historicoContato.type = "button";
-historicoContato.textContent = "📋 Histórico de cobranças";
-historicoContato.dataset.historicoCobranca = parcela.id;
-div.appendChild(historicoContato);
+const acompanhamentoParcela = document.createElement("div");
+acompanhamentoParcela.innerHTML = acompanhamentoPagamento.cardHTML(parcela.id,parcela,dados);
+div.appendChild(acompanhamentoParcela);
 
 if(podeEditarVencimento(parcela,chaveDataVencimento(new Date(),dados.pais),dados.pais)){
  const editarData = document.createElement("button");

@@ -1,5 +1,5 @@
 import {prepararWhatsAppParcela} from './mensagem-cobranca-whatsapp.mjs';
-import {noticeKey,noticeState,projection,saveNotice,displayDate} from './acompanhamento-pagamento.mjs';
+import {noticeKey,noticeState,projection,saveNotice,displayDate,resultadoPromessa} from './acompanhamento-pagamento.mjs';
 import {dateKey} from './vencimentos.mjs';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function createPaymentFollowup(api){
@@ -12,16 +12,21 @@ export function createPaymentFollowup(api){
   const found=keys(id,loan).map(k=>notices.get(k)).filter(n=>n?.status==='ativa');
   const labels=found.map(n=>{const state=noticeState(n,api.now?.()||new Date());
    let forecast='';
-   if(!state.invalid&&!state.expired){
+   let totalLabel=Number.isFinite(n.totalPrevisto)?money(n.totalPrevisto,loan):null;
+   const resultado=resultadoPromessa(n,parcel,loan,api.now?.()||new Date());
+   if(!state.invalid&&!state.expired&&resultado.tipo==='aguardando'){
     try{
      const reference=api.now?.()||new Date();
      const estimate=projection(parcel,loan,n.data,api.calculate,reference);
      const current=api.calculate(parcel,reference);
+     if(!totalLabel)totalLabel=money(estimate.totalAtualizado,loan);
      const extra=Math.max(0,Number((estimate.juros-current.juros).toFixed(2)));
      forecast=`<div style="margin-top:10px;line-height:1.7"><strong>Estimativa para ${esc(displayDate(n.data))}</strong><br>Juros totais até a data: <strong>${esc(money(estimate.juros,loan))}</strong><br>Juros adicionais de hoje até a data: ${esc(money(extra,loan))}<br>Multa: ${esc(money(estimate.multa,loan))}<br><strong>Total estimado para pagar: ${esc(money(estimate.totalAtualizado,loan))}</strong><br><small>Calculado com os dados atuais, sem novos pagamentos. O vencimento original permanece.</small></div>`;
     }catch{forecast='<p>Não foi possível calcular a estimativa desta parcela. Confira os dados antes de informar o valor ao cliente.</p>';}
    }
-   return `<div style="padding:10px;margin:8px 0;border-radius:8px;background:${state.active?'#fff7ed':'#fef2f2'};color:#7c2d12;border:1px solid #fed7aa"><strong>${esc(state.label)}</strong><br><small>${n.scope==='cliente'?'Aviso para as cobranças deste cliente':'Aviso desta parcela'}${n.observacao?' · '+esc(n.observacao):''}</small>${forecast}</div>`;}).join('');
+   const cor={aguardando:'#b45309',cumprida:'#15803d',fora:'#b45309',vencida:'#b91c1c',conferir:'#475569'}[resultado.tipo]||'#475569';
+   const icone={aguardando:'🗓️',cumprida:'✅',fora:'⚠️',vencida:'🚨',conferir:'🔎'}[resultado.tipo]||'ℹ️';
+   return `<section aria-label="Promessa de pagamento" style="padding:16px;margin:12px 0;border-radius:12px;background:var(--surface,#fff);color:var(--text,#111);border:2px solid ${cor};border-left:7px solid ${cor};line-height:1.6"><strong style="display:block;font-size:17px;color:${cor}">${icone} ${esc(resultado.titulo)}</strong><div style="margin:8px 0;font-size:18px"><b>Data combinada: ${esc(state.invalid?'Conferir':displayDate(n.data))}</b><br><b>${n.totalPrevisto!=null?'Total previsto no combinado':'Total previsto com os dados atuais'}: ${totalLabel?esc(totalLabel):'Não disponível neste aviso antigo'}</b></div><p style="margin:6px 0">${esc(resultado.detalhe)}</p><small>${esc(['cumprida','fora'].includes(resultado.tipo)?'Situação verificada pela data real do pagamento.':state.label)}<br>${n.scope==='cliente'?'Aviso antigo do cliente; situação acima refere-se somente a esta parcela.':'Aviso somente desta parcela.'}${n.observacao?'<br>Observação: '+esc(n.observacao):''}</small>${forecast?'<details style="margin-top:10px"><summary>Ver cálculo atualizado de juros e total</summary>'+forecast+'</details>':''}<small style="display:block;margin-top:8px">A promessa não altera o vencimento nem elimina juros e multa. O cumprimento usa a quitação e a data real do pagamento.</small></section>`;}).join('');
   return `<div data-acompanhamento-pagamento style="margin:10px 0">${loadError?'<p role="alert">Não foi possível consultar os avisos. Confira antes de cobrar.</p>':labels}<button type="button" data-estimar-parcela="${esc(id)}" style="background:#0369a1;color:white;margin:4px">📅 Estimar para outra data</button><button type="button" data-promessa-parcela="${esc(id)}" style="background:#b45309;color:white;margin:4px">🗓️ ${found.length?'Ver / editar promessa':'Registrar promessa de pagamento'}</button><button type="button" data-historico-cobranca="${esc(id)}" style="margin:4px">📋 Histórico de cobranças</button></div>`;
  }
  async function load(id){

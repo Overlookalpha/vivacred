@@ -52,6 +52,6 @@ export async function carregarHistoricoCliente(api,uid){
   try{const add=s=>s.docs.forEach(d=>found.set(d.id,{...d.data(),id:d.id}));add(await query(collection,'userId',uid));for(const l of data.contratos)add(await query(collection,'emprestimoId',l.id));return [...found.values()].filter(x=>(!x.userId||x.userId===uid)&&(!x.emprestimoId||data.contratos.some(l=>l.id===x.emprestimoId)));}
   catch{warnings.push('Não foi possível carregar '+collection+'. Tente atualizar o histórico.');return [];}
  };
- const [promessas,cobrancas]=await Promise.all([extra('promessasPagamento'),extra('historicoCobrancas')]);
- return {uid,user,...data,promessas,cobrancas,warnings,...resumoHistorico(user,data.contratos,data.parcelas,api.now?.()||new Date())};
+ const [promessas,cobrancas,pagamentos]=await Promise.all([extra('promessasPagamento'),extra('historicoCobrancas'),extra('historicoPagamentos')]);
+ return {uid,user,...data,promessas,cobrancas,pagamentos,warnings,...resumoHistorico(user,data.contratos,data.parcelas,api.now?.()||new Date())};
 }

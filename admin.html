@@ -556,6 +556,8 @@ import {createDateEditor} from './editar-vencimentos.mjs';
 import {iniciarPainelEmprestimos} from './painel-emprestimos-ui.mjs';
 import {criarHistoricoCobrancas} from './historico-cobrancas-ui.mjs';
 import {criarHistoricoCliente} from './historico-cliente-ui.mjs';
+import {valorPagamento,previaPagamento,salvarPagamentoConferido} from './conferencia-pagamento.mjs';
+import {conferirPagamento} from './conferencia-pagamento-ui.mjs';
 import {registrarPagamentoSaque} from './saque-pagamento.mjs';
 let indiceAvaliacoesInternas = { porId: new Map(), porEmail: new Map() };
 function botaoHistoricoCliente(nome,userId,emprestimoId){
@@ -2997,6 +2999,11 @@ async function enviarTelegram(texto){
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const pagamentosEmAndamento = new Set();
+const apiConferenciaPagamento = {db,auth,doc,runTransaction,serverTimestamp,aplicarFinanceiro:(tx,valor,loan,parcel)=>{
+ const dist=calcularDistribuicaoPagamento(valor,loan,parcel);
+ acumularFinanceiroNoLote(tx,loan.pais||parcel.pais||"BR",{impactoCaixa:dist.valorLiquido,repasseEvelyn:dist.repasseEvelyn,lucroLiquido:dist.lucroLiquido});
+}};
 const historicoCompletoCliente = criarHistoricoCliente({db,auth,doc,collection,query,where,getDocFromServer,getDocsFromServer});
 const historicoCobrancas = criarHistoricoCobrancas({db,auth,doc,collection,query,where,getDocsFromServer,runTransaction,serverTimestamp});
 const acompanhamentoPagamento = createPaymentFollowup({recordContact:historicoCobrancas.registrar,db,auth,doc,collection,query,where,getDocFromServer,getDocsFromServer,runTransaction,serverTimestamp,calculate:calcularCobrancaParcela,refresh:async()=>{await calcularFinanceiro();const modal=document.getElementById("modalParcelas");if(modal?.style.display==="flex"&&modal.dataset.emprestimoId)await window.abrirParcelas(modal.dataset.emprestimoId);}});
@@ -4639,81 +4646,38 @@ window.editarEmprestimo = async (id)=>{
  document.getElementById("modalParcelas").style.display = "none";
 }
   window.adicionarPagamento = async (parcelaId)=>{
-
- const valor = prompt("Digite o valor pago:");
-
- if(!valor) return;
-
- const ref = doc(db,"parcelas",parcelaId);
- const snap = await getDoc(ref);
- const dados = snap.data();
-const restanteAtual = dados.valor - dados.pago;
-
-if(Number(valor) <= 0){
- alert("Valor inválido");
- return;
-}
-
-if(Number(valor) > restanteAtual){
- alert("Valor maior que o restante da parcela");
- return;
-}
-
- const novoPago = Number(dados.pago) + Number(valor);
- const restante = dados.valor - novoPago;
-
- const emprestimoRef = doc(db,"emprestimos",dados.emprestimoId);
- const emprestimoSnap = await getDoc(emprestimoRef);
-
- if(!emprestimoSnap.exists()){
-  alert("Empréstimo não encontrado.");
-  return;
- }
-
- const emprestimo = emprestimoSnap.data();
- const distribuicao = calcularDistribuicaoPagamento(
-  Number(valor),
-  emprestimo,
-  dados
- );
- const lote = writeBatch(db);
-
-  lote.update(ref,{
-   pago: novoPago,
-   restante: restante,
-   ultimaDataPagamento: new Date()
-  });
-
- acumularFinanceiroNoLote(
-  lote,
-  emprestimo.pais || dados.pais || "BR",
-  {
-   impactoCaixa: distribuicao.valorLiquido,
-   repasseEvelyn: distribuicao.repasseEvelyn,
-   lucroLiquido: distribuicao.lucroLiquido
-  }
- );
-
- await lote.commit();
-
- alert(
-  "Pagamento registrado.\n\n" +
-  "Evelyn (10%): " + distribuicao.repasseEvelyn.toFixed(2) + "\n" +
-  "Entrada líquida no Caixa: " + distribuicao.valorLiquido.toFixed(2)
- );
-
- location.reload();
-
-}
+ if(pagamentosEmAndamento.has(parcelaId))return;
+ pagamentosEmAndamento.add(parcelaId);
+ try{
+  const texto=prompt("Digite o valor recebido agora (ex.: 100,50):");
+  if(texto===null)return;
+  const valor=valorPagamento(texto);
+  const ref=doc(db,"parcelas",parcelaId),snap=await getDocFromServer(ref);
+  if(!snap.exists())throw Error("Parcela não encontrada.");
+  const dados=snap.data(),emprestimoRef=doc(db,"emprestimos",dados.emprestimoId),emprestimoSnap=await getDocFromServer(emprestimoRef);
+  if(!emprestimoSnap.exists())throw Error("Empréstimo não encontrado.");
+  const emprestimo=emprestimoSnap.data(),agora=new Date();
+  const previa=previaPagamento(dados,emprestimo,valor,"parcial",agora);
+  const distribuicao=calcularDistribuicaoPagamento(valor,emprestimo,dados);
+  if(!await conferirPagamento(previa,emprestimo,dados,distribuicao))return;
+  await salvarPagamentoConferido(apiConferenciaPagamento,{parcelaId,parcel:dados,loan:emprestimo},previa,{pago:previa.novoPago,restante:previa.saldoContratual,ultimaDataPagamento:new Date()},crypto.randomUUID());
+  alert("Pagamento registado.\n\nEvelyn (10%): "+distribuicao.repasseEvelyn.toFixed(2)+"\nEntrada líquida no Caixa: "+distribuicao.valorLiquido.toFixed(2));
+  location.reload();
+ }catch(error){alert("Não foi possível registar o pagamento. "+(error.message||error));}
+ finally{pagamentosEmAndamento.delete(parcelaId);}
+};
   window.confirmarParcela = async (parcelaId)=>{
+ if(pagamentosEmAndamento.has(parcelaId))return;
+ pagamentosEmAndamento.add(parcelaId);
  try{
 
  const ref = doc(db,"parcelas",parcelaId);
- const snap = await getDoc(ref);
+ const snap = await getDocFromServer(ref);
+ if(!snap.exists())throw Error("Parcela não encontrada.");
  const dados = snap.data();
 
  const emprestimoRef = doc(db,"emprestimos",dados.emprestimoId);
- const emprestimoSnap = await getDoc(emprestimoRef);
+ const emprestimoSnap = await getDocFromServer(emprestimoRef);
 
  if(!emprestimoSnap.exists()){
   alert("Empréstimo não encontrado.");
@@ -4721,10 +4685,10 @@ if(Number(valor) > restanteAtual){
  }
 
  const emprestimo = emprestimoSnap.data();
- const valorRecebidoAgora = Math.max(
+ const valorRecebidoAgora = arredondarDinheiro(Math.max(
   0,
   Number(dados.valor || 0) - Number(dados.pago || 0)
- );
+ ));
  const distribuicao = calcularDistribuicaoPagamento(
   valorRecebidoAgora,
   emprestimo,
@@ -4767,9 +4731,9 @@ if(diasDiferenca > 0){
  perfilPagamento = "atrasado";
 }
     
-const lotePagamento = writeBatch(db);
-
- lotePagamento.update(ref,{
+const previa = previaPagamento(dados,emprestimo,valorRecebidoAgora,"confirmar",dataPagamentoReal);
+if(!await conferirPagamento(previa,emprestimo,dados,distribuicao))return;
+await salvarPagamentoConferido(apiConferenciaPagamento,{parcelaId,parcel:dados,loan:emprestimo},previa,{
     pago: dados.valor,
     restante: 0,
     status:"pago",
@@ -4783,19 +4747,7 @@ const lotePagamento = writeBatch(db);
     dataPagamentoReal: dataPagamentoReal,
     diasDiferenca: diasDiferenca,
     perfilPagamento: perfilPagamento
-});
-
-acumularFinanceiroNoLote(
- lotePagamento,
- emprestimo.pais || dados.pais || "BR",
- {
-  impactoCaixa: distribuicao.valorLiquido,
-  repasseEvelyn: distribuicao.repasseEvelyn,
-  lucroLiquido: distribuicao.lucroLiquido
- }
-);
-
-await lotePagamento.commit();
+},crypto.randomUUID());
 
 // aumentar score do cliente
 
@@ -4983,7 +4935,7 @@ alert(
  } catch(erro){
   console.error("Erro ao confirmar parcela:", erro);
   alert("Não foi possível confirmar o pagamento. Detalhe: " + (erro?.message || erro));
- }
+ } finally{pagamentosEmAndamento.delete(parcelaId);}
 
 }
   // ================================================

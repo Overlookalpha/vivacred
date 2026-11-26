@@ -58,6 +58,12 @@ export function criarHistoricoCliente(api){
      node('p','Vencimento: '+(p.vencimentoDia?displayDate(p.vencimentoDia):'Não registado')+' · Valor: '+money(p.valor,p.pais)+' · Recebido registado: '+money(p.pago,p.pais),card);
      node('p','Data real do pagamento: '+(p.pagamentoRealDia?displayDate(p.pagamentoRealDia):'Não registada')+' · '+(p.atrasoDias==null?'Atraso não verificável':p.atrasoDias+' dia(s) de atraso'+(p.quitada?' no pagamento':' até hoje')),card);
      const extra=node('div',null,card);extra.innerHTML=detalhesExtrato(p,v=>money(v,p.pais));
+     const movimentos=data.pagamentos.filter(m=>m.parcelaId===p.id);
+     if(movimentos.length){
+      node('h4','Lançamentos individuais conferidos',card);
+      for(const m of movimentos)node('p',date(m.dataPagamentoReal,p.pais)+' · Recebido neste lançamento: '+money(m.valorRecebido,p.pais)+' · Saldo contratual após: '+money(m.saldoDepois,p.pais)+(m.tipo==='confirmar'?' · Confirmação de quitação':''),card);
+      node('small','Estes lançamentos já estão incluídos no total pago da parcela. Não são somados novamente.',card);
+     }
      const notices=data.promessas.filter(n=>n.scope==='cliente'||n.parcelaId===p.id);
      for(const notice of notices){const r=resultadoPromessa(notice,p,loan);node('p','🗓️ Promessa: '+date(notice.data,p.pais)+' · '+r.titulo+(notice.totalPrevisto!=null?' · Total previsto: '+money(notice.totalPrevisto,p.pais):' · Total original não registado'),card);}
      const history=node('button','Histórico de cobranças desta parcela',card);history.type='button';history.dataset.historicoCobranca=p.id;

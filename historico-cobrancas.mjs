@@ -12,7 +12,7 @@ export async function registrarContato(api,expected,prepared,id){
    parcelaId:expected.parcelId,emprestimoId:expected.parcel.emprestimoId,
    userId:expected.loan.userId||null,numeroParcela:expected.parcel.numero||null,
    telefone:expected.loan.telefoneCliente||'',mensagem:prepared.mensagem,
-   canal:'whatsapp',status:'preparada',criadoEm:api.serverTimestamp(),criadoPor:uid
+   tipoContato:prepared.tipoContato||'cobranca',...(prepared.tipoContato==='confirmacao_pagamento'?{valorRecebido:prepared.valorRecebido,emprestimoQuitado:prepared.emprestimoQuitado}:{}),canal:'whatsapp',status:'preparada',criadoEm:api.serverTimestamp(),criadoPor:uid
   });
  });
  return id;

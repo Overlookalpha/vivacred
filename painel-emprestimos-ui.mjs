@@ -3,7 +3,8 @@ export function iniciarPainelEmprestimos(api,items){
  const root=document.getElementById('ferramentasEmprestimos');
  root.innerHTML=`<div class="card"><div class="filtrosEmprestimos">
  <label>Pesquisar cliente<input id="buscaEmprestimos" type="search" placeholder="Nome, email ou telefone"></label>
- <label>Vencimento<select id="prazoEmprestimos"><option value="">Todos</option><option value="atrasado">Atrasados</option><option value="hoje">Vence hoje</option><option value="cinco">Próximos 5 dias</option><option value="quitado">Sem parcelas em aberto</option></select></label>
+ <label>Situação<select id="situacaoEmprestimos"><option value="abertos">Em aberto</option><option value="quitados">Quitados</option><option value="">Todos</option></select></label>
+ <label>Vencimento<select id="prazoEmprestimos"><option value="">Todos</option><option value="atrasado">Atrasados</option><option value="hoje">Vence hoje</option><option value="cinco">Próximos 5 dias</option></select></label>
  <label>País<select id="paisEmprestimos"><option value="">Todos</option><option value="BR">Brasil</option><option value="PT">Portugal</option></select></label>
  <label>Pagamentos<select id="pagamentoEmprestimos"><option value="">Todos</option><option value="sem">Sem pagamento recebido</option></select></label>
  </div><button type="button" id="limparFiltrosEmprestimos">Limpar filtros</button>
@@ -11,9 +12,10 @@ export function iniciarPainelEmprestimos(api,items){
  <p style="color:var(--text-soft)">Resumo dos empréstimos filtrados. Próximos 5 dias: de amanhã até ao quinto dia. Valores previstos; recebimento não garantido.</p>
  <div id="resumoVencimentosEmprestimos" class="resumoEmprestimos"></div></div>`;
  const busca=root.querySelector('#buscaEmprestimos'),prazo=root.querySelector('#prazoEmprestimos'),pais=root.querySelector('#paisEmprestimos'),pagamento=root.querySelector('#pagamentoEmprestimos');
+ const situacao=root.querySelector('#situacaoEmprestimos');
  const money=(v,p)=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:p==='PT'?'EUR':'BRL'}).format(v);
  function atualizar(){
-  const filtros={busca:busca.value,prazo:prazo.value,pais:pais.value,pagamento:pagamento.value};
+  const filtros={busca:busca.value,prazo:prazo.value,pais:pais.value,pagamento:pagamento.value,situacao:situacao.value};
   const visiveis=items.filter(item=>corresponde(item,filtros));
   for(const item of items)item.div.hidden=!visiveis.includes(item);
   root.querySelector('#resultadoEmprestimos').textContent=visiveis.length?`${visiveis.length} de ${items.length} empréstimos encontrados.`:'Nenhum empréstimo corresponde aos filtros.';
@@ -28,8 +30,8 @@ export function iniciarPainelEmprestimos(api,items){
   }));
  }
  busca.addEventListener('input',atualizar);
- for(const el of [prazo,pais,pagamento])el.addEventListener('change',atualizar);
- root.querySelector('#limparFiltrosEmprestimos').addEventListener('click',()=>{for(const el of [busca,prazo,pais,pagamento])el.value='';atualizar();});
+ for(const el of [prazo,pais,pagamento,situacao])el.addEventListener('change',atualizar);
+ root.querySelector('#limparFiltrosEmprestimos').addEventListener('click',()=>{for(const el of [busca,prazo,pais,pagamento,situacao])el.value='';situacao.value='abertos';atualizar();});
  for(const item of items){
   const host=document.createElement('div');host.className='telefoneEmprestimo';
   const label=document.createElement('p');label.textContent='Telefone: '+(item.emp.telefoneCliente||'Não informado');

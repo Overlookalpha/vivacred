@@ -357,7 +357,7 @@ Saldo:<br>
 
 <div id="telaEmprestimos" style="display:none;">
 
-<h3>Empréstimos Ativos</h3>
+<h3>Empréstimos</h3>
 
 <div id="ferramentasEmprestimos"></div>
 <div id="listaEmprestimosAtivos"></div>
@@ -558,6 +558,7 @@ import {criarHistoricoCobrancas} from './historico-cobrancas-ui.mjs';
 import {criarHistoricoCliente} from './historico-cliente-ui.mjs';
 import {salvarPagamentoConferido,distribuirRecebimentoReal} from './conferencia-pagamento.mjs';
 import {solicitarPagamentoReal} from './conferencia-pagamento-ui.mjs';
+import {criarConfirmacaoPagamento,emprestimoQuitado} from './confirmacao-pagamento.mjs';
 import {registrarPagamentoSaque} from './saque-pagamento.mjs';
 let indiceAvaliacoesInternas = { porId: new Map(), porEmail: new Map() };
 function botaoHistoricoCliente(nome,userId,emprestimoId){
@@ -3006,6 +3007,7 @@ const apiConferenciaPagamento = {db,auth,doc,runTransaction,serverTimestamp,apli
 }};
 const historicoCompletoCliente = criarHistoricoCliente({db,auth,doc,collection,query,where,getDocFromServer,getDocsFromServer});
 const historicoCobrancas = criarHistoricoCobrancas({db,auth,doc,collection,query,where,getDocsFromServer,runTransaction,serverTimestamp});
+const confirmacaoPagamento = criarConfirmacaoPagamento({db,doc,collection,query,where,getDocFromServer,getDocsFromServer,registrar:historicoCobrancas.registrar});
 const acompanhamentoPagamento = createPaymentFollowup({recordContact:historicoCobrancas.registrar,db,auth,doc,collection,query,where,getDocFromServer,getDocsFromServer,runTransaction,serverTimestamp,calculate:calcularCobrancaParcela,refresh:async()=>{await calcularFinanceiro();const modal=document.getElementById("modalParcelas");if(modal?.style.display==="flex"&&modal.dataset.emprestimoId)await window.abrirParcelas(modal.dataset.emprestimoId);}});
 const editorVencimentos = createDateEditor({db,auth,doc,collection,query,where,getDocFromServer,getDocsFromServer,runTransaction,serverTimestamp,refresh:id=>window.abrirParcelas(id)});
 window.editarVencimentos = (emprestimoId,parcelaId=null)=>editorVencimentos.open(emprestimoId,parcelaId);
@@ -3871,8 +3873,8 @@ for(const emprestimoDoc of emprestimosSnap.docs){
     const emp = emprestimoDoc.data();
 
     if(
-     emp.status !== "ativo" ||
-     emp.arquivado === true ||
+     (!["ativo","finalizado","quitado"].includes(emp.status) && emp.finalizado !== true) ||
+     ["perdido","cancelado","rejeitado"].includes(emp.status) ||
      registroTeste(emp)
     ){
         continue;
@@ -3895,6 +3897,8 @@ for(const emprestimoDoc of emprestimosSnap.docs){
     });
 
     parcelas.sort((a,b)=>a.numero-b.numero);
+    const quitado = emprestimoQuitado(emp,parcelas);
+    if(emp.arquivado === true && !quitado)continue;
 
     const pagas = parcelas.filter(p=>p.status==="pago");
     const pendentes = parcelas.filter(parcelaEmAberto);
@@ -3930,11 +3934,13 @@ pendentes.reduce(
 let statusTexto = "";
 let diasRestantes = "--";
 
-if(!proximaParcela){
+if(quitado){
 
     statusTexto =
     "<div style='color:#17A673;font-weight:bold;font-size:18px;'>🟢 QUITADO</div>";
 
+}else if(!proximaParcela){
+    statusTexto = "<div style='font-weight:bold;'>Conferir parcelas — quitação não confirmada</div>";
 }else{
 
     const hoje = new Date();
@@ -3991,7 +3997,7 @@ div.innerHTML = `
 ${
 proximaParcela
 ? proximaParcela.vencimento.toDate().toLocaleDateString("pt-BR")
-: "Quitado"
+: (quitado ? "Quitado" : "Conferir parcelas")
 }
 <br>
 
@@ -4031,6 +4037,7 @@ ${percentual}% Concluído
 <br>
 
 ${statusTexto}
+${quitado ? '<p>✅ Empréstimo quitado. A confirmação de pagamento continua disponível.</p><button type="button" data-confirmacao-emprestimo="'+escaparHTML(emprestimoDoc.id)+'" style="background:#15803d;color:white;min-height:44px">💬 Enviar confirmação de quitação pelo WhatsApp</button>' : ''}
 ${demonstrativoCliente(emp)}
 
 <br>
@@ -4056,7 +4063,7 @@ cartoesEmprestimosAtivos.push({
  vencimento: proximaParcela ? ordemVencimento(proximaParcela) : "9999-12-31",
  nome: emp.nomeCliente || "",
  id: emprestimoDoc.id,
- emp, pendentes, pagas:pagas.length, telefoneCadastro:telefonesCadastro.get(emp.userId)||""
+ emp, quitado, pendentes, pagas:pagas.length, telefoneCadastro:telefonesCadastro.get(emp.userId)||""
 });
 
 }
@@ -4839,32 +4846,7 @@ bonusISC += bonusAntecipacao;
     status: finalizado ? "finalizado" : "ativo"
 });
 const moeda = emprestimo.pais === "PT" ? "€" : "R$";
- const telefoneWhats = (emprestimo.telefoneCliente || "").replace(/\D/g,"");
-
- if(telefoneWhats){
-
-   const mensagem =
-   "👩‍💼 Evellyn - Assistente Virtual IsaCred\n\n"+
-
-   "Olá "+(emprestimo.nomeCliente || "Cliente")+"!\n\n"+
-
-   "✅ Confirmamos o pagamento da parcela "+dados.numero+" de "+emprestimo.parcelas+".\n\n"+
-
-   "💰 Recebido agora: "+moeda+" "+Number(previa.recebido).toFixed(2)+"\n"+
-   "Parcela: "+moeda+" "+previa.paraParcela.toFixed(2)+" · Juros: "+moeda+" "+previa.jurosRecebidos.toFixed(2)+" · Multa: "+moeda+" "+previa.multaRecebida.toFixed(2)+"\n\n"+
-
-   "Obrigado por manter seus pagamentos em dia!";
-
-   const link =
-   "https://wa.me/" +
-   telefoneWhats +
-   "?text=" +
-   encodeURIComponent(mensagem);
-
-   window.open(link,"_blank");
-
- }
-
+ // O aviso por WhatsApp fica disponível por botão, mesmo após a quitação.
  await criarNotificacao(
   dados.userId,
   "✅ Pagamento confirmado",
@@ -4872,7 +4854,7 @@ const moeda = emprestimo.pais === "PT" ? "€" : "R$";
 );
 
 alert(
- "Parcela confirmada.\n\n" +
+ "Parcela confirmada.\n" + (finalizado ? "Empréstimo quitado. A confirmação por WhatsApp está no filtro Quitados e no histórico do cliente.\n\n" : "A confirmação por WhatsApp está em Gerenciar Parcelas e no histórico.\n\n") +
  "Evelyn (10%): " + distribuicao.repasseEvelyn.toFixed(2) + "\n" +
  "Entrada líquida no Caixa: " + distribuicao.valorLiquido.toFixed(2)
 );
@@ -5162,60 +5144,7 @@ window.avisarAvalistaAprovado = async (id)=>{
 
 }
 
-window.avisarClienteParcelaPaga = async (parcelaId)=>{
-
- const janela = window.open("","_blank");
-
- const ref = doc(db,"parcelas",parcelaId);
- const snap = await getDoc(ref);
-
- if(!snap.exists()){
-   if(janela){ janela.close(); }
-   alert("Parcela não encontrada");
-   return;
- }
-
- const parcela = snap.data();
-
- const emprestimoRef = doc(db,"emprestimos",parcela.emprestimoId);
- const emprestimoSnap = await getDoc(emprestimoRef);
-
- if(!emprestimoSnap.exists()){
-   if(janela){ janela.close(); }
-   alert("Empréstimo não encontrado");
-   return;
- }
-
- const emprestimo = emprestimoSnap.data();
- const moeda = emprestimo.pais === "PT" ? "€" : "R$";
- const telefone = (emprestimo.telefoneCliente || "").replace(/\D/g,"");
-
- if(!telefone){
-   if(janela){ janela.close(); }
-   alert("Este cliente não tem telefone cadastrado.");
-   return;
- }
-
- const mensagem =
- "👩‍💼 Evellyn - Assistente Virtual IsaCred\n\n"+
-
- "Olá "+(emprestimo.nomeCliente || "Cliente")+"!\n\n"+
-
- "✅ Confirmamos o pagamento da parcela "+parcela.numero+" de "+emprestimo.parcelas+".\n\n"+
-
- "💰 Valor: "+moeda+" "+Number(parcela.valor).toFixed(2)+"\n\n"+
-
- "Obrigado por manter seus pagamentos em dia!";
-
- const link =
- "https://wa.me/" +
- telefone +
- "?text=" +
- encodeURIComponent(mensagem);
-
- if(janela){ janela.location.href = link; } else { window.open(link,"_blank"); }
-
-}
+window.avisarClienteParcelaPaga = (parcelaId)=>confirmacaoPagamento.abrir(parcelaId);
  // ================================================
 // 💸 ABA: SAQUES — Clube ISAcoin
 // ================================================

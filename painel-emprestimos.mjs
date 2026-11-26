@@ -5,13 +5,14 @@ export function diasAte(parcela,pais,now=new Date()){
  try{return Math.round((Date.parse(dateKey(parcela.vencimento,pais)+'T12:00:00Z')-Date.parse(dateKey(now,pais)+'T12:00:00Z'))/86400000);}catch{return null;}
 }
 const normalizar=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-export function corresponde(item,{busca='',prazo='',pais='',pagamento=''}={},now=new Date()){
+export function corresponde(item,{busca='',prazo='',pais='',pagamento='',situacao=''}={},now=new Date()){
  const emp=item.emp,pendentes=item.pendentes;
  const dias=pendentes.map(p=>diasAte(p,emp.pais||'BR',now));
  return normalizar(emp.nomeCliente+' '+(emp.email||'')+' '+(emp.telefoneCliente||'')).includes(normalizar(busca).trim()) &&
   (!pais||(emp.pais||'BR')===pais) &&
+  (!situacao||(situacao==='quitados'?item.quitado===true:item.quitado!==true)) &&
   (!pagamento||(item.pagas===0&&!pendentes.some(p=>Number(p.pago||0)>0))) &&
-  (!prazo||(prazo==='atrasado'?dias.some(d=>d!==null&&d<0):prazo==='hoje'?dias.includes(0):prazo==='cinco'?dias.some(d=>d!==null&&d>=1&&d<=5):prazo==='quitado'?pendentes.length===0:false));
+  (!prazo||(prazo==='atrasado'?dias.some(d=>d!==null&&d<0):prazo==='hoje'?dias.includes(0):prazo==='cinco'?dias.some(d=>d!==null&&d>=1&&d<=5):prazo==='quitado'?item.quitado===true:false));
 }
 export function resumirVencimentos(items,now=new Date()){
  const result=Object.fromEntries(['atrasado','hoje','cinco'].map(k=>[k,{clientes:0,parcelas:0,BR:0,PT:0}]));

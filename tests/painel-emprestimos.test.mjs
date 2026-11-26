@@ -11,7 +11,7 @@ test('busca sem acentos e filtros combinados consideram todas as parcelas aberta
  assert.ok(!corresponde(x,{pais:'PT'},now));
  assert.ok(!corresponde({...x,pagas:1},{pagamento:'sem'},now));
  assert.ok(!corresponde({...x,pendentes:[parcela('28',{pago:20})]},{pagamento:'sem'},now));
- assert.ok(corresponde(item('q','BR',[]),{prazo:'quitado'},now));
+ assert.ok(corresponde({...item('q','BR',[]),quitado:true},{prazo:'quitado'},now));
 });
 test('resumo conta clientes únicos, separa moedas e soma juros, parcial e acordo corretamente',()=>{
  const items=[item('u','BR',[parcela('24'),parcela('26',{pago:40})]),item('u','BR',[parcela('25',{acordoSemEncargos:true})]),item('p','PT',[parcela('30'),parcela('30')])];

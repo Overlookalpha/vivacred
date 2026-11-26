@@ -2,6 +2,7 @@ import {carregarHistoricoCliente,diaHistorico} from './historico-cliente.mjs';
 import {detalhesExtrato} from './extrato-detalhes.mjs';
 import {resultadoPromessa} from './acompanhamento-pagamento.mjs';
 import {displayDate} from './vencimentos.mjs';
+import {emprestimoQuitado,parcelaQuitada} from './confirmacao-pagamento.mjs';
 export function criarHistoricoCliente(api){
  let dialog=null;
  const node=(tag,text,parent)=>{const el=document.createElement(tag);if(text!=null)el.textContent=text;parent?.append(el);return el;};
@@ -50,6 +51,7 @@ export function criarHistoricoCliente(api){
     const ps=linhas.filter(p=>p.emprestimoId===loan.id).sort((a,b)=>Number(a.numero)-Number(b.numero));
     node('summary',(loan.status||'Sem estado')+(loan.arquivado?' · Arquivado':'')+' · '+date(loan.dataAprovacao||loan.criadoEm,loan.pais)+' · '+money(loan.valor,loan.pais)+' · '+ps.length+' parcela(s)',details);
     node('p','Referência: '+loan.id+' · Valor contratado: '+money(loan.valorFinal,loan.pais)+' · Parcelas quitadas: '+ps.filter(p=>p.quitada).length,details);
+    if(emprestimoQuitado(loan,ps)){const notify=node('button','💬 Enviar confirmação de quitação pelo WhatsApp',details);notify.type='button';notify.dataset.confirmacaoEmprestimo=loan.id;}
     if(loan.motivoRecusa)node('p','Motivo registado: '+loan.motivoRecusa,details);
     if(!ps.length)node('p','Sem parcelas registadas para esta solicitação.',details);
     for(const p of ps){
@@ -67,12 +69,13 @@ export function criarHistoricoCliente(api){
      const notices=data.promessas.filter(n=>n.scope==='cliente'||n.parcelaId===p.id);
      for(const notice of notices){const r=resultadoPromessa(notice,p,loan);node('p','🗓️ Promessa: '+date(notice.data,p.pais)+' · '+r.titulo+(notice.totalPrevisto!=null?' · Total previsto: '+money(notice.totalPrevisto,p.pais):' · Total original não registado'),card);}
      const history=node('button','Histórico de cobranças desta parcela',card);history.type='button';history.dataset.historicoCobranca=p.id;
+     if(parcelaQuitada(p)){const notify=node('button','💬 Enviar confirmação de pagamento pelo WhatsApp',card);notify.type='button';notify.dataset.confirmacaoParcela=p.id;}
     }
    }
    node('h3','Contactos de cobrança registados',body);
    if(!data.cobrancas.length)node('p','Sem contactos de cobrança registados. Envios antigos não foram presumidos.',body);
    for(const record of [...data.cobrancas].sort((a,b)=>(diaHistorico(b.criadoEm)||'').localeCompare(diaHistorico(a.criadoEm)||''))){
-    node('p',date(record.criadoEm)+' · Parcela '+(record.numeroParcela||'—')+' · '+(record.status==='enviada'?'Envio confirmado manualmente em '+date(record.enviadoEm):'Mensagem preparada; envio não confirmado'),body);
+    node('p',date(record.criadoEm)+' · '+(record.tipoContato==='confirmacao_pagamento'?'Confirmação de pagamento':'Cobrança')+' · Parcela '+(record.numeroParcela||'—')+' · '+(record.status==='enviada'?'Envio confirmado manualmente em '+date(record.enviadoEm):'Mensagem preparada; envio não confirmado'),body);
    }
    node('small','Este painel reúne os registos disponíveis, incluindo empréstimos antigos e arquivados. Acordos mostram os dados preservados na parcela; versões antigas que não foram guardadas não podem ser reconstruídas.',body);
   }catch(e){status.textContent='Não foi possível carregar o histórico. '+(e.message||'Tente novamente.');}

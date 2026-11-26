@@ -20,6 +20,7 @@ export function criarHistoricoCobrancas(api){
    status.textContent=records.length?records.length+' contacto(s) registado(s).':'Ainda não há contactos registados. Os novos contactos pelo botão WhatsApp aparecerão aqui; envios antigos não são presumidos.';
    for(const record of records){
     const card=node('section',null,list);card.style.cssText='padding:14px;margin:12px 0;border:1px solid var(--border,#ddd);border-radius:10px';
+    if(record.tipoContato==='confirmacao_pagamento')node('p','Confirmação de pagamento (não é cobrança)',card);
     node('strong',record.status==='enviada'?'✅ Mensagem marcada como enviada':'📝 Mensagem preparada · envio não confirmado',card);
     node('p','Contacto preparado em: '+data(record.criadoEm),card);
     if(record.enviadoEm)node('p','Envio confirmado por administrador em: '+data(record.enviadoEm),card);

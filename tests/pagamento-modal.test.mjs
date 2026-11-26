@@ -12,7 +12,7 @@ test('cliques concorrentes abrem um modal e fechar funciona mesmo com aviso pend
  getDoc:async()=>({exists:()=>true,data:()=>({valor:50,numero:1})}),
  enviarTelegram:()=>{avisos++;return new Promise(()=>{});},
  document:{getElementById:()=>modais[0],createElement:()=>{
- const nodes={};return {style:{},setAttribute(){},querySelector(id){return nodes[id]??={before(){},addEventListener(k,fn){this[k]=fn;}};},remove(){modais=modais.filter(m=>m!==this);}};
+ const nodes={};return {style:{},dataset:{},setAttribute(){},querySelector(id){return nodes[id]??={before(){},addEventListener(k,fn){this[k]=fn;}};},remove(){modais=modais.filter(m=>m!==this);}};
  },body:{appendChild(m){modais.push(m);}}}};
  vm.createContext(ctx);vm.runInContext(source,ctx);
  await Promise.all([ctx.window.gerarPagamentoParcela('1'),ctx.window.gerarPagamentoParcela('1')]);

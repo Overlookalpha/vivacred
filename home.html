@@ -1155,6 +1155,7 @@ color:var(--text);
   </div>
 </div>
 <script type="module">
+import {atualizarConferenciaTempoReal} from "./conferencia-tempo-real.mjs";
 import {calcularCobrancaParcela} from "./cobranca-parcela.mjs";
 import {previaMoedas,aguardandoConferencia,textoPreviaMoedas} from "./previa-moedas.mjs";
 import {linhaExtrato} from "./extrato-detalhes.mjs";
@@ -2182,6 +2183,7 @@ let isaCoinsGlobal = 0;
 let dadosExtratoGlobal = null;
 let primeiraParcelaAtrasadaId = null;
 let pararSaldoIsaCoins = null;
+let pararConferenciaParcelas = null;
 function atualizarSaldoIsaCoins(data){
  const paisUsuario = data.pais === "PT" ? "PT" : "BR";
  const moedaUsuario = paisUsuario === "PT" ? "EUR" : "BRL";
@@ -2280,6 +2282,7 @@ if(faltamIsaCoins){
 
 }
 onAuthStateChanged(auth, async (user) => {
+  if(pararConferenciaParcelas){pararConferenciaParcelas();pararConferenciaParcelas=null;}
   if(pararSaldoIsaCoins){ pararSaldoIsaCoins(); pararSaldoIsaCoins = null; }
   
 
@@ -2696,6 +2699,8 @@ atualizarResumoProximaParcela();
 const diasLembretePreferido =
   (userSnap.exists() && userSnap.data().diasLembrete) || 3;
 
+if(pararConferenciaParcelas)pararConferenciaParcelas();
+pararConferenciaParcelas=onSnapshot(q,snapshot=>atualizarConferenciaTempoReal(snapshot),erro=>{console.error('Não foi possível acompanhar a conferência',erro.code);});
 await gerarLembretesVencimento(snapshotParcelas, diasLembretePreferido);
 
   const listaRejeitados = snapshotRejeitado.docs.sort((a,b)=>{
@@ -4098,6 +4103,7 @@ const cliente = clienteSnap.exists() ? clienteSnap.data() : {};
  const modalPagamento = document.createElement("div");
 
 modalPagamento.id = "modalPagamentoParcela";
+modalPagamento.dataset.parcelaId=parcelaId;
 
 modalPagamento.style.cssText = `
     position: fixed;
@@ -4212,9 +4218,9 @@ modalPagamento.innerHTML = `
 `;
 
 document.body.appendChild(modalPagamento);
-const previa=document.createElement('p');previa.textContent=textoPreviaMoedas(moedas);previa.style.cssText='padding:12px;background:#f5f3ff;color:#5b21b6;border-radius:10px;font-size:13px;text-align:left;line-height:1.6';
+const previa=document.createElement('p');previa.dataset.previaMoedas='true';previa.textContent=textoPreviaMoedas(moedas);previa.style.cssText='padding:12px;background:#f5f3ff;color:#5b21b6;border-radius:10px;font-size:13px;text-align:left;line-height:1.6';
 modalPagamento.querySelector('#btnConfirmarPagamentoParcela').before(previa);
-const pendencia=document.createElement('p');pendencia.setAttribute('role','status');pendencia.style.cssText='padding:12px;background:#fff7ed;color:#9a3412;border-radius:10px;font-size:13px';
+const pendencia=document.createElement('p');pendencia.dataset.statusConferencia='true';pendencia.setAttribute('role','status');pendencia.style.cssText='padding:12px;background:#fff7ed;color:#9a3412;border-radius:10px;font-size:13px';
 pendencia.textContent='⏳ Pagamento informado — aguardando conferência. Isso não confirma o recebimento nem baixa a parcela.';pendencia.hidden=!aguardandoConferencia(dados);
 modalPagamento.querySelector('#btnConfirmarPagamentoParcela').before(pendencia);
 if(aguardandoConferencia(dados))modalPagamento.querySelector('#btnConfirmarPagamentoParcela').textContent='Reenviar informação de pagamento';
@@ -4276,6 +4282,7 @@ modalPagamento.querySelector("#btnConfirmarPagamentoParcela").onclick = async fu
             "success"
         );
 
+        if(modalPagamento.dataset.pagamentoConfirmado==='true')return;
         pendencia.hidden=false;
         botaoConfirmar.innerText='⏳ Aguardando conferência';
         document.querySelectorAll('[data-conferencia-parcela]').forEach(e=>{if(e.dataset.conferenciaParcela===parcelaId)e.hidden=false;});

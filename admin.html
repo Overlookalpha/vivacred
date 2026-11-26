@@ -135,6 +135,7 @@ color:var(--primary-dark);
 .resumoEmprestimos{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
 .resumoEmprestimo{padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--bg)}
 .resumoEmprestimo p{margin:8px 0}.telefoneEmprestimo{padding:12px 0}.telefoneEmprestimo button{min-height:44px;margin:6px 8px 6px 0}
+.nomeClienteHistorico{background:transparent!important;color:var(--primary)!important;border:0;padding:4px 0;min-height:44px;font:inherit;font-weight:800;text-decoration:underline;text-underline-offset:4px;cursor:pointer;max-width:100%;white-space:normal;overflow-wrap:anywhere}
 </style>
 </head>
 
@@ -554,8 +555,13 @@ import {createPaymentFollowup} from './acompanhamento-pagamento-ui.mjs';
 import {createDateEditor} from './editar-vencimentos.mjs';
 import {iniciarPainelEmprestimos} from './painel-emprestimos-ui.mjs';
 import {criarHistoricoCobrancas} from './historico-cobrancas-ui.mjs';
+import {criarHistoricoCliente} from './historico-cliente-ui.mjs';
 import {registrarPagamentoSaque} from './saque-pagamento.mjs';
 let indiceAvaliacoesInternas = { porId: new Map(), porEmail: new Map() };
+function botaoHistoricoCliente(nome,userId,emprestimoId){
+ const atributo = userId ? 'data-historico-cliente="'+escaparHTML(userId)+'"' : 'data-historico-emprestimo="'+escaparHTML(emprestimoId||'')+'"';
+ return '<button type="button" class="nomeClienteHistorico" '+atributo+' title="Ver histórico completo do cliente">'+escaparHTML(nome||'Cliente')+'</button>';
+}
 function demonstrativoCliente(referencia) {
  const avaliacao = referencia.userId
   ? indiceAvaliacoesInternas.porId.get(referencia.userId)
@@ -2259,7 +2265,7 @@ async function montarListaVencimentos(lista,titulo){
    html +=
     "<div class='vencimentoItem'>" +
 
-   "👤 " + (emp.nomeCliente || "Cliente") +
+   "👤 " + botaoHistoricoCliente(emp.nomeCliente,emp.userId,parcela.emprestimoId) +
    "<br>" +
 
    "📞 " + (emp.telefoneCliente || "-") +
@@ -2887,7 +2893,7 @@ if(atrasados.length === 0){
      htmlAtrasados +=
 
 acompanhamentoPagamento.cardHTML(atraso.parcelaId,atraso,emp) +
-"👤 " + (emp.nomeCliente || "Cliente") +
+"👤 " + botaoHistoricoCliente(emp.nomeCliente,emp.userId,atraso.emprestimoId) +
 "<br>" +
 
 "📞 " + (emp.telefoneCliente || "-") +
@@ -2991,6 +2997,7 @@ async function enviarTelegram(texto){
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const historicoCompletoCliente = criarHistoricoCliente({db,auth,doc,collection,query,where,getDocFromServer,getDocsFromServer});
 const historicoCobrancas = criarHistoricoCobrancas({db,auth,doc,collection,query,where,getDocsFromServer,runTransaction,serverTimestamp});
 const acompanhamentoPagamento = createPaymentFollowup({recordContact:historicoCobrancas.registrar,db,auth,doc,collection,query,where,getDocFromServer,getDocsFromServer,runTransaction,serverTimestamp,calculate:calcularCobrancaParcela,refresh:async()=>{await calcularFinanceiro();const modal=document.getElementById("modalParcelas");if(modal?.style.display==="flex"&&modal.dataset.emprestimoId)await window.abrirParcelas(modal.dataset.emprestimoId);}});
 const editorVencimentos = createDateEditor({db,auth,doc,collection,query,where,getDocFromServer,getDocsFromServer,runTransaction,serverTimestamp,refresh:id=>window.abrirParcelas(id)});
@@ -3962,7 +3969,7 @@ const moeda = emp.pais === "PT" ? "€" : "R$";
 div.innerHTML = `
 
 <div style="text-align:center;margin-bottom:15px;">
-<h2 style="margin:0;">👤 ${escaparHTML(emp.nomeCliente || "-")}</h2>
+<h2 style="margin:0;">👤 ${botaoHistoricoCliente(emp.nomeCliente,emp.userId,emprestimoDoc.id)}</h2>
 <div>${escaparHTML(emp.email || "")}</div>
 </div>
 
@@ -5515,7 +5522,7 @@ window.renderizarUsuarios = async function(){
   lista.innerHTML += `
    <div class="card" data-busca="${escaparHTML(`${user.nome || ""} ${user.email || ""} ${user.cpf || ""}`.toLowerCase())}">
 
-    <strong>${escaparHTML(user.nome || "-")}</strong><br>
+    <strong>${botaoHistoricoCliente(user.nome,id)}</strong><br>
 
     📧 ${escaparHTML(user.email || "-")}<br>
     🔐 Senha protegida pelo Firebase<br>
@@ -5558,8 +5565,12 @@ ${user.notasInternas ? "📝 <b>Nota:</b> " + escaparHTML(user.notasInternas) + 
  ${avaliacaoHTML(indiceClientes.porId.get(id))}
 </div>
 
+    <button type="button" data-historico-cliente="${escaparHTML(id)}">
+      Histórico completo
+    </button>
+
     <button onclick="verUsuarioFirestore('${id}')">
-      Ver
+      Dados do cadastro
     </button>
 
     <button onclick="gerarExtratoCliente('${id}')">

@@ -3835,6 +3835,7 @@ container.appendChild(div);
 
 const containerAtivos = document.getElementById("listaEmprestimosAtivos");
 containerAtivos.innerHTML = "";
+const cartoesEmprestimosAtivos = [];
 
 const emprestimosSnap = await getDocs(collection(db,"emprestimos"));
 
@@ -3870,6 +3871,14 @@ for(const emprestimoDoc of emprestimosSnap.docs){
 
     const pagas = parcelas.filter(p=>p.status==="pago");
     const pendentes = parcelas.filter(parcelaEmAberto);
+    // A próxima cobrança é a parcela em aberto com a menor data,
+    // mesmo quando os vencimentos foram editados manualmente.
+    const ordemVencimento = parcela => {
+      try {
+        return chaveDataVencimento(parcela.vencimento, emp.pais || "BR");
+      } catch { return "9999-12-31"; }
+    };
+    pendentes.sort((a,b)=>ordemVencimento(a).localeCompare(ordemVencimento(b)) || Number(a.numero)-Number(b.numero));
 
     const proximaParcela =
         pendentes.length>0
@@ -4014,11 +4023,26 @@ Gerenciar Parcelas
 
 `;
 
-containerAtivos.appendChild(div);
+cartoesEmprestimosAtivos.push({
+ div,
+ vencimento: proximaParcela ? ordemVencimento(proximaParcela) : "9999-12-31",
+ nome: emp.nomeCliente || "",
+ id: emprestimoDoc.id
+});
 
 }
 
   
+// Mais antigos em atraso primeiro; depois hoje e os próximos vencimentos.
+// Empréstimos sem parcelas em aberto ficam no fim. Apenas apresentação.
+cartoesEmprestimosAtivos.sort((a,b)=>
+ a.vencimento.localeCompare(b.vencimento) ||
+ a.nome.localeCompare(b.nome,"pt") || a.id.localeCompare(b.id)
+);
+for(const cartao of cartoesEmprestimosAtivos){
+ containerAtivos.appendChild(cartao.div);
+}
+
 // ===== HISTÓRICO DE EMPRÉSTIMOS =====
 
 const historicoContainer = document.getElementById("historicoEmprestimos");

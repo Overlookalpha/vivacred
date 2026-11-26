@@ -521,6 +521,7 @@ window.abrirTela = function(tela){
 
 <script src="link-cadastro.js?v=2"></script>
 <script type="module">
+import {prepararQuitacaoAtomica} from "./quitacao-atomica.mjs";
 import {detalhesExtrato} from "./extrato-detalhes.mjs";
 
 
@@ -3002,7 +3003,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const pagamentosEmAndamento = new Set();
-const apiConferenciaPagamento = {db,auth,doc,runTransaction,serverTimestamp,aplicarFinanceiro:(tx,valor,loan,parcel,preview)=>{
+const apiConferenciaPagamento = {db,auth,doc,runTransaction,serverTimestamp,prepararQuitacao:prepararQuitacaoAtomica,aplicarFinanceiro:(tx,valor,loan,parcel,preview)=>{
  const dist=preview?.discriminado?distribuirRecebimentoReal(preview,loan,parcel):calcularDistribuicaoPagamento(valor,loan,parcel);
  acumularFinanceiroNoLote(tx,loan.pais||parcel.pais||"BR",{impactoCaixa:dist.valorLiquido,repasseEvelyn:dist.repasseEvelyn,lucroLiquido:dist.lucroLiquido});
 }};
@@ -4703,156 +4704,8 @@ window.editarEmprestimo = async (id)=>{
   pago:previa.novoPago,restante:0,status:"pago",pagoEm:agoraConfirmacao,formaPagamento:"manual",transacaoId:"manual",confirmadoPor:"admin",dataPagamento:agoraConfirmacao,dataPagamentoReal,diasDiferenca,perfilPagamento
  },crypto.randomUUID());
 
-// aumentar score do cliente
-
-const userRef = doc(db,"usuarios",dados.userId);
-
-const userSnap = await getDoc(userRef);
-
-if(userSnap.exists()){
-
- const userData = userSnap.data();
- const scoreAtual = userData.score || 0;
-
- let bonusISC = Math.round(dados.valor);
-
-let bonusAntecipacao = 0;
-
-if(diasDiferenca <= -30){
- bonusAntecipacao = 200;
-}
-else if(diasDiferenca <= -15){
- bonusAntecipacao = 100;
-}
-else if(diasDiferenca <= -10){
- bonusAntecipacao = 50;
-}
-else if(diasDiferenca <= -5){
- bonusAntecipacao = 25;
-}
-else if(diasDiferenca < 0){
- bonusAntecipacao = 10;
-}
-
-bonusISC += bonusAntecipacao;
-  
- const emprestimoRefBonus =
- doc(db,"emprestimos",dados.emprestimoId);
-
- const emprestimoSnapBonus =
- await getDoc(emprestimoRefBonus);
-
- let estaQuitandoAgora = false;
-
- if(emprestimoSnapBonus.exists()){
-
-   const emp = emprestimoSnapBonus.data();
-
-   const parcelasPagasDepois =
-   (emp.parcelasPagas || 0) + 1;
-
-   estaQuitandoAgora = parcelasPagasDepois >= emp.parcelas;
-
-   if(estaQuitandoAgora){
-
-      bonusISC += 100;
-
-   }
-
- }
-
- // 🎁 Bônus de indicação: se este cliente foi cadastrado com o código de
- // indicação de outro usuário, e é a primeira vez que ele termina de
- // quitar um empréstimo, os dois ganham 5.000 ISC agora - o indicado
- // (somado aqui no bonusISC) e quem indicou (creditado à parte abaixo).
- const ganhaBonusIndicacao =
- estaQuitandoAgora &&
- !!userData.indicadoPor &&
- userData.indicacaoPremiada !== true;
-
- if(ganhaBonusIndicacao){
-   bonusISC += 5000;
- }
-
- const camposUsuario = {
-   // A nota de pagamentos é recuperada pelo histórico; não aumenta o limite normal.
-   score: scoreAtual,
-
-   isaCoins: (userData.isaCoins || 0) + bonusISC,
-
-   pagamentosAdiantados:
-   (userData.pagamentosAdiantados || 0) +
-   (perfilPagamento === "adiantado" ? 1 : 0)
- };
-
- if(ganhaBonusIndicacao){
-   camposUsuario.indicacaoPremiada = true;
- }
-
- const loteBonus = writeBatch(db);
-
- loteBonus.update(userRef, camposUsuario);
-
- if(ganhaBonusIndicacao){
-
-   loteBonus.update(doc(db,"usuarios",userData.indicadoPor),{
-     isaCoins: increment(5000)
-   });
-
- }
-
- // 📣 Feed de atividade recente (prova social em home.html): registra
- // essa quitação de forma já anonimizada, pra outros clientes verem
- // "Fulana S. acabou de quitar e ganhou X IsaCoins" sem saber quem é.
- if(estaQuitandoAgora){
-
-   loteBonus.set(doc(collection(db,"atividadesQuitacao")), {
-     userId: dados.userId,
-     nomeExibicao: nomeExibicaoAnonimizado(userData.nome),
-     isaCoinsGanhos: bonusISC,
-     criadoEm: new Date()
-   });
-
- }
-
- await loteBonus.commit();
-
- if(ganhaBonusIndicacao){
-
-   try{
-
-     await criarNotificacao(
-       userData.indicadoPor,
-       "🎉 Indicação premiada!",
-       "Quem você indicou quitou o primeiro empréstimo. Você ganhou 5.000 IsaCoins!"
-     );
-
-   } catch(erroNotificacao){
-
-     console.error("Erro ao notificar indicação premiada:", erroNotificacao);
-
-   }
-
- }
-
-}
-
- const novasPagas = (emprestimo.parcelasPagas || 0) + 1;
-
- const finalizado = novasPagas >= emprestimo.parcelas;
-
- await updateDoc(emprestimoRef,{
-    parcelasPagas: novasPagas,
-    finalizado: finalizado,
-    status: finalizado ? "finalizado" : "ativo"
-});
-const moeda = emprestimo.pais === "PT" ? "€" : "R$";
- // O aviso por WhatsApp fica disponível por botão, mesmo após a quitação.
- await criarNotificacao(
-  dados.userId,
-  "✅ Pagamento confirmado",
-  "Confirmamos o pagamento da parcela " + dados.numero + " de " + emprestimo.parcelas + ". Recebido agora: " + moeda + " " + Number(previa.recebido).toFixed(2) + ", incluindo juros e multa discriminados no histórico."
-);
+// Parcela, Caixa, moedas, indicação, histórico e quitação foram salvos juntos.
+ const finalizado=Number(emprestimo.parcelasPagas||0)+1>=Number(emprestimo.parcelas);
 
 alert(
  "Parcela confirmada.\n" + (finalizado ? "Empréstimo quitado. A confirmação por WhatsApp está no filtro Quitados e no histórico do cliente.\n\n" : "A confirmação por WhatsApp está em Gerenciar Parcelas e no histórico.\n\n") +

@@ -5,12 +5,11 @@ import vm from 'node:vm';
 import {previaMoedas,aguardandoConferencia} from '../previa-moedas.mjs';
 const admin=fs.readFileSync('admin.html','utf8');
 test('prévia espelha exatamente o bônus atual do admin em cada faixa e indicação',async()=>{
- const start=admin.indexOf(' let bonusISC = Math.round(dados.valor);'),end=admin.indexOf(' const camposUsuario =',start);
- const code=admin.slice(start,end)+'\nreturn bonusISC;';
+
  for(const diferenca of [-40,-30,-29,-15,-14,-10,-9,-5,-4,-1,0,1])for(const indicado of [false,true])for(const final of [false,true]){
   const parcela={valor:270,vencimento:new Date(2026,10,30)},emprestimo={parcelas:final?1:2,parcelasPagas:0},cliente={indicadoPor:indicado?'u2':null};
-  const context={dados:{valor:270,emprestimoId:'x'},diasDiferenca:diferenca,userData:cliente,db:{},doc:()=>({}),getDoc:async()=>({exists:()=>true,data:()=>emprestimo})};
-  const atual=await vm.runInNewContext('(async()=>{'+code+'})()',context);
+  const antecipacao=diferenca<=-30?200:diferenca<=-15?100:diferenca<=-10?50:diferenca<=-5?25:diferenca<0?10:0;
+  const atual=270+antecipacao+(final?100:0)+(final&&indicado?5000:0);
   assert.equal(previaMoedas(parcela,emprestimo,cliente,new Date(2026,10,30+diferenca)).total,atual);
  }
 });

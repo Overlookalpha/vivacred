@@ -66,6 +66,8 @@ export async function salvarPagamentoConferido(api,expected,preview,patch,operat
   const checked=preview.discriminado?previaPagamentoReal(parcel.data(),loan.data(),{valor:preview.recebido,juros:preview.jurosRecebidos,multa:preview.multaRecebida,dataReal:preview.dataReal},preview.mode,agora):previaPagamento(parcel.data(),loan.data(),preview.recebido,preview.mode,reference,agora);
   if(signature(checked)!==signature(preview))throw Error('A prévia mudou. Reabra a conferência.');
   if(Number(patch.pago)!==preview.novoPago||Number(patch.restante)!==preview.saldoContratual)throw Error('O lançamento não corresponde à conferência.');
+  const quitacao=preview.mode==='confirmar'&&api.prepararQuitacao
+    ?await api.prepararQuitacao(api,tx,parcel.data(),loan.data(),preview,operationId):null;
   const atual=parcel.data();
   const composicao=preview.discriminado?{
    jurosPagos:round(Number(atual.jurosPagos||0)+preview.jurosRecebidos),multaPaga:round(Number(atual.multaPaga||0)+preview.multaRecebida),
@@ -73,8 +75,9 @@ export async function salvarPagamentoConferido(api,expected,preview,patch,operat
    encargosHistoricosNaoDiscriminados:atual.encargosHistoricosNaoDiscriminados===true||(Number(atual.pago||0)>0&&(atual.jurosPagos==null||atual.multaPaga==null)),ultimaDataPagamentoRealConferida:preview.dataReal
   }:{};
   tx.update(ref,{...patch,...composicao});
+  if(quitacao)quitacao.aplicar();
   api.aplicarFinanceiro(tx,preview.recebido,loan.data(),parcel.data(),preview);
-  tx.set(audit,{parcelaId:expected.parcelaId,emprestimoId:expected.parcel.emprestimoId,userId:expected.loan.userId||null,numeroParcela:expected.parcel.numero||null,valorRecebido:preview.recebido,dataPagamentoReal:preview.dataReal,pagoAntes:preview.jaPago,pagoDepois:preview.novoPago,saldoDepois:preview.saldoContratual,jurosCalculados:preview.jurosCalculados,multaCalculada:preview.multaCalculada,descontoNovo:0,descontoAcordoExistente:preview.descontoAcordo,encargosDiscriminadosNoRecebimento:preview.discriminado===true,...(preview.discriminado?{valorParcelaRecebido:preview.paraParcela,jurosRecebidos:preview.jurosRecebidos,multaRecebida:preview.multaRecebida,saldoAtualizadoDepois:preview.saldoAtualizado}:{}),tipo:preview.mode,pais:preview.pais,por:uid,em:api.serverTimestamp()});
+  tx.set(audit,{parcelaId:expected.parcelaId,emprestimoId:expected.parcel.emprestimoId,userId:expected.loan.userId||null,numeroParcela:expected.parcel.numero||null,valorRecebido:preview.recebido,dataPagamentoReal:preview.dataReal,pagoAntes:preview.jaPago,pagoDepois:preview.novoPago,saldoDepois:preview.saldoContratual,jurosCalculados:preview.jurosCalculados,multaCalculada:preview.multaCalculada,descontoNovo:0,descontoAcordoExistente:preview.descontoAcordo,encargosDiscriminadosNoRecebimento:preview.discriminado===true,...(quitacao?{isaCoinsCreditadas:quitacao.moedas.total,bonusAntecipacaoISC:quitacao.moedas.antecipacao,bonusQuitacaoISC:quitacao.moedas.quitacao,bonusIndicacaoISC:quitacao.moedas.indicacao}:{}),...(preview.discriminado?{valorParcelaRecebido:preview.paraParcela,jurosRecebidos:preview.jurosRecebidos,multaRecebida:preview.multaRecebida,saldoAtualizadoDepois:preview.saldoAtualizado}:{}),tipo:preview.mode,pais:preview.pais,por:uid,em:api.serverTimestamp()});
   return operationId;
  });
 }

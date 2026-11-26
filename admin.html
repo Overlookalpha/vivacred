@@ -360,7 +360,8 @@ Saldo:<br>
 <h3>Empréstimos</h3>
 
 <div id="ferramentasEmprestimos"></div>
-<div id="listaEmprestimosAtivos"></div>
+<div id="estadoCarregamentoEmprestimos" class="card" role="status" aria-live="polite">⏳ Carregando empréstimos… Aguarde enquanto buscamos os contratos e as parcelas.</div>
+<div id="listaEmprestimosAtivos" aria-busy="true"></div>
 
 <div id="painelParcelas"></div> 
   
@@ -3863,7 +3864,12 @@ container.appendChild(div);
 // =========================
 
 const containerAtivos = document.getElementById("listaEmprestimosAtivos");
+const estadoEmprestimos=document.getElementById('estadoCarregamentoEmprestimos');
+estadoEmprestimos.hidden=false;
+estadoEmprestimos.textContent='⏳ Carregando empréstimos… Aguarde enquanto buscamos os contratos e as parcelas.';
+containerAtivos.setAttribute('aria-busy','true');
 containerAtivos.innerHTML = "";
+try {
 const cartoesEmprestimosAtivos = [];
 
 const emprestimosSnap = await getDocs(collection(db,"emprestimos"));
@@ -4082,6 +4088,16 @@ for(const cartao of cartoesEmprestimosAtivos){
 }
 
 iniciarPainelEmprestimos({db,auth,doc,runTransaction},cartoesEmprestimosAtivos);
+estadoEmprestimos.textContent=cartoesEmprestimosAtivos.length?'':'Nenhum empréstimo encontrado.';
+estadoEmprestimos.hidden=cartoesEmprestimosAtivos.length>0;
+} catch(erro){
+ console.error('Falha ao carregar empréstimos',erro);
+ estadoEmprestimos.hidden=false;
+ estadoEmprestimos.textContent='Não foi possível carregar os empréstimos agora. Os dados não foram apagados. ';
+ const tentar=document.createElement('button');tentar.type='button';tentar.textContent='Tentar novamente';tentar.onclick=()=>location.reload();estadoEmprestimos.append(tentar);
+} finally {
+ containerAtivos.setAttribute('aria-busy','false');
+}
 
 // ===== HISTÓRICO DE EMPRÉSTIMOS =====
 

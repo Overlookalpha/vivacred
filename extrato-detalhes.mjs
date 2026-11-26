@@ -1,6 +1,9 @@
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+import {totalRecebidoParcela} from './cobranca-parcela.mjs';
 export function detalhesExtrato(p,formatar){
  const linhas=[];
+ if(Number(p.jurosMoraRecebidosSeparados||0)+Number(p.multaRecebidaSeparada||0)>0)linhas.push('Total efetivamente recebido nesta parcela: '+esc(formatar(totalRecebidoParcela(p)))+' (inclui encargos recebidos separadamente; não somar novamente)');
+ if(p.encargosHistoricosNaoDiscriminados)linhas.push('Parte dos pagamentos antigos não tem encargos discriminados. Os juros e a multa pagos abaixo mostram somente os valores identificados.');
  const data=v=>{const d=v?.toDate?.()||(v?new Date(v):null);return d&&!Number.isNaN(d.getTime())?d.toLocaleDateString('pt-BR'):null;};
  const dinheiro=v=>esc(formatar(Number(v||0)));
  const real=data(p.dataPagamentoReal);
@@ -29,5 +32,5 @@ export function linhaExtrato(p,formatar){
  const data=p.vencimento?.toDate?.()||(p.vencimento?new Date(p.vencimento):null);
  const vencimento=data&&!Number.isNaN(data.getTime())?data.toLocaleDateString('pt-BR'):'—';
  const status=p.status==='perdido'?'Encerrada como perda':p.status==='pago'||(Number(p.valor)>0&&Number(p.pago)>=Number(p.valor))?'🟢 Pago':'🔴 Em aberto';
- return `<tr><td>${esc(p.numero)}</td><td>${vencimento}</td><td>${esc(formatar(p.valor))}</td><td>${esc(formatar(p.pago))}</td><td>${status}</td></tr>`+(detalhesExtrato(p,formatar)?`<tr><td colspan="5">${detalhesExtrato(p,formatar)}</td></tr>`:'');
+ return `<tr><td>${esc(p.numero)}</td><td>${vencimento}</td><td>${esc(formatar(p.valor))}</td><td>${esc(formatar(totalRecebidoParcela(p)))}</td><td>${status}</td></tr>`+(detalhesExtrato(p,formatar)?`<tr><td colspan="5">${detalhesExtrato(p,formatar)}</td></tr>`:'');
 }

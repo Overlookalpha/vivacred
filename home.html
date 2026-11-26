@@ -2453,8 +2453,8 @@ function obterSituacaoParcela(dados, agora = new Date()) {
   const diasAtraso = atrasada
     ? Math.floor((agora - vencimento) / (1000 * 60 * 60 * 24)) : 0;
   const aplicarEncargos = atrasada && dados.acordoSemEncargos !== true;
-  const multa = aplicarEncargos ? valor * 0.05 : 0;
-  const juros = aplicarEncargos ? valor * 0.01 * diasAtraso : 0;
+  const multa = Number(Math.max(0,(aplicarEncargos ? valor * 0.05 : 0)-Number(dados.multaRecebidaSeparada||0)).toFixed(2));
+  const juros = Number(Math.max(0,(aplicarEncargos ? valor * 0.01 * diasAtraso : 0)-Number(dados.jurosMoraRecebidosSeparados||0)).toFixed(2));
   return { atrasada, multa, juros, restante: Math.max(0, valor + multa + juros - pago) };
 }
 

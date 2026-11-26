@@ -92,6 +92,8 @@ def calcular_cobranca_parcela(parcela, hoje):
 
     multa = round(valor_original * 0.05, 2) if dias_atraso > 0 and not parcela.get("acordoSemEncargos") else 0
     juros = round(valor_original * 0.01 * dias_atraso, 2) if dias_atraso > 0 and not parcela.get("acordoSemEncargos") else 0
+    multa = round(max(0, multa - float(parcela.get("multaRecebidaSeparada") or 0)), 2)
+    juros = round(max(0, juros - float(parcela.get("jurosMoraRecebidosSeparados") or 0)), 2)
     restante_base = max(0, valor_original - valor_pago)
     total_atualizado = round(restante_base + multa + juros, 2)
 

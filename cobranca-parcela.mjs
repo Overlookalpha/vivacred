@@ -65,14 +65,18 @@ export function calcularCobrancaParcela(parcela, hojeReferencia = new Date()){
  // vencimento continua intacta e as demais parcelas seguem cobrando normal.
  const acordoSemEncargos = parcela.acordoSemEncargos === true;
 
- const multa = diasAtraso > 0 && !acordoSemEncargos
+ const multaTotalCalculada = diasAtraso > 0 && !acordoSemEncargos
   ? Number((valorOriginal * 0.05).toFixed(2))
   : 0;
 
- const juros = diasAtraso > 0 && !acordoSemEncargos
+ const jurosTotalCalculado = diasAtraso > 0 && !acordoSemEncargos
   ? Number((valorOriginal * 0.01 * diasAtraso).toFixed(2))
   : 0;
 
+ // Novos encargos recebidos ficam separados de pago (saldo contratual).
+ // Campos antigos não são reinterpretados nem subtraídos duas vezes.
+ const multa = Number(Math.max(0,multaTotalCalculada - Number(parcela.multaRecebidaSeparada || 0)).toFixed(2));
+ const juros = Number(Math.max(0,jurosTotalCalculado - Number(parcela.jurosMoraRecebidosSeparados || 0)).toFixed(2));
  const restanteBase = Math.max(0, valorOriginal - valorPago);
 
  const totalAtualizado = Number(
@@ -87,4 +91,7 @@ export function calcularCobrancaParcela(parcela, hojeReferencia = new Date()){
   juros,
   totalAtualizado
  };
+}
+export function totalRecebidoParcela(parcela){
+ return Number((Number(parcela.pago||0)+Number(parcela.jurosMoraRecebidosSeparados||0)+Number(parcela.multaRecebidaSeparada||0)).toFixed(2));
 }

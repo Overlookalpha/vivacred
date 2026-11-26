@@ -32,7 +32,7 @@ export function criarHistoricoCliente(api){
     for(const [label,value] of [['Capital liberado registado',t.liberado],['Total recebido registado',t.recebido],['Juros recebidos discriminados',t.juros],['Multas recebidas discriminadas',t.multa],['Em aberto atualizado até hoje',t.aberto]])node('p',label+': '+money(value,pais),card);
     if(t.semDiscriminacao)node('small',t.semDiscriminacao+' parcela(s) com pagamento sem discriminação completa de juros/multa. Estes encargos não foram presumidos nem somados novamente ao recebido.',card);
    }
-   node('p','O total recebido vem do campo pago de cada parcela. Registos antigos não permitem reconstruir cada pagamento parcial nem separar todos os juros contratuais. Juros calculados e descontos de acordos não são tratados como dinheiro recebido.',body);
+   node('p','O total recebido inclui o abatimento da parcela e os encargos recebidos separadamente nos novos lançamentos. Registos antigos não permitem reconstruir cada pagamento parcial nem separar todos os juros contratuais. Juros calculados e descontos de acordos não são tratados como dinheiro recebido.',body);
    const credit=node('section',null,body);credit.className='card';node('h3','Nota de pagamento e recuperação',credit);
    node('p','Nota atual de pagamento: '+(credito.nota==null?'Histórico insuficiente':credito.nota+'/100'),credit);
    node('p','Dias acumulados de atraso: '+credito.diasAcumulados+' · Maior atraso: '+credito.maiorAtraso+' dia(s) · Parcelas atualmente atrasadas: '+credito.atrasosAtuais,credit);
@@ -55,13 +55,13 @@ export function criarHistoricoCliente(api){
     for(const p of ps){
      const card=node('section',null,details);card.style.cssText='padding:12px;margin:12px 0;background:var(--bg,#f8fafc);border-radius:10px';
      node('h4','Parcela '+(p.numero||'—')+' · '+(p.status==='perdido'?'Encerrada como perda':p.status==='cancelado'?'Cancelada':p.quitada?'Paga':'Em aberto'),card);
-     node('p','Vencimento: '+(p.vencimentoDia?displayDate(p.vencimentoDia):'Não registado')+' · Valor: '+money(p.valor,p.pais)+' · Recebido registado: '+money(p.pago,p.pais),card);
+     node('p','Vencimento: '+(p.vencimentoDia?displayDate(p.vencimentoDia):'Não registado')+' · Valor: '+money(p.valor,p.pais)+' · Recebido registado: '+money(p.recebidoReal,p.pais),card);
      node('p','Data real do pagamento: '+(p.pagamentoRealDia?displayDate(p.pagamentoRealDia):'Não registada')+' · '+(p.atrasoDias==null?'Atraso não verificável':p.atrasoDias+' dia(s) de atraso'+(p.quitada?' no pagamento':' até hoje')),card);
      const extra=node('div',null,card);extra.innerHTML=detalhesExtrato(p,v=>money(v,p.pais));
      const movimentos=data.pagamentos.filter(m=>m.parcelaId===p.id);
      if(movimentos.length){
       node('h4','Lançamentos individuais conferidos',card);
-      for(const m of movimentos)node('p',date(m.dataPagamentoReal,p.pais)+' · Recebido neste lançamento: '+money(m.valorRecebido,p.pais)+' · Saldo contratual após: '+money(m.saldoDepois,p.pais)+(m.tipo==='confirmar'?' · Confirmação de quitação':''),card);
+      for(const m of movimentos)node('p',date(m.dataPagamentoReal,p.pais)+' · Recebido neste lançamento: '+money(m.valorRecebido,p.pais)+' · Saldo contratual após: '+money(m.saldoDepois,p.pais)+(m.encargosDiscriminadosNoRecebimento?' · Parcela: '+money(m.valorParcelaRecebido,p.pais)+' · Juros: '+money(m.jurosRecebidos,p.pais)+' · Multa: '+money(m.multaRecebida,p.pais):' · Encargos não discriminados neste lançamento')+(m.tipo==='confirmar'?' · Confirmação de quitação':''),card);
       node('small','Estes lançamentos já estão incluídos no total pago da parcela. Não são somados novamente.',card);
      }
      const notices=data.promessas.filter(n=>n.scope==='cliente'||n.parcelaId===p.id);

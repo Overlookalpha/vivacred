@@ -49,7 +49,7 @@ test('cancelar a conferência não grava; cliques repetidos não abrem dois flux
  const html=readFileSync(new URL('../admin.html',import.meta.url),'utf8');
  const source=html.slice(html.indexOf('window.adicionarPagamento = async'),html.indexOf('window.confirmarParcela = async'));
  let reviewed=0,saved=0,release;
- const ctx={window:{},pagamentosEmAndamento:new Set(),prompt:()=> '100,00',valorPagamento,previaPagamento,Date,doc:(_,c)=>c,db:{},getDocFromServer:async ref=>({exists:()=>true,data:()=>ref==='parcelas'?parcel:loan}),calcularDistribuicaoPagamento:()=>({}),conferirPagamento:()=>{reviewed++;return new Promise(resolve=>release=resolve);},salvarPagamentoConferido:()=>{saved++;},apiConferenciaPagamento:{},alert:()=>{},location:{reload(){throw Error('Não deveria recarregar');}}};
+ const ctx={window:{},pagamentosEmAndamento:new Set(),prompt:()=> '100,00',valorPagamento,previaPagamento,Date,doc:(_,c)=>c,db:{},getDocFromServer:async ref=>({exists:()=>true,data:()=>ref==='parcelas'?parcel:loan}),calcularDistribuicaoPagamento:()=>({}),solicitarPagamentoReal:()=>{reviewed++;return new Promise(resolve=>release=resolve);},salvarPagamentoConferido:()=>{saved++;},apiConferenciaPagamento:{},alert:()=>{},location:{reload(){throw Error('Não deveria recarregar');}}};
  vm.createContext(ctx);vm.runInContext(source,ctx);
  const first=ctx.window.adicionarPagamento('p');
  await new Promise(resolve=>setImmediate(resolve));
@@ -59,6 +59,6 @@ test('cancelar confirmação integral não grava nem dispara bonificações',asy
  const html=readFileSync(new URL('../admin.html',import.meta.url),'utf8');
  const start=html.indexOf('window.confirmarParcela = async'),end=html.indexOf('// 📥 ABA: SOLICITAÇÕES',start);
  const source=html.slice(start,end);let saved=0,reviewed=0;
- const ctx={window:{},pagamentosEmAndamento:new Set(),Date,doc:(_,c)=>c,db:{},getDocFromServer:async ref=>({exists:()=>true,data:()=>ref==='parcelas'?{...parcel,vencimento:{toDate:()=>parcel.vencimento}}:loan}),arredondarDinheiro:v=>Math.round(v*100)/100,calcularDistribuicaoPagamento:()=>({}),prompt:()=> '2026-11-26',dataLocalInformada:()=>now,inicioDoDia:d=>new Date(d.getFullYear(),d.getMonth(),d.getDate()),previaPagamento,conferirPagamento:async()=>{reviewed++;return false;},salvarPagamentoConferido:()=>{saved++;},apiConferenciaPagamento:{},alert:message=>{throw Error(message);},console};
+ const ctx={window:{},pagamentosEmAndamento:new Set(),Date,doc:(_,c)=>c,db:{},getDocFromServer:async ref=>({exists:()=>true,data:()=>ref==='parcelas'?{...parcel,vencimento:{toDate:()=>parcel.vencimento}}:loan}),arredondarDinheiro:v=>Math.round(v*100)/100,calcularDistribuicaoPagamento:()=>({}),prompt:()=> '2026-11-26',dataLocalInformada:()=>now,inicioDoDia:d=>new Date(d.getFullYear(),d.getMonth(),d.getDate()),previaPagamento,solicitarPagamentoReal:async()=>{reviewed++;return null;},salvarPagamentoConferido:()=>{saved++;},apiConferenciaPagamento:{},alert:message=>{throw Error(message);},console};
  vm.createContext(ctx);vm.runInContext(source,ctx);await ctx.window.confirmarParcela('p');assert.equal(reviewed,1);assert.equal(saved,0);assert.equal(ctx.pagamentosEmAndamento.size,0);
 });

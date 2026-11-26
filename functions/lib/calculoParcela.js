@@ -22,8 +22,8 @@ function calcularCobrancaParcela(parcela, agora = new Date()) {
 
   const diasAtraso = Math.floor((agora - vencimento) / (1000 * 60 * 60 * 24));
   const acordoSemEncargos = parcela.acordoSemEncargos === true;
-  const multa = acordoSemEncargos ? 0 : valor * 0.05;
-  const juros = acordoSemEncargos ? 0 : valor * 0.01 * diasAtraso;
+  const multa = Number(Math.max(0,(acordoSemEncargos ? 0 : valor * 0.05)-Number(parcela.multaRecebidaSeparada||0)).toFixed(2));
+  const juros = Number(Math.max(0,(acordoSemEncargos ? 0 : valor * 0.01 * diasAtraso)-Number(parcela.jurosMoraRecebidosSeparados||0)).toFixed(2));
 
   return {
     multa,

@@ -1,5 +1,5 @@
 import {dateKey,parseDate} from './vencimentos.mjs';
-import {calcularCobrancaParcela} from './cobranca-parcela.mjs';
+import {calcularCobrancaParcela,totalRecebidoParcela} from './cobranca-parcela.mjs';
 import {limiteEfetivo} from './perfil-credito.mjs';
 import {limitesRecuperacao} from './functions/lib/recuperacaoCredito.mjs';
 export function diaHistorico(value,pais='BR'){
@@ -23,15 +23,16 @@ export function resumoHistorico(user,contratos,parcelas,now=new Date()){
   const vencimento=diaHistorico(p.vencimento,pais),real=diaHistorico(p.dataPagamentoReal||p.dataPagamentoEfetivo,pais),hoje=diaHistorico(now,pais);
   const encerrada=['perdido','cancelado'].includes(p.status);
   const atraso=vencimento&&(!quitada||real&&real<=hoje)?Math.max(0,Math.round((Date.parse((quitada?real:hoje)+'T12:00:00Z')-Date.parse(vencimento+'T12:00:00Z'))/86400000)):null;
-  t.recebido+=pago;
+  const recebidoReal=totalRecebidoParcela(p);
+  t.recebido+=recebidoReal;
   // Never infer received interest from an outstanding charge or contract markup.
-  t.juros+=pago>0?money(p.jurosPagos):0;t.multa+=pago>0?money(p.multaPaga):0;
-  if(pago>0&&(p.jurosPagos==null||p.multaPaga==null))t.semDiscriminacao++;
+  t.juros+=recebidoReal>0?money(p.jurosPagos):0;t.multa+=recebidoReal>0?money(p.multaPaga):0;
+  if(recebidoReal>0&&(p.encargosHistoricosNaoDiscriminados||p.jurosPagos==null||p.multaPaga==null))t.semDiscriminacao++;
   if(!quitada&&!encerrada){
    if(vencimento){const [y,m,d]=vencimento.split('-').map(Number),[hy,hm,hd]=hoje.split('-').map(Number);t.aberto+=calcularCobrancaParcela({...p,vencimento:new Date(y,m-1,d,12)},new Date(hy,hm-1,hd,12)).totalAtualizado;}
    else t.aberto+=Math.max(0,valor-pago);
   }
-  return {...p,pais,quitada,vencimentoDia:vencimento,pagamentoRealDia:real,atrasoDias:encerrada?null:atraso};
+  return {...p,pais,quitada,recebidoReal,vencimentoDia:vencimento,pagamentoRealDia:real,atrasoDias:encerrada?null:atraso};
  });
  for(const t of Object.values(totais))for(const key of ['liberado','recebido','juros','multa','aberto'])t[key]=Math.round(t[key]*100)/100;
  return {totais,linhas,credito:limitesRecuperacao(user,limiteEfetivo(user),contratos,parcelas,now)};

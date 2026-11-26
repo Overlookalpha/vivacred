@@ -19,11 +19,14 @@ test('páginas e backend usam a mesma validação e preservam aprovação',()=>{
  assert.match(front,/getDocFromServer\(doc\(db,"usuarios"/);assert.match(front,/functions\/invalid-argument/);assert.match(front,/includes\(error.code\)\)await deleteUser/);
  assert.match(back,/status: "pendente_aprovacao"/);assert.match(back,/disabled: true/);
 });
-test('link funciona com clipboard, fallback e compartilhamento sem envio automático',async()=>{
- const html=fs.readFileSync('admin.html','utf8');const code=html.slice(html.indexOf('window.copiarLinkCadastro ='),html.indexOf('window.sairAdmin ='));
- let copied;const context={URL,window:{location:{href:'https://overlookalpha.github.io/vivacred/admin.html?x=1#foo'}},navigator:{clipboard:{writeText:async x=>copied=x}},alert:()=>{}};
- vm.runInNewContext(code,context);await context.window.copiarLinkCadastro();assert.equal(copied,'https://overlookalpha.github.io/vivacred/cadastro.html');
- const nodes=[];context.navigator={};context.document={body:{append:x=>nodes.push(x)},execCommand:()=>true,createElement:()=>({style:{},setAttribute(){},focus(){},select(){},setSelectionRange(){},remove(){}})};
- await context.window.copiarLinkCadastro();assert.equal(nodes[0].value,copied);
- assert.match(code,/https:\/\/wa.me\/\?text=/);assert.match(code,/dialog.showModal/);
+test('link abre sem Firebase e mantém endereço mesmo com cópia bloqueada',async()=>{
+ const nodes=[];const ids=new Map();
+ const document={getElementById:id=>ids.get(id),body:{append:n=>{nodes.push(n);ids.set(n.id,n);}},execCommand:()=>false,createElement:tag=>({tag,style:{},events:{},setAttribute(){},focus(){},select(){},setSelectionRange(){},scrollIntoView(){},addEventListener(k,fn){this.events[k]=fn;},append(...items){this.children=items;}})};
+ const context={URL,encodeURIComponent,window:{location:{href:'https://overlookalpha.github.io/vivacred/admin.html?x=1#foo'}},navigator:{clipboard:{writeText:async()=>{throw Error('bloqueado');}}},document};
+ vm.runInNewContext(fs.readFileSync('link-cadastro.js','utf8'),context);
+ context.window.copiarLinkCadastro();const painel=nodes[0],campo=painel.children[2],copiar=painel.children[3],whats=painel.children[4],status=painel.children[5];
+ assert.equal(campo.value,'https://overlookalpha.github.io/vivacred/cadastro.html');
+ await copiar.events.click();assert.match(status.textContent,/bloqueou/);assert.match(whats.href,/https:\/\/wa.me\/\?text=/);
+ document.execCommand=()=>true;await copiar.events.click();assert.match(status.textContent,/Link copiado/);
+ painel.children[6].events.click();assert.equal(painel.hidden,true);context.window.copiarLinkCadastro();assert.equal(painel.hidden,false);assert.equal(nodes.length,1);
 });

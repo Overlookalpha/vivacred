@@ -519,6 +519,7 @@ window.abrirTela = function(tela){
 };
 </script>
 
+<script src="link-cadastro.js?v=2"></script>
 <script type="module">
 import {detalhesExtrato} from "./extrato-detalhes.mjs";
 
@@ -5439,22 +5440,6 @@ ${user.status === "ativo" ? "Bloquear" : "Desbloquear"}
  }
 }
 
-window.copiarLinkCadastro = async function(){
- const link=new URL("cadastro.html",window.location.href);link.search="";link.hash="";
- try{await navigator.clipboard.writeText(link.href);alert("Link de cadastro copiado. Agora é só colar e enviar.");return;}catch(e){}
- // Fallback para Safari e navegadores que recusam a área de transferência.
- const area=document.createElement('textarea');area.value=link.href;area.setAttribute('aria-label','Link de cadastro');
- area.style.cssText='position:fixed;top:0;left:0;font-size:16px';document.body.append(area);area.focus();area.select();area.setSelectionRange(0,area.value.length);
- let copiado=false;try{copiado=document.execCommand('copy');}catch(e){}area.remove();
- if(copiado){alert("Link de cadastro copiado. Agora é só colar e enviar.");return;}
- const dialog=document.createElement('dialog');
- const titulo=document.createElement('h3');titulo.textContent='Link para novos clientes';
- const campo=document.createElement('input');campo.type='text';campo.readOnly=true;campo.value=link.href;campo.style.cssText='width:100%;font-size:16px';campo.setAttribute('aria-label','Link para copiar');campo.onclick=()=>{campo.select();campo.setSelectionRange(0,campo.value.length);};
- const ajuda=document.createElement('p');ajuda.textContent='Toque e mantenha pressionado o endereço para copiar. Pode também abrir o WhatsApp e escolher o destinatário.';
- const whats=document.createElement('a');whats.textContent='Compartilhar pelo WhatsApp';whats.href='https://wa.me/?text='+encodeURIComponent('Crie sua conta no IsaCred: '+link.href);whats.target='_blank';whats.rel='noopener';
- const fechar=document.createElement('button');fechar.textContent='Fechar';fechar.onclick=()=>dialog.close();
- dialog.append(titulo,campo,ajuda,whats,fechar);dialog.style.cssText='max-width:90vw;width:480px;padding:24px;border-radius:16px';dialog.addEventListener('close',()=>dialog.remove());document.body.append(dialog);dialog.showModal();campo.focus();campo.select();
-};
 
 window.sairAdmin = async function(){
  try{

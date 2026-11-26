@@ -22,7 +22,7 @@ export function createPaymentFollowup(api){
     }catch{forecast='<p>Não foi possível calcular a estimativa desta parcela. Confira os dados antes de informar o valor ao cliente.</p>';}
    }
    return `<div style="padding:10px;margin:8px 0;border-radius:8px;background:${state.active?'#fff7ed':'#fef2f2'};color:#7c2d12;border:1px solid #fed7aa"><strong>${esc(state.label)}</strong><br><small>${n.scope==='cliente'?'Aviso para as cobranças deste cliente':'Aviso desta parcela'}${n.observacao?' · '+esc(n.observacao):''}</small>${forecast}</div>`;}).join('');
-  return `<div data-acompanhamento-pagamento style="margin:10px 0">${loadError?'<p role="alert">Não foi possível consultar os avisos. Confira antes de cobrar.</p>':labels}<button type="button" data-estimar-parcela="${esc(id)}" style="background:#0369a1;color:white;margin:4px">📅 Estimar para outra data</button><button type="button" data-promessa-parcela="${esc(id)}" style="background:#b45309;color:white;margin:4px">🗓️ ${found.length?'Ver / editar promessa':'Registrar promessa de pagamento'}</button></div>`;
+  return `<div data-acompanhamento-pagamento style="margin:10px 0">${loadError?'<p role="alert">Não foi possível consultar os avisos. Confira antes de cobrar.</p>':labels}<button type="button" data-estimar-parcela="${esc(id)}" style="background:#0369a1;color:white;margin:4px">📅 Estimar para outra data</button><button type="button" data-promessa-parcela="${esc(id)}" style="background:#b45309;color:white;margin:4px">🗓️ ${found.length?'Ver / editar promessa':'Registrar promessa de pagamento'}</button><button type="button" data-historico-cobranca="${esc(id)}" style="margin:4px">📋 Histórico de cobranças</button></div>`;
  }
  async function load(id){
   const p=await api.getDocFromServer(api.doc(api.db,'parcelas',id));if(!p.exists())throw Error('Parcela não encontrada.');
@@ -50,8 +50,10 @@ export function createPaymentFollowup(api){
   popup.opener=null;
   try{
    if(!await canContact(id)){popup.close();return false;}
-   const {parcel,loan}=await load(id);
+   const expected=await load(id);
+   const {parcel,loan}=expected;
    const prepared=prepararWhatsAppParcela(parcel,loan,api.now?.()||new Date());
+   if(api.recordContact)await api.recordContact(expected,prepared);
    popup.location.replace(prepared.url);
    return true;
   }catch(e){popup.close();alert(e.message||'Não foi possível preparar a mensagem. Nenhuma mensagem foi enviada.');return false;}

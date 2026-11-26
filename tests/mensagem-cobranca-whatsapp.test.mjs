@@ -37,14 +37,21 @@ test('não prepara dívida encerrada, quitada ou telefone inválido e não alter
  const before=structuredClone(parcel);text();assert.deepEqual(parcel,before);
  assert.throws(()=>text({status:'pago'}));assert.throws(()=>text({pago:350}));assert.throws(()=>text({}, {telefoneCliente:''}));assert.throws(()=>text({}, {status:'quitado'}));
 });
-function fixture(notice){
+function fixture(notice,recordContact){
  globalThis.document={addEventListener(){}};globalThis.alert=()=>{};
  let closed=false,url='';globalThis.window={open:()=>({opener:{},close(){closed=true;},location:{replace(v){url=v;}}})};
  const records=new Map([['parcelas/p',{...parcel,emprestimoId:'e',userId:'u'}],['emprestimos/e',{...loan,userId:'u'}],['promessasPagamento/parcela-p',notice]]);
- const api={db:{},now:()=>now,doc:(_,c,id)=>c+'/'+id,getDocFromServer:async ref=>({exists:()=>!!records.get(ref),data:()=>records.get(ref)})};
+ const api={recordContact,db:{},now:()=>now,doc:(_,c,id)=>c+'/'+id,getDocFromServer:async ref=>({exists:()=>!!records.get(ref),data:()=>records.get(ref)})};
  return {panel:createPaymentFollowup(api),get closed(){return closed;},get url(){return url;}};
 }
 test('abrir contato prepara texto atual; promessa ativa fecha a aba sem navegar',async()=>{
  const allowed=fixture(null);assert.equal(await allowed.panel.openContact('p'),true);assert.match(allowed.url,/text=/);
  const key=new Date().toISOString().slice(0,10);const blocked=fixture({status:'ativa',data:key,pais:'PT'});assert.equal(await blocked.panel.openContact('p'),false);assert.equal(blocked.closed,true);assert.equal(blocked.url,'');
+});
+test('regista preparação antes de abrir WhatsApp; falha no histórico e promessa não simulam envio',async()=>{
+ let count=0;
+ const allowed=fixture(null,async(expected,prepared)=>{count++;assert.equal(expected.parcelId,'p');assert.match(prepared.mensagem,/Maria/);});
+ assert.equal(await allowed.panel.openContact('p'),true);assert.equal(count,1);
+ const failed=fixture(null,async()=>{throw Error('Falha de gravação');});assert.equal(await failed.panel.openContact('p'),false);assert.equal(failed.url,'');assert.equal(failed.closed,true);
+ const key=new Date().toISOString().slice(0,10);const blocked=fixture({status:'ativa',data:key,pais:'PT'},async()=>{count++;});assert.equal(await blocked.panel.openContact('p'),false);assert.equal(count,1);
 });

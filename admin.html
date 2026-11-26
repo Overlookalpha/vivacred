@@ -553,6 +553,7 @@ import {calcularCobrancaParcela} from './cobranca-parcela.mjs';
 import {createPaymentFollowup} from './acompanhamento-pagamento-ui.mjs';
 import {createDateEditor} from './editar-vencimentos.mjs';
 import {iniciarPainelEmprestimos} from './painel-emprestimos-ui.mjs';
+import {criarHistoricoCobrancas} from './historico-cobrancas-ui.mjs';
 import {registrarPagamentoSaque} from './saque-pagamento.mjs';
 let indiceAvaliacoesInternas = { porId: new Map(), porEmail: new Map() };
 function demonstrativoCliente(referencia) {
@@ -2990,7 +2991,8 @@ async function enviarTelegram(texto){
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const acompanhamentoPagamento = createPaymentFollowup({db,auth,doc,collection,query,where,getDocFromServer,getDocsFromServer,runTransaction,serverTimestamp,calculate:calcularCobrancaParcela,refresh:()=>calcularFinanceiro()});
+const historicoCobrancas = criarHistoricoCobrancas({db,auth,doc,collection,query,where,getDocsFromServer,runTransaction,serverTimestamp});
+const acompanhamentoPagamento = createPaymentFollowup({recordContact:historicoCobrancas.registrar,db,auth,doc,collection,query,where,getDocFromServer,getDocsFromServer,runTransaction,serverTimestamp,calculate:calcularCobrancaParcela,refresh:()=>calcularFinanceiro()});
 const editorVencimentos = createDateEditor({db,auth,doc,collection,query,where,getDocFromServer,getDocsFromServer,runTransaction,serverTimestamp,refresh:id=>window.abrirParcelas(id)});
 window.editarVencimentos = (emprestimoId,parcelaId=null)=>editorVencimentos.open(emprestimoId,parcelaId);
 
@@ -4425,6 +4427,12 @@ parcela.restante ?? (parcela.valor - parcela.pago)
 "Vencimento: "+venc.toLocaleDateString("pt-BR")+"<br>"+
 "<br>"+
 botoes;
+
+const historicoContato = document.createElement("button");
+historicoContato.type = "button";
+historicoContato.textContent = "📋 Histórico de cobranças";
+historicoContato.dataset.historicoCobranca = parcela.id;
+div.appendChild(historicoContato);
 
 if(podeEditarVencimento(parcela,chaveDataVencimento(new Date(),dados.pais),dados.pais)){
  const editarData = document.createElement("button");

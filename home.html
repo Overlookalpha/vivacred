@@ -1155,6 +1155,8 @@ color:var(--text);
   </div>
 </div>
 <script type="module">
+import {calcularCobrancaParcela} from "./cobranca-parcela.mjs";
+import {previaMoedas,aguardandoConferencia,textoPreviaMoedas} from "./previa-moedas.mjs";
 import {linhaExtrato} from "./extrato-detalhes.mjs";
 
 import { mostrarResumoLimite } from "./resumo-limite.mjs";
@@ -2639,6 +2641,13 @@ function renderizarGrupoEmprestimo(grupo){
 
   }
 
+  if(restante>0){
+    const aviso=document.createElement('p');aviso.dataset.conferenciaParcela=docSnap.id;
+    aviso.style.cssText='font-size:13px;padding:10px;border-radius:8px;background:#fff7ed;color:#9a3412';
+    aviso.hidden=!aguardandoConferencia(dados);aviso.textContent='⏳ Pagamento informado — aguardando conferência. O saldo e as moedas serão atualizados após a confirmação do administrador.';
+    linha.append(aviso);
+    const pagar=document.createElement('button');pagar.type='button';pagar.textContent='💳 Pagar parcela · ver ISAcoins';pagar.onclick=()=>gerarPagamentoParcela(docSnap.id);linha.append(pagar);
+  }
   card.appendChild(linha);
 
   });
@@ -4073,7 +4082,10 @@ window.gerarPagamentoParcela = async function(parcelaId){
   const clienteSnap = await getDoc(doc(db, "usuarios", usuarioLogado.uid));
 const cliente = clienteSnap.exists() ? clienteSnap.data() : {};
 
-  const valor = Number(dados.restante || dados.valor || 0);
+  const emprestimoSnap=await getDoc(doc(db,"emprestimos",dados.emprestimoId));
+  const moedas=emprestimoSnap.exists()?previaMoedas(dados,emprestimoSnap.data(),cliente):null;
+  const valor = calcularCobrancaParcela(dados).totalAtualizado;
+  if(valor<=0){mostrarAviso("Esta parcela já está paga.");return;}
 
   const moeda = paisUsuarioGlobal === "PT" ? "EUR" : "BRL";
   const localizacao = paisUsuarioGlobal === "PT" ? "pt-PT" : "pt-BR";
@@ -4200,6 +4212,12 @@ modalPagamento.innerHTML = `
 `;
 
 document.body.appendChild(modalPagamento);
+const previa=document.createElement('p');previa.textContent=textoPreviaMoedas(moedas);previa.style.cssText='padding:12px;background:#f5f3ff;color:#5b21b6;border-radius:10px;font-size:13px;text-align:left;line-height:1.6';
+modalPagamento.querySelector('#btnConfirmarPagamentoParcela').before(previa);
+const pendencia=document.createElement('p');pendencia.setAttribute('role','status');pendencia.style.cssText='padding:12px;background:#fff7ed;color:#9a3412;border-radius:10px;font-size:13px';
+pendencia.textContent='⏳ Pagamento informado — aguardando conferência. Isso não confirma o recebimento nem baixa a parcela.';pendencia.hidden=!aguardandoConferencia(dados);
+modalPagamento.querySelector('#btnConfirmarPagamentoParcela').before(pendencia);
+if(aguardandoConferencia(dados))modalPagamento.querySelector('#btnConfirmarPagamentoParcela').textContent='Reenviar informação de pagamento';
 
 modalPagamento.querySelector("#btnFecharPagamentoParcela").addEventListener("click", function(event){
     event.preventDefault();
@@ -4254,11 +4272,13 @@ modalPagamento.querySelector("#btnConfirmarPagamentoParcela").onclick = async fu
         await enviarTelegram("pagamento_confirmado", { id: parcelaId });
 
         mostrarAviso(
-            "✅ Confirmação recebida! Seu pagamento será conferido e atualizado em até 24 horas.",
+            "⏳ Pagamento informado — aguardando conferência do administrador. O saldo e as ISAcoins só mudam após a confirmação.",
             "success"
         );
 
-        modalPagamento.remove();
+        pendencia.hidden=false;
+        botaoConfirmar.innerText='⏳ Aguardando conferência';
+        document.querySelectorAll('[data-conferencia-parcela]').forEach(e=>{if(e.dataset.conferenciaParcela===parcelaId)e.hidden=false;});
 
     } catch (erro) {
 

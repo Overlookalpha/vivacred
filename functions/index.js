@@ -254,8 +254,25 @@ exports.registrarEventoCliente = onCall(
     await exigirContaAprovada(db, request.auth.uid);
     const id = String(dados.id || "");
     if (["pagamento_aberto", "pagamento_confirmado"].includes(tipo)) {
-      const parcela = await db.collection("parcelas").doc(id).get();
-      if (!parcela.exists || parcela.data().userId !== request.auth.uid) throw new HttpsError("permission-denied", "Parcela inválida.");
+      if(!id||id.includes('/'))throw new HttpsError("invalid-argument","Parcela inválida.");
+      const ref=db.collection("parcelas").doc(id);
+      if(tipo==="pagamento_confirmado"){
+        return db.runTransaction(async tx=>{
+          const parcela=await tx.get(ref);
+          if(!parcela.exists||parcela.data().userId!==request.auth.uid)throw new HttpsError("permission-denied","Parcela inválida.");
+          const p=parcela.data();
+          if(p.status==='pago'||Number(p.pago||0)>=Number(p.valor))throw new HttpsError("failed-precondition","Esta parcela já está paga.");
+          // A informação do cliente não altera saldo, juros, status financeiro ou moedas.
+          const informado=p.pagamentoInformadoEm?.toMillis?.()||0;
+          const conferido=Math.max(p.pagoEm?.toMillis?.()||0,p.ultimaDataPagamento?.toMillis?.()||0);
+          if(informado>conferido)return {ok:true,aguardandoConferencia:true};
+          tx.update(ref,{pagamentoInformadoEm:FieldValue.serverTimestamp()});
+          tx.set(db.collection("notificacoes").doc(),alertaTelegram(request.auth.uid,tipo,id));
+          return {ok:true,aguardandoConferencia:true};
+        });
+      }
+      const parcela=await ref.get();
+      if(!parcela.exists||parcela.data().userId!==request.auth.uid)throw new HttpsError("permission-denied","Parcela inválida.");
     }
     if (tipo === "negociacao") {
       const negociacao = await db.collection("negociacoes").doc(id).get();

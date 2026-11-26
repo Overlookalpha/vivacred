@@ -186,12 +186,14 @@ text-align:left;
 <a href="login.html" class="back">Já tem conta? Entrar</a>
 </div>
 
+<script src="functions/lib/validacaoDocumento.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
 import {
 getAuth,
 signOut,
 createUserWithEmailAndPassword,
+signInWithEmailAndPassword,
 deleteUser,
 setPersistence,
 browserLocalPersistence
@@ -201,6 +203,7 @@ import {
 getFirestore,
 doc,
 getDoc,
+getDocFromServer,
 setDoc,
 query,
 where,
@@ -369,7 +372,7 @@ return;
 }
 
 const documentoNormalizado = documento.replace(/\D/g, "");
-if ((pais === "BR" && documentoNormalizado.length !== 11) || (pais === "PT" && documentoNormalizado.length !== 9)) {
+if (!globalThis.documentoCadastroValido(documentoNormalizado,pais)) {
 alert("Informe um CPF ou NIF válido.");
 return;
 }
@@ -401,8 +404,16 @@ limparErroCadastro();
 let contaCriadaAgora = null;
 
 try {
-const cred = await createUserWithEmailAndPassword(auth, email, senha);
-contaCriadaAgora = cred.user;
+let cred;
+try { cred = await createUserWithEmailAndPassword(auth, email, senha); contaCriadaAgora=cred.user; }
+catch(erro){
+ if(erro.code!=="auth/email-already-in-use")throw erro;
+ // Recupera somente uma conta incompleta cuja senha o próprio utilizador conhece.
+ cred=await signInWithEmailAndPassword(auth,email,senha);
+ const perfil=await getDocFromServer(doc(db,"usuarios",cred.user.uid));
+ if(perfil.exists()){await signOut(auth);throw {code:"auth/email-already-in-use"};}
+ contaCriadaAgora=cred.user;
+}
 
 await criarPerfilUsuario({
  nome, email, telefone, cpf: documentoNormalizado, pais, dataNascimento, pix, profissao,
@@ -421,30 +432,22 @@ area.style.background = "#14532d"; area.style.color = "#fff";
 btnCadastrar.textContent = "Cadastro enviado";
 return;
 } catch (error) {
-if (error.code === "functions/already-exists") {
- // O perfil recusou o CPF/NIF porque pertence a outra conta. Como esse
- // usuário de autenticação acabou de ser criado e não ganhou perfil, ele
- // não deve ficar órfão impedindo uma tentativa futura com o mesmo e-mail.
- if (contaCriadaAgora) {
-  try { await deleteUser(contaCriadaAgora); }
-  catch (erroLimpeza) { console.warn("Não foi possível limpar a conta incompleta:", erroLimpeza); }
- }
- const emailLogin = encodeURIComponent(email);
- mostrarErroCadastro(
-  "<strong>Este CPF/NIF já está cadastrado.</strong><br>" +
-  "Se a conta for sua, entre ou recupere a senha. Se não reconhecer o cadastro, fale com o atendimento.<br><br>" +
-  '<a href="login.html?email=' + emailLogin + '">Entrar na conta</a> · ' +
-  '<a href="login.html?email=' + emailLogin + '#recuperar">Recuperar senha</a>'
- );
-} else if (error.code === "functions/unavailable") {
- // servidor em modo de emergência: não deixar a conta de autenticação solta
- if (contaCriadaAgora) {
-  try { await deleteUser(contaCriadaAgora); }
-  catch (erroLimpeza) { console.warn("Não foi possível limpar a conta incompleta:", erroLimpeza); }
- }
- mostrarErroCadastro("<strong>" + MSG_CADASTROS_SUSPENSOS + "</strong>");
-} else {
- mostrarErroCadastro(traduzErro(error.code));
+// Nunca apagar a conta após uma resposta incerta: o servidor pode ter concluído o perfil.
+if(contaCriadaAgora){
+ try {
+  const perfil=await getDocFromServer(doc(db,"usuarios",contaCriadaAgora.uid));
+  if(!perfil.exists() && ["functions/invalid-argument","functions/already-exists","functions/unavailable","functions/permission-denied"].includes(error.code))await deleteUser(contaCriadaAgora);
+ }catch(erroLimpeza){console.warn("Cadastro não confirmado; conta preservada para recuperação.");}
+}
+try{await signOut(auth);}catch(e){}
+if(error.code==="functions/already-exists"){
+ mostrarErroCadastro("Este CPF/NIF ou utilizador já está cadastrado. Entre ou recupere a senha; se precisar, fale com o atendimento.");
+}else if(error.code==="functions/unavailable"){
+ mostrarErroCadastro(MSG_CADASTROS_SUSPENSOS);
+}else if(error.code==="auth/user-disabled"){
+ mostrarErroCadastro("Esta conta está desativada. Pode estar aguardando aprovação, ter sido recusada ou bloqueada. Fale com o administrador.");
+}else{
+ mostrarErroCadastro(traduzErro(error.code)+" Se o envio foi interrompido, tente novamente com o mesmo e-mail e senha. A aprovação continua sendo feita pelo administrador.");
 }
 cadastrando = false;
 btnCadastrar.disabled = false;

@@ -19,10 +19,7 @@ function textoOpcional(valor, maximo) {
   return valor == null || (typeof valor === "string" && valor.trim().length <= maximo);
 }
 
-function documentoValido(valor, pais) {
-  const numeros = String(valor || "").replace(/\D/g, "");
-  return (pais === "BR" && numeros.length === 11) || (pais === "PT" && numeros.length === 9);
-}
+const {documentoValido}=require('./lib/validacaoDocumento');
 
 function dataNascimentoValida(valor) {
   if (!/^\d{2}\/\d{2}\/\d{4}$/.test(String(valor || ""))) return false;

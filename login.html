@@ -182,7 +182,7 @@ if (user.email === "over@vivacred.com") {
 }
   } catch (error) {
     if (error.code === "auth/user-disabled") {
-      alert("A sua conta ainda não foi aprovada pelo administrador. Assim que for aprovada poderá entrar.");
+      alert("Esta conta está desativada. Pode estar aguardando aprovação, ter sido recusada ou bloqueada. Fale com o administrador para confirmar.");
     } else {
       alert("Erro no login: " + error.message);
     }

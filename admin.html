@@ -528,6 +528,7 @@ window.abrirTela = function(tela){
 import {criarPixCliente} from "./pix-cliente-ui.mjs";
 import {criarEditorPix,salvarPixCliente} from "./editar-pix-cliente.mjs";
 import {iniciarCentralPendencias} from './central-pendencias-ui.mjs';
+import {agruparParcelasEmprestimos} from './carregamento-emprestimos.mjs';
 import {prepararQuitacaoAtomica} from "./quitacao-atomica.mjs";
 import {detalhesExtrato} from "./extrato-detalhes.mjs";
 
@@ -3588,40 +3589,22 @@ if (!adminSnap.exists()) {
 // Migrações históricas não podem rodar ao abrir o painel: elas alteram muitos
 // registros e exigem revisão prévia dos dados e um backup.
   
-// O diagnóstico e o cálculo financeiro não dependem um do outro,
-// então rodam ao mesmo tempo em vez de um esperar o outro terminar.
-const [diagnostico] = await Promise.all([
-  gerarDiagnosticoSistema(),
-  calcularFinanceiro()
+// O diagnóstico não bloqueia a lista. Mantemos o cálculo financeiro pronto
+// antes dos cartões, porque fornece as avaliações internas já existentes.
+gerarDiagnosticoSistema().then(diagnostico=>{
+ const resumoTelegram=gerarResumoTelegram(diagnostico);
+ const alertasTelegram=gerarAlertasTelegram(diagnostico);
+ enviarTelegram(resumoTelegram);
+ if(alertasTelegram.trim())enviarTelegram(alertasTelegram);
+}).catch(erro=>console.error('Falha no diagnóstico geral; a lista continua disponível.',erro));
+
+const [,snapshot,parcelasAnaliseSnap,usuariosSnapshot] = await Promise.all([
+ calcularFinanceiro(),
+ getDocs(collection(db,"emprestimos")),
+ getDocs(collection(db,"parcelas")),
+ getDocs(collection(db,"usuarios"))
 ]);
-
-console.log("🚀 DIAGNOSTICO", diagnostico);
-console.log("DIAGNOSTICO FINAL:", diagnostico);
-const resumoTelegram =
-gerarResumoTelegram(diagnostico);
-
-const alertasTelegram =
-gerarAlertasTelegram(diagnostico);
-
-console.log("RESUMO TELEGRAM");
-console.log(resumoTelegram);
-
-console.log("ALERTAS TELEGRAM");
-console.log(alertasTelegram);
-
-// Não esperamos a resposta do Telegram pra continuar carregando
-// a tela — a mensagem é disparada em segundo plano. Antes, a tela
-// só aparecia depois do Telegram responder.
-enviarTelegram(resumoTelegram);
-
-if(alertasTelegram.trim() !== ""){
-
- enviarTelegram(alertasTelegram);
-
-}
-
-const snapshot = await getDocs(collection(db,"emprestimos"));
-const parcelasAnaliseSnap = await getDocs(collection(db,"parcelas"));
+const parcelasPorEmprestimoCards = agruparParcelasEmprestimos(parcelasAnaliseSnap.docs);
 const parcelasPorEmprestimoAnalise = new Map();
 
 parcelasAnaliseSnap.forEach(function(parcelaDoc){
@@ -3634,10 +3617,6 @@ parcelasAnaliseSnap.forEach(function(parcelaDoc){
 const container = document.getElementById("listaUsuarios");
 
 container.innerHTML = "";
-
-const usuariosSnapshot = await getDocs(
-  collection(db,"usuarios")
-);
 
 const usuariosMap = {};
 const perfisPixPorId = new Map(usuariosSnapshot.docs.map(d=>[d.id,d.data()]));
@@ -3926,8 +3905,8 @@ containerAtivos.innerHTML = "";
 try {
 const cartoesEmprestimosAtivos = [];
 
-const emprestimosSnap = await getDocs(collection(db,"emprestimos"));
-const perfisContatosSnap = await getDocs(collection(db,"usuarios"));
+const emprestimosSnap = snapshot;
+const perfisContatosSnap = usuariosSnapshot;
 const telefonesCadastro = new Map(perfisContatosSnap.docs.map(d=>[d.id,d.data().telefone || ""]));
 const perfisPixAtivos = new Map(perfisContatosSnap.docs.map(d=>[d.id,d.data()]));
 
@@ -3943,21 +3922,8 @@ for(const emprestimoDoc of emprestimosSnap.docs){
         continue;
     }
 
-    const parcelasQuery = query(
-        collection(db,"parcelas"),
-        where("emprestimoId","==",emprestimoDoc.id)
-    );
-
-    const parcelasSnap = await getDocs(parcelasQuery);
-
-    const parcelas = [];
-
-    parcelasSnap.forEach(docParcela=>{
-        parcelas.push({
-            id:docParcela.id,
-            ...docParcela.data()
-        });
-    });
+    // Uma leitura compartilhada substitui uma consulta sequencial por contrato.
+    const parcelas = [...(parcelasPorEmprestimoCards.get(emprestimoDoc.id)||[])];
 
     parcelas.sort((a,b)=>a.numero-b.numero);
     const quitado = emprestimoQuitado(emp,parcelas);
@@ -4161,7 +4127,7 @@ estadoEmprestimos.hidden=cartoesEmprestimosAtivos.length>0;
 const historicoContainer = document.getElementById("historicoEmprestimos");
 historicoContainer.innerHTML = "";
 
-const historicoSnapshot = await getDocs(collection(db,"emprestimos"));
+const historicoSnapshot = snapshot;
 
 historicoSnapshot.forEach((docSnap) => {
   const dados = docSnap.data();

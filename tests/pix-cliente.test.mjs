@@ -18,5 +18,5 @@ test('sem chave não oferece botão vazio e PT usa MB WAY',()=>{
 });
 test('chave não é interpretada como HTML e ambos os cartões usam o componente',()=>{
  const value='<img src=x onerror=alert(1)>';const host=criarPixCliente({pixCliente:value},null,dom());assert.equal(host.children[1].value,value);assert.equal(host.children[1].innerHTML,undefined);
- const html=readFileSync('admin.html','utf8');assert.match(html,/criarPixCliente\(dados,perfisPixPorId.get\(dados.userId\)\)/);assert.match(html,/criarPixCliente\(emp,perfisPixAtivos.get\(emp.userId\)\)/);
+ const html=readFileSync('admin.html','utf8');assert.match(html,/criarCartaoPixEditavel\(dados,perfisPixPorId.get\(dados.userId\)\)/);assert.match(html,/criarCartaoPixEditavel\(emp,perfisPixAtivos.get\(emp.userId\)\)/);
 });

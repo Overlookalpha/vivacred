@@ -523,6 +523,7 @@ window.abrirTela = function(tela){
 <script src="link-cadastro.js?v=2"></script>
 <script type="module">
 import {criarPixCliente} from "./pix-cliente-ui.mjs";
+import {criarEditorPix,salvarPixCliente} from "./editar-pix-cliente.mjs";
 import {prepararQuitacaoAtomica} from "./quitacao-atomica.mjs";
 import {detalhesExtrato} from "./extrato-detalhes.mjs";
 
@@ -3004,6 +3005,26 @@ async function enviarTelegram(texto){
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const cartoesPixEditaveis=[];
+function criarCartaoPixEditavel(emprestimo,perfil){
+ const host=document.createElement('div');
+ const item={host,emprestimo,perfil};cartoesPixEditaveis.push(item);
+ function render(){
+  host.replaceChildren(criarPixCliente(emprestimo,item.perfil));
+  if(!emprestimo.userId||!item.perfil)return;
+  host.append(criarEditorPix({
+   chave:typeof item.perfil.pix==='string'?item.perfil.pix.trim():'',
+   nome:item.perfil.nome||emprestimo.nomeCliente||'cliente',pt:emprestimo.pais==='PT',
+   salvar:async nova=>{
+    const chave=await salvarPixCliente({db,doc,runTransaction},emprestimo.userId,item.perfil.pix,nova);
+    for(const outro of cartoesPixEditaveis){
+     if(outro.emprestimo.userId===emprestimo.userId){outro.perfil={...outro.perfil,pix:chave};outro.render();}
+    }
+   }
+  }));
+ }
+ item.render=render;render();return host;
+}
 const pagamentosEmAndamento = new Set();
 const apiConferenciaPagamento = {db,auth,doc,runTransaction,serverTimestamp,prepararQuitacao:prepararQuitacaoAtomica,aplicarFinanceiro:(tx,valor,loan,parcel,preview)=>{
  const dist=preview?.discriminado?distribuirRecebimentoReal(preview,loan,parcel):calcularDistribuicaoPagamento(valor,loan,parcel);
@@ -3856,7 +3877,7 @@ statusTexto +
 "<button style='background:#25D366;color:white;' onclick=\"avisarClienteSolicitacao('" + docSnap.id + "')\">📲 Avisar Cliente</button> " +
 "<button style='background:#25D366;color:white;' onclick=\"acionarAvalista('" + docSnap.id + "')\">🤝 Acionar Avalista</button>";
 
-div.querySelector('.pixClienteCard').append(criarPixCliente(dados,perfisPixPorId.get(dados.userId)));
+div.querySelector('.pixClienteCard').append(criarCartaoPixEditavel(dados,perfisPixPorId.get(dados.userId)));
 container.appendChild(div);
 
 });
@@ -4070,7 +4091,7 @@ Gerenciar Parcelas
 
 `;
 
-div.querySelector('.pixClienteCard').append(criarPixCliente(emp,perfisPixAtivos.get(emp.userId)));
+div.querySelector('.pixClienteCard').append(criarCartaoPixEditavel(emp,perfisPixAtivos.get(emp.userId)));
 cartoesEmprestimosAtivos.push({
  div,
  vencimento: proximaParcela ? ordemVencimento(proximaParcela) : "9999-12-31",

@@ -143,7 +143,7 @@ color:var(--primary-dark);
 
 <header class="adminHeader">
  <div class="adminBrand"><div class="adminBrandIcon">💼</div><div><strong>IsaCred Admin</strong><span id="adminIdentity">Painel administrativo</span></div></div>
- <div class="adminActions"><button type="button" class="adminLinkButton" onclick="copiarLinkCadastro()" title="Copiar link para novos clientes">🔗 <span class="adminActionLabel">Link</span></button><button type="button" onclick="abrirTela('inteligencia')" style="color:var(--primary-dark);" title="Resultados">🧠 <span class="adminActionLabel">Resultados</span></button><button type="button" onclick="sairAdmin()" style="color:var(--danger);" title="Sair">↪ <span class="adminActionLabel">Sair</span></button></div>
+ <div class="adminActions"><button type="button" id="atualizarAdmin" aria-label="Atualizar página do admin" title="Atualizar página sem sair da conta" style="min-height:44px">🔄 <span class="adminActionLabel">Atualizar</span></button><button type="button" class="adminLinkButton" onclick="copiarLinkCadastro()" title="Copiar link para novos clientes">🔗 <span class="adminActionLabel">Link</span></button><button type="button" onclick="abrirTela('inteligencia')" style="color:var(--primary-dark);" title="Resultados">🧠 <span class="adminActionLabel">Resultados</span></button><button type="button" onclick="sairAdmin()" style="color:var(--danger);" title="Sair">↪ <span class="adminActionLabel">Sair</span></button></div>
 </header>
 
 <!-- ÁREA PRINCIPAL -->
@@ -522,6 +522,7 @@ window.abrirTela = function(tela){
 };
 </script>
 
+<script src="atualizar-admin.js"></script>
 <script src="link-cadastro.js?v=2"></script>
 <script type="module">
 import {criarPixCliente} from "./pix-cliente-ui.mjs";

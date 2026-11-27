@@ -1,6 +1,7 @@
 import {prepararWhatsAppParcela} from './mensagem-cobranca-whatsapp.mjs';
 import {noticeKey,noticeState,projection,saveNotice,displayDate,resultadoPromessa} from './acompanhamento-pagamento.mjs';
 import {dateKey} from './vencimentos.mjs';
+import {mostrarMensagemWhatsApp} from './abrir-whatsapp-ui.mjs';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function createPaymentFollowup(api){
  let notices=new Map(),loadError=false,dialog=null;
@@ -48,20 +49,20 @@ export function createPaymentFollowup(api){
    return true;
   }catch{alert('Não foi possível conferir os avisos atualizados. Nenhum contato de cobrança foi aberto.');return false;}
  }
+ const preparandoContatos=new Set();
  async function openContact(id){
-  // Open during the click so mobile browsers do not block the async navigation.
-  const popup=window.open('about:blank','_blank');
-  if(!popup){alert('Permita abrir o WhatsApp nas configurações de pop-ups do navegador.');return false;}
-  popup.opener=null;
+  if(preparandoContatos.has(id))return false;
+  preparandoContatos.add(id);
   try{
-   if(!await canContact(id)){popup.close();return false;}
+   if(!await canContact(id))return false;
    const expected=await load(id);
    const {parcel,loan}=expected;
    const prepared=prepararWhatsAppParcela(parcel,loan,api.now?.()||new Date());
    if(api.recordContact)await api.recordContact(expected,prepared);
-   popup.location.replace(prepared.url);
+   (api.presentContact||mostrarMensagemWhatsApp)(prepared);
    return true;
-  }catch(e){popup.close();alert(e.message||'Não foi possível preparar a mensagem. Nenhuma mensagem foi enviada.');return false;}
+  }catch(e){alert(e.message||'Não foi possível preparar a mensagem. Nenhuma mensagem foi enviada.');return false;}
+  finally{preparandoContatos.delete(id);}
  }
  function node(tag,text,parent){const e=document.createElement(tag);if(text!=null)e.textContent=text;if(parent)parent.append(e);return e;}
  function field(parent,label,type){const wrap=node('label',label,parent);wrap.style.cssText='display:block;margin:12px 0';const e=node(type==='textarea'?'textarea':'input',null,wrap);if(type!=='textarea')e.type=type;e.style.cssText='display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:10px;border:1px solid #cbd5e1;border-radius:8px';return e;}

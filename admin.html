@@ -155,6 +155,8 @@ color:var(--primary-dark);
 
 <h2>Painel Administrativo VivaCred</h2>
 <p class="adminDashboardIntro">Comece pelos vencimentos e pedidos que precisam de atenção. Os indicadores financeiros continuam disponíveis nas seções abaixo.</p>
+<section class="card" id="centralPendenciasAdmin" aria-label="Central de pendências"></section>
+<section class="card" id="conferenciaCadastrosAdmin" aria-label="Conferência dos cadastros"></section>
 <!-- 11/11/2026: modo de emergência de segurança -->
 <div class="card" id="cardSegurancaEmergencia" style="border:2px solid #b42318;">
 <h3>🛡️ Modo de emergência de segurança</h3>
@@ -524,6 +526,7 @@ window.abrirTela = function(tela){
 <script type="module">
 import {criarPixCliente} from "./pix-cliente-ui.mjs";
 import {criarEditorPix,salvarPixCliente} from "./editar-pix-cliente.mjs";
+import {iniciarCentralPendencias} from './central-pendencias-ui.mjs';
 import {prepararQuitacaoAtomica} from "./quitacao-atomica.mjs";
 import {detalhesExtrato} from "./extrato-detalhes.mjs";
 
@@ -3551,6 +3554,33 @@ if (!adminSnap.exists()) {
    console.log("Admin autenticado");
    iniciarPainelSeguranca(user);
    iniciarContasPendentes();
+   iniciarCentralPendencias({
+    host:document.getElementById('centralPendenciasAdmin'),cadastros:document.getElementById('conferenciaCadastrosAdmin'),
+    carregar:async()=>{
+     const nomes=['usuarios','emprestimos','parcelas','promessasPagamento'];
+     const snapshots=await Promise.all(nomes.map(nome=>getDocsFromServer(collection(db,nome))));
+     return Object.fromEntries(nomes.map((nome,i)=>[nome,snapshots[i].docs.map(d=>({...d.data(),id:d.id}))]));
+    },
+    acoes:{
+     contas:()=>{window.abrirTela('dashboard');document.getElementById('cardContasPendentes').scrollIntoView({behavior:'smooth',block:'start'});},
+     pedidos:()=>window.abrirTela('solicitacoes'),
+     parcelas:r=>window.abrirParcelas(r.emprestimoId),
+     cadastro:u=>window.verUsuarioFirestore(u.id),
+     cliente:r=>r.userId?historicoCompletoCliente.abrir(r.userId):alert('Este aviso não tem um cliente vinculado. Confira os dados antes de cobrar.'),
+     pix:(u,atualizar)=>{
+      const dialog=document.createElement('dialog');dialog.setAttribute('aria-label','Editar chave do cliente');
+      dialog.style.cssText='width:min(480px,92vw);box-sizing:border-box;border:1px solid var(--border);border-radius:14px;padding:20px;background:var(--surface);color:var(--text)';
+      const title=document.createElement('h3');title.textContent=u.nome||'Cliente';
+      const fechar=document.createElement('button');fechar.type='button';fechar.textContent='Fechar';fechar.style.minHeight='44px';
+      const dismiss=()=>{dialog.close();dialog.remove();};fechar.onclick=dismiss;dialog.addEventListener('cancel',e=>{e.preventDefault();dismiss();});
+      dialog.append(title,criarEditorPix({chave:u.pix||'',nome:u.nome||'cliente',pt:u.pais==='PT',salvar:async nova=>{
+       const chave=await salvarPixCliente({db,doc,runTransaction},u.id,u.pix,nova);u.pix=chave;
+       for(const item of cartoesPixEditaveis)if(item.emprestimo.userId===u.id){item.perfil={...item.perfil,pix:chave};item.render();}
+       await atualizar();
+      }}),fechar);document.body.append(dialog);dialog.showModal();
+     }
+    }
+   });
    const identidadeAdmin = document.getElementById("adminIdentity");
    if(identidadeAdmin) identidadeAdmin.textContent = user.email || "Administrador";
 

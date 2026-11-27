@@ -531,6 +531,7 @@ import {iniciarCentralPendencias} from './central-pendencias-ui.mjs?v=dispensas-
 import {salvarDispensa} from './dispensar-pendencias.mjs';
 import {criarAvisosRecebimento} from './avisos-recebimento.mjs';
 import {agruparParcelasEmprestimos} from './carregamento-emprestimos.mjs';
+import {diasAte} from './painel-emprestimos.mjs';
 import {prepararQuitacaoAtomica} from "./quitacao-atomica.mjs";
 import {detalhesExtrato} from "./extrato-detalhes.mjs";
 
@@ -1894,12 +1895,8 @@ hoje.setHours(0,0,0,0);
 
 if(dados.vencimento){
 
- const vencimento = dados.vencimento.toDate();
- vencimento.setHours(0,0,0,0);
-
-const diasRestantes = Math.round(
-    (vencimento.getTime() - hoje.getTime()) / 86400000
-);
+const diasRestantes = diasAte(dados,emprestimoDaParcela?.pais||dados.pais||'BR',new Date());
+if(diasRestantes===null)return;
 const emAberto = parcelaEmAberto(dados);
 
 if (emAberto && diasRestantes === 5) {
@@ -2003,16 +2000,12 @@ if(
 
    const vencimento = dados.vencimento.toDate();
 
-   const hojeComparacao = new Date();
-   hojeComparacao.setHours(0,0,0,0);
-
-   const vencimentoComparacao = new Date(vencimento);
-   vencimentoComparacao.setHours(0,0,0,0);
+   const diasCalendario = diasAte(dados,emprestimoDaParcela?.pais||dados.pais||'BR',new Date());
 
    // "Próximo Vencimento" é pra quem ainda vai vencer — quem já
    // venceu (atrasado) fica só no card "Em Atraso", não aqui.
    const aindaNaoVenceu =
-     vencimentoComparacao >= hojeComparacao;
+     diasCalendario !== null && diasCalendario >= 0;
 
    if(
      aindaNaoVenceu &&
@@ -2058,10 +2051,7 @@ telefoneCliente.replace(/\D/g,"");
 
    const hoje = new Date();
 
-const diasRestantes = Math.ceil(
- (proximaParcela.vencimento - hoje) /
- (1000 * 60 * 60 * 24)
-);
+const diasRestantes = diasAte(proximaParcela,emp.pais||'BR',hoje);
 
    
 document.getElementById(

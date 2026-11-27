@@ -522,6 +522,7 @@ window.abrirTela = function(tela){
 
 <script src="link-cadastro.js?v=2"></script>
 <script type="module">
+import {criarPixCliente} from "./pix-cliente-ui.mjs";
 import {prepararQuitacaoAtomica} from "./quitacao-atomica.mjs";
 import {detalhesExtrato} from "./extrato-detalhes.mjs";
 
@@ -3587,6 +3588,7 @@ const usuariosSnapshot = await getDocs(
 );
 
 const usuariosMap = {};
+const perfisPixPorId = new Map(usuariosSnapshot.docs.map(d=>[d.id,d.data()]));
 
 usuariosSnapshot.forEach((userDoc)=>{
 
@@ -3688,8 +3690,7 @@ div.innerHTML =
 "Telefone: " + escaparHTML(dados.telefoneCliente || "-") + "<br>" +
 (dados.pais === "PT" ? "NIF: " : "CPF: ") +
 (escaparHTML(dados.cpfCliente || "-")) + "<br>" +
-(dados.pais === "PT" ? "MB Way: " : "Pix: ") +
-(escaparHTML(dados.pixCliente || "-")) + "<br><br>" +
+"<div class='pixClienteCard'></div><br>" +
 
 "<b>🤝 Avalista</b><br>" +
 "Nome: " + escaparHTML(dados.nomeAvalista || "-") + "<br>" +
@@ -3855,6 +3856,7 @@ statusTexto +
 "<button style='background:#25D366;color:white;' onclick=\"avisarClienteSolicitacao('" + docSnap.id + "')\">📲 Avisar Cliente</button> " +
 "<button style='background:#25D366;color:white;' onclick=\"acionarAvalista('" + docSnap.id + "')\">🤝 Acionar Avalista</button>";
 
+div.querySelector('.pixClienteCard').append(criarPixCliente(dados,perfisPixPorId.get(dados.userId)));
 container.appendChild(div);
 
 });
@@ -3875,6 +3877,7 @@ const cartoesEmprestimosAtivos = [];
 const emprestimosSnap = await getDocs(collection(db,"emprestimos"));
 const perfisContatosSnap = await getDocs(collection(db,"usuarios"));
 const telefonesCadastro = new Map(perfisContatosSnap.docs.map(d=>[d.id,d.data().telefone || ""]));
+const perfisPixAtivos = new Map(perfisContatosSnap.docs.map(d=>[d.id,d.data()]));
 
 for(const emprestimoDoc of emprestimosSnap.docs){
 
@@ -3995,6 +3998,7 @@ div.innerHTML = `
 </div>
 
 <div class="contatoEmprestimo"></div>
+<div class="pixClienteCard"></div>
 💰 <b>Valor Emprestado:</b> ${moeda} ${Number(emp.valor || 0).toFixed(2)}<br>
 
 💵 <b>Valor Total:</b> ${moeda} ${Number(emp.valorFinal || 0).toFixed(2)}<br>
@@ -4066,6 +4070,7 @@ Gerenciar Parcelas
 
 `;
 
+div.querySelector('.pixClienteCard').append(criarPixCliente(emp,perfisPixAtivos.get(emp.userId)));
 cartoesEmprestimosAtivos.push({
  div,
  vencimento: proximaParcela ? ordemVencimento(proximaParcela) : "9999-12-31",

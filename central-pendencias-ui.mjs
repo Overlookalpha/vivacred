@@ -42,6 +42,24 @@ export function iniciarCentralPendencias({host,cadastros,carregar,acoes,root=doc
    grupo('🆕 Contas para aprovar',dados.contas,'Ver aprovação',acoes.contas);
    grupo('📥 Pedidos de empréstimo',dados.pedidos,'Abrir pedidos',acoes.pedidos);
    grupo('💳 Pagamentos para conferir',dados.pagamentos,'Conferir parcelas',acoes.parcelas);
+   const avisos=node('section',null,body);avisos.style.cssText='padding:14px;border:2px solid #15803d;border-radius:12px;background:var(--surface,#fff);overflow-wrap:anywhere';
+   node('h4',`✅ Pagamentos confirmados — falta avisar · ${dados.avisos.length}`,avisos);
+   node('p','Abrir o WhatsApp não confirma envio. Depois de enviar, marque como avisado. Inclui a última parcela e pagamentos parciais.',avisos);
+   if(!dados.avisos.length)node('p','Nenhum aviso pendente. Novos recebimentos confirmados aparecem aqui.',avisos);
+   for(const row of dados.avisos){
+    const item=node('div',null,avisos);item.style.cssText='padding:10px 0;border-bottom:1px solid var(--border,#ddd)';
+    node('strong',row.nome,item);node('p','Parcela '+row.parcela,item);
+    node('p','Recebido: '+new Intl.NumberFormat('pt-BR',{style:'currency',currency:row.pais==='PT'?'EUR':'BRL'}).format(Number(row.valorRecebido)),item);
+    if(typeof row.data==='string')node('p','Pagamento em '+row.data.split('-').reverse().join('/'),item);
+    botao('💬 Enviar confirmação pelo WhatsApp',item,()=>acoes.avisarRecebimento(row));
+    const marcar=botao('✅ Marcar como avisado',item,async()=>{
+     if(marcar.disabled)return;
+     if(!globalThis.confirm('Você já enviou a confirmação deste recebimento ao cliente?'))return;
+     marcar.disabled=true;
+     try{await acoes.marcarRecebimento(row);await refresh();}
+     catch(e){status.textContent=e.message||'Não foi possível marcar o aviso. Tente novamente.';marcar.disabled=false;}
+    });
+   }
    grupo('🗓️ Promessas vencidas',dados.vencidas,'Revisar promessa',acoes.parcelas);
    grupo('⚠️ Promessas a conferir',dados.conferir,'Ver detalhes',r=>r.emprestimoId?acoes.parcelas(r):acoes.cliente(r));
    renderCadastros();status.textContent='Atualizado às '+new Date().toLocaleTimeString('pt-PT')+'. Use Atualizar pendências após resolver uma situação.';

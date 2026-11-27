@@ -528,6 +528,7 @@ window.abrirTela = function(tela){
 import {criarPixCliente} from "./pix-cliente-ui.mjs";
 import {criarEditorPix,salvarPixCliente} from "./editar-pix-cliente.mjs";
 import {iniciarCentralPendencias} from './central-pendencias-ui.mjs';
+import {criarAvisosRecebimento} from './avisos-recebimento.mjs';
 import {agruparParcelasEmprestimos} from './carregamento-emprestimos.mjs';
 import {prepararQuitacaoAtomica} from "./quitacao-atomica.mjs";
 import {detalhesExtrato} from "./extrato-detalhes.mjs";
@@ -3030,6 +3031,7 @@ function criarCartaoPixEditavel(emprestimo,perfil){
  }
  item.render=render;render();return host;
 }
+const avisosRecebimento=criarAvisosRecebimento({db,auth,doc,collection,query,where,getDocFromServer,getDocsFromServer,runTransaction,serverTimestamp});
 const pagamentosEmAndamento = new Set();
 const apiConferenciaPagamento = {db,auth,doc,runTransaction,serverTimestamp,prepararQuitacao:prepararQuitacaoAtomica,aplicarFinanceiro:(tx,valor,loan,parcel,preview)=>{
  const dist=preview?.discriminado?distribuirRecebimentoReal(preview,loan,parcel):calcularDistribuicaoPagamento(valor,loan,parcel);
@@ -3561,9 +3563,12 @@ if (!adminSnap.exists()) {
     carregar:async()=>{
      const nomes=['usuarios','emprestimos','parcelas','promessasPagamento'];
      const snapshots=await Promise.all(nomes.map(nome=>getDocsFromServer(collection(db,nome))));
-     return Object.fromEntries(nomes.map((nome,i)=>[nome,snapshots[i].docs.map(d=>({...d.data(),id:d.id}))]));
+     const pendentes=await getDocsFromServer(query(collection(db,'historicoPagamentos'),where('avisoClienteStatus','==','pendente')));
+     return {...Object.fromEntries(nomes.map((nome,i)=>[nome,snapshots[i].docs.map(d=>({...d.data(),id:d.id}))])),recebimentos:pendentes.docs.map(d=>({...d.data(),id:d.id}))};
     },
     acoes:{
+     avisarRecebimento:r=>avisosRecebimento.abrir(r.id),
+     marcarRecebimento:r=>avisosRecebimento.marcar(r.id),
      contas:()=>{window.abrirTela('dashboard');document.getElementById('cardContasPendentes').scrollIntoView({behavior:'smooth',block:'start'});},
      pedidos:()=>window.abrirTela('solicitacoes'),
      parcelas:r=>window.abrirParcelas(r.emprestimoId),
@@ -4747,7 +4752,7 @@ window.editarEmprestimo = async (id)=>{
  const finalizado=Number(emprestimo.parcelasPagas||0)+1>=Number(emprestimo.parcelas);
 
 alert(
- "Parcela confirmada.\n" + (finalizado ? "Empréstimo quitado. A confirmação por WhatsApp está no filtro Quitados e no histórico do cliente.\n\n" : "A confirmação por WhatsApp está em Gerenciar Parcelas e no histórico.\n\n") +
+ "Parcela confirmada.\n" + (finalizado ? "Empréstimo quitado. O aviso ao cliente está na Central de pendências, inclusive após a quitação.\n\n" : "O aviso ao cliente está na Central de pendências.\n\n") +
  "Evelyn (10%): " + distribuicao.repasseEvelyn.toFixed(2) + "\n" +
  "Entrada líquida no Caixa: " + distribuicao.valorLiquido.toFixed(2)
 );

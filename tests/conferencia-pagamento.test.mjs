@@ -34,7 +34,7 @@ test('salva parcela, financeiro e comprovativo da conferência na mesma transaç
  const f=fixture(),preview=previaPagamento(parcel,loan,100,'parcial',now,now);
  await salvarPagamentoConferido(f.api,expected,preview,{pago:200,restante:150},'op',now);
  assert.equal(f.records.get('parcelas/p').pago,200);assert.equal(f.records.get('configuracoes/financeiro').valor,100);
- const audit=f.records.get('historicoPagamentos/op');assert.equal(audit.valorRecebido,100);assert.equal(audit.jurosCalculados,7);assert.equal(audit.encargosDiscriminadosNoRecebimento,false);assert.equal(audit.saldoDepois,150);
+ const audit=f.records.get('historicoPagamentos/op');assert.equal(audit.avisoClienteStatus,'pendente');assert.equal(audit.valorRecebido,100);assert.equal(audit.jurosCalculados,7);assert.equal(audit.encargosDiscriminadosNoRecebimento,false);assert.equal(audit.saldoDepois,150);
  await assert.rejects(salvarPagamentoConferido(f.api,expected,preview,{pago:200,restante:150},'op',now));assert.equal(f.writes.length,3);
 });
 test('mudança durante conferência, falta de admin e divergência não debitam nem creditam',async()=>{

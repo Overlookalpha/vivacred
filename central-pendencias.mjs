@@ -19,7 +19,7 @@ export function conferirCadastro(u){
  else if(/^(teste(?:\s.*)?|test|pix|chave|exemplo|n[ãa]o informado|[-.]+)$/i.test(pix))problemas.push(pt?'MB WAY parece um preenchimento de teste':'Chave Pix parece um preenchimento de teste');
  return problemas;
 }
-export function resumirPendencias({usuarios=[],emprestimos=[],parcelas=[],promessas=[]},agora=new Date()){
+export function resumirPendencias({usuarios=[],emprestimos=[],parcelas=[],promessas=[],recebimentos=[]},agora=new Date()){
  const clientes=usuarios.filter(u=>!teste(u)),loans=emprestimos.filter(e=>!teste(e));
  const porLoan=new Map(loans.map(e=>[e.id,e])),porCliente=new Map(clientes.map(u=>[u.id,u]));
  const porParcela=new Map(parcelas.filter(p=>!teste(p)).map(p=>[p.id,p]));
@@ -44,5 +44,6 @@ export function resumirPendencias({usuarios=[],emprestimos=[],parcelas=[],promes
   else if(r.tipo==='conferir')conferir.push(item);
  }
  const cadastros=clientes.map(u=>({...u,problemas:conferirCadastro(u)})).filter(u=>u.problemas.length);
- return {contas,pedidos,pagamentos,vencidas,conferir,cadastros};
+ const avisos=recebimentos.filter(r=>!teste(r)&&r.avisoClienteStatus==='pendente'&&Number(r.valorRecebido)>0).map(r=>({id:r.id,userId:r.userId,emprestimoId:r.emprestimoId,nome:nome(r.userId,porLoan.get(r.emprestimoId)),parcela:r.numeroParcela||'—',data:r.dataPagamentoReal,valorRecebido:r.valorRecebido,pais:r.pais||porLoan.get(r.emprestimoId)?.pais||'BR'}));
+ return {contas,pedidos,pagamentos,vencidas,conferir,cadastros,avisos};
 }

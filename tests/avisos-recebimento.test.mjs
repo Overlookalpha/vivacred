@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {prepararAvisoRecebimento,marcarRecebimentoAvisado} from '../avisos-recebimento.mjs';
+import {prepararAvisoRecebimento,marcarRecebimentoAvisado,criarAvisosRecebimento} from '../avisos-recebimento.mjs';
 import {resumirPendencias} from '../central-pendencias.mjs';
 const loan={id:'l',userId:'u',nomeCliente:'Cliente',telefoneCliente:'+5551999990000',pais:'BR',status:'finalizado',finalizado:true,parcelas:1};
 const pagamento={id:'r',parcelaId:'p',emprestimoId:'l',userId:'u',numeroParcela:1,avisoClienteStatus:'pendente',valorRecebido:321,valorParcelaRecebido:300,jurosRecebidos:6,multaRecebida:15,encargosDiscriminadosNoRecebimento:true,saldoDepois:0,pais:'BR',dataPagamentoReal:'2026-11-27'};
@@ -31,4 +31,20 @@ test('marcar avisado atualiza pendência e histórico juntos sem alterar parcela
 });
 test('sem admin ou sem mensagem preparada não marca nem grava parcialmente',async()=>{
  for(const config of [{admin:false},{contato:false}]){const f=fixture(config);await assert.rejects(marcarRecebimentoAvisado(f.api,'r'));assert.equal(f.writes.length,0);}
+});
+
+test('central prepara link direto com telefone atual sem abrir aba vazia nem marcar enviado',async()=>{
+ const f=fixture();f.rows.set('parcelas/p',{emprestimoId:'l'});let prepared=null,abas=0;
+ globalThis.window={open(){abas++;throw Error('Aba vazia proibida');}};
+ globalThis.alert=msg=>{throw Error(msg);};
+ Object.assign(f.api,{
+  collection:(_,c)=>c,where(){},query(){},
+  getDocFromServer:async ref=>({exists:()=>true,id:ref.split('/').pop(),data:()=>ref==='historicoPagamentos/r'?pagamento:ref==='emprestimos/l'?loan:{nome:'Cliente',telefone:'+5587996679155'}}),
+  getDocsFromServer:async()=>({docs:[{id:'p',data:()=>({emprestimoId:'l',valor:300,pago:300,status:'pago'})}]}),
+  mostrarMensagemWhatsApp:p=>{prepared=p;}
+ });
+ assert.equal(await criarAvisosRecebimento(f.api).abrir('r'),true);
+ assert.equal(abas,0);assert.match(prepared.url,/^https:\/\/wa.me\/5587996679155\?text=/);
+ assert.equal(prepared.valorRecebido,321);assert.equal(f.writes.length,0);
+ assert.equal(f.rows.get('historicoPagamentos/r').avisoClienteStatus,'pendente');
 });

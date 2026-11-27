@@ -1,3 +1,4 @@
+import {mostrarMensagemWhatsApp} from './abrir-whatsapp-ui.mjs';
 import {validarTelefone} from './painel-emprestimos.mjs';
 import {emprestimoQuitado} from './confirmacao-pagamento.mjs';
 import {registrarContato} from './historico-cobrancas.mjs';
@@ -35,8 +36,6 @@ export function criarAvisosRecebimento(api){
  const abrindo=new Set();
  return {async abrir(id){
   if(abrindo.has(id))return false;abrindo.add(id);
-  const janela=window.open('about:blank','_blank');
-  if(!janela){abrindo.delete(id);alert('Permita abrir o WhatsApp no navegador.');return false;}janela.opener=null;
   try{
    const ps=await api.getDocFromServer(api.doc(api.db,'historicoPagamentos',id));if(!ps.exists())throw Error('Recebimento não encontrado.');const pagamento=ps.data();
    const ls=await api.getDocFromServer(api.doc(api.db,'emprestimos',pagamento.emprestimoId));if(!ls.exists())throw Error('Empréstimo não encontrado.');const loan={...ls.data(),id:ls.id||pagamento.emprestimoId};
@@ -45,8 +44,8 @@ export function criarAvisosRecebimento(api){
    if(loan.userId){const u=await api.getDocFromServer(api.doc(api.db,'usuarios',loan.userId));if(u.exists()){loan.telefoneCliente=u.data().telefone||loan.telefoneCliente;loan.nomeCliente=u.data().nome||loan.nomeCliente;}}
    const prepared=prepararAvisoRecebimento(pagamento,loan,parcelas);
    await registrarContato(api,{parcelId:pagamento.parcelaId,parcel,loan},prepared,'pagamento-'+id);
-   janela.location.replace(prepared.url);return true;
-  }catch(e){janela.close();alert(e.message||'Não foi possível abrir a confirmação.');return false;}
+   (api.mostrarMensagemWhatsApp||mostrarMensagemWhatsApp)(prepared);return true;
+  }catch(e){alert(e.message||'Não foi possível abrir a confirmação.');return false;}
   finally{abrindo.delete(id);}
  },marcar:id=>marcarRecebimentoAvisado(api,id)};
 }

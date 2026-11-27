@@ -22,8 +22,15 @@ test('o contrato quitado continua filtrável e o contacto seleciona a última pa
  assert.equal(ultimaParcelaRecebida([{...paid('1',1),dataPagamentoReal:'2026-11-26'},{...paid('2',2),dataPagamentoReal:'2026-11-20'}]).id,'1');
 });
 test('abre confirmação de quitado, regista contacto e não envia automaticamente',async()=>{
- const p=[paid('1',1),{...paid('2',2),jurosMoraRecebidosSeparados:7,multaRecebidaSeparada:17.5}];let url='',record=null,closed=false;
- globalThis.document={addEventListener(){}};globalThis.alert=()=>{};globalThis.window={open:()=>({opener:{},close(){closed=true;},location:{replace(v){url=v;}}})};
- const api={db:{},doc:(_,c,id)=>c+'/'+id,collection:(_,c)=>c,where(){},query(){},getDocsFromServer:async()=>({docs:p.map(x=>({id:x.id,data:()=>x}))}),getDocFromServer:async ref=>({exists:()=>true,data:()=>ref==='emprestimos/e'?loan:ref.startsWith('usuarios/')?{telefone:'+5551998208350'}:p[1]}),registrar:async(expected,prepared)=>{record={expected,prepared};}};
- assert.equal(await criarConfirmacaoPagamento(api).abrir(null,'e'),true);assert.equal(closed,false);assert.match(url,/wa.me\/5551998208350/);assert.equal(record.prepared.tipoContato,'confirmacao_pagamento');assert.equal(record.prepared.valorRecebido,374.5);
+ const p=[paid('1',1),{...paid('2',2),jurosMoraRecebidosSeparados:7,multaRecebidaSeparada:17.5}];let url='',record=null,aberturas=0;
+ globalThis.document={addEventListener(){}};globalThis.alert=()=>{};globalThis.window={open:()=>{aberturas++;throw Error('Não deve abrir uma aba vazia');}};
+ const api={mostrarMensagemWhatsApp:prepared=>{url=prepared.url;},db:{},doc:(_,c,id)=>c+'/'+id,collection:(_,c)=>c,where(){},query(){},getDocsFromServer:async()=>({docs:p.map(x=>({id:x.id,data:()=>x}))}),getDocFromServer:async ref=>({exists:()=>true,data:()=>ref==='emprestimos/e'?loan:ref.startsWith('usuarios/')?{telefone:'+5551998208350'}:p[1]}),registrar:async(expected,prepared)=>{record={expected,prepared};}};
+ assert.equal(await criarConfirmacaoPagamento(api).abrir(null,'e'),true);assert.equal(aberturas,0);assert.match(url,/wa.me\/5551998208350/);assert.equal(record.prepared.tipoContato,'confirmacao_pagamento');assert.equal(record.prepared.valorRecebido,374.5);
+});
+test('falha de consulta não deixa aba vazia nem mostra confirmação incorreta',async()=>{
+ let abas=0,previas=0,aviso='';
+ globalThis.document={addEventListener(){}};globalThis.window={open(){abas++;}};globalThis.alert=texto=>{aviso=texto;};
+ const api={db:{},doc:(_,c,id)=>c+'/'+id,getDocFromServer:async()=>{throw Error('Falha ao consultar pagamento');},mostrarMensagemWhatsApp(){previas++;}};
+ assert.equal(await criarConfirmacaoPagamento(api).abrir('p'),false);
+ assert.equal(abas,0);assert.equal(previas,0);assert.match(aviso,/Falha ao consultar/);
 });

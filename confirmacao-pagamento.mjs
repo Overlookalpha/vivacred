@@ -1,3 +1,4 @@
+import {mostrarMensagemWhatsApp} from './abrir-whatsapp-ui.mjs';
 import {totalRecebidoParcela} from './cobranca-parcela.mjs';
 import {validarTelefone} from './painel-emprestimos.mjs';
 export function parcelaQuitada(p){
@@ -31,7 +32,6 @@ export function criarConfirmacaoPagamento(api){
  const abrindo=new Set();
  async function abrir(parcelaId,emprestimoId){
   const key=parcelaId||emprestimoId;if(abrindo.has(key))return false;abrindo.add(key);
-  const janela=window.open('about:blank','_blank');if(!janela){abrindo.delete(key);alert('Permita a abertura do WhatsApp no navegador.');return false;}janela.opener=null;
   try{
    let parcel;
    if(parcelaId){const snap=await api.getDocFromServer(api.doc(api.db,'parcelas',parcelaId));if(!snap.exists())throw Error('Parcela não encontrada.');parcel={...snap.data(),id:parcelaId};emprestimoId=parcel.emprestimoId;}
@@ -45,8 +45,8 @@ export function criarConfirmacaoPagamento(api){
    if(loan.userId){const user=await api.getDocFromServer(api.doc(api.db,'usuarios',loan.userId));if(user.exists()&&user.data().telefone)loan.telefoneCliente=user.data().telefone;}
    const prepared=prepararConfirmacaoPagamento(parcel,loan,parcelas);
    await api.registrar({parcelId:parcelaId,parcel,loan},prepared);
-   janela.location.replace(prepared.url);return true;
-  }catch(e){janela.close();alert(e.message||'Não foi possível preparar a confirmação.');return false;}
+   (api.mostrarMensagemWhatsApp||mostrarMensagemWhatsApp)(prepared);return true;
+  }catch(e){alert(e.message||'Não foi possível preparar a confirmação.');return false;}
   finally{abrindo.delete(key);}
  }
  document.addEventListener('click',event=>{const target=event.target.closest?.('[data-confirmacao-parcela],[data-confirmacao-emprestimo]');if(!target)return;event.preventDefault();void abrir(target.dataset.confirmacaoParcela,target.dataset.confirmacaoEmprestimo);});

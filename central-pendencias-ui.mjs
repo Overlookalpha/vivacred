@@ -1,4 +1,4 @@
-import {resumirPendencias} from './central-pendencias.mjs';
+import {resumirPendencias} from './central-pendencias.mjs?v=avisos-1';
 import {aplicarDispensas} from './dispensar-pendencias.mjs';
 export function iniciarCentralPendencias({host,cadastros,carregar,acoes,root=document}){
  const node=(tag,text,parent)=>{const el=root.createElement(tag);if(text!=null)el.textContent=text;parent?.append(el);return el;};

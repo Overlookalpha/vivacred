@@ -528,6 +528,7 @@ window.abrirTela = function(tela){
 import {criarPixCliente} from "./pix-cliente-ui.mjs";
 import {criarEditorPix,salvarPixCliente} from "./editar-pix-cliente.mjs";
 import {iniciarCentralPendencias} from './central-pendencias-ui.mjs';
+import {salvarDispensa} from './dispensar-pendencias.mjs';
 import {criarAvisosRecebimento} from './avisos-recebimento.mjs';
 import {agruparParcelasEmprestimos} from './carregamento-emprestimos.mjs';
 import {prepararQuitacaoAtomica} from "./quitacao-atomica.mjs";
@@ -3563,10 +3564,11 @@ if (!adminSnap.exists()) {
     carregar:async()=>{
      const nomes=['usuarios','emprestimos','parcelas','promessasPagamento'];
      const snapshots=await Promise.all(nomes.map(nome=>getDocsFromServer(collection(db,nome))));
-     const pendentes=await getDocsFromServer(query(collection(db,'historicoPagamentos'),where('avisoClienteStatus','==','pendente')));
-     return {...Object.fromEntries(nomes.map((nome,i)=>[nome,snapshots[i].docs.map(d=>({...d.data(),id:d.id}))])),recebimentos:pendentes.docs.map(d=>({...d.data(),id:d.id}))};
+     const [pendentes,dispensas]=await Promise.all([getDocsFromServer(query(collection(db,'historicoPagamentos'),where('avisoClienteStatus','==','pendente'))),getDocsFromServer(collection(db,'pendenciasDispensadas'))]);
+     return {...Object.fromEntries(nomes.map((nome,i)=>[nome,snapshots[i].docs.map(d=>({...d.data(),id:d.id}))])),recebimentos:pendentes.docs.map(d=>({...d.data(),id:d.id})),dispensas:dispensas.docs.map(d=>({...d.data(),id:d.id}))};
     },
     acoes:{
+     dispensar:(tipo,row,restaurar)=>salvarDispensa({db,auth,doc,runTransaction,serverTimestamp},tipo,row,restaurar),
      avisarRecebimento:r=>avisosRecebimento.abrir(r.id),
      marcarRecebimento:r=>avisosRecebimento.marcar(r.id),
      contas:()=>{window.abrirTela('dashboard');document.getElementById('cardContasPendentes').scrollIntoView({behavior:'smooth',block:'start'});},
